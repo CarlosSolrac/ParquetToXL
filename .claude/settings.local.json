@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/carlos/.claude/**)",
+      "Bash(uv sync *)"
+    ]
+  }
+}
