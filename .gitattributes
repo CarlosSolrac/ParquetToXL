@@ -1,0 +1,3 @@
+# Line endings are a property of the repository, not of each machine's git config.
+# Without this, a clone on Windows depends on core.autocrlf being set locally.
+* text=auto eol=lf

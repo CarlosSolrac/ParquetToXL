@@ -1,0 +1,36 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # Applications commit uv.lock and must install from it exactly.
+      # Libraries do not commit one, so they resolve at install time.
+      # This is a property of the repository, declared here once — never
+      # detected at runtime, because a workflow that drops --locked when the
+      # lockfile is missing fails open the moment someone deletes it.
+      - name: Sync the environment (application; commits uv.lock)
+        run: uv sync --locked --all-groups
+      # For a library, replace the step above with:
+      #   run: uv sync --all-groups
+
+      # Ruff, formatting, the declaration checker, and both type checkers.
+      # Runs over every file so a Ruff upgrade that changes which rules fire
+      # is caught here rather than in someone's next diff.
+      - name: Lint, format, declarations, types
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
+      - name: Tests and coverage
+        run: uv run pytest --cov --cov-report=term-missing --cov-branch

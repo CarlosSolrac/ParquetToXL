@@ -1,0 +1,29 @@
+# Baseline hooks. `uv run pre-commit run --files <changed files>` is the whole
+# verification loop except execution and coverage, which stay manual because
+# they need the narrowest practical entry point chosen per change.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: check-declarations
+        name: every variable annotated before first binding
+        entry: uv run python tools/check_declarations.py
+        language: system
+        types: [python]
+      - id: pyright
+        name: pyright (strict)
+        entry: uv run pyright
+        language: system
+        types: [python]
+        pass_filenames: true
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: true

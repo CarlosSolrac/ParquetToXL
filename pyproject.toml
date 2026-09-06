@@ -1,0 +1,120 @@
+##
+## Baseline tooling configuration for a new Python project.
+## Use the repository's existing configuration when one is already present.
+##
+
+[project]
+name = "ParquetToXL"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18,<2",
+    "pre-commit>=4,<5",
+    "pyright>=1.1.400,<2",       # PyPI wrapper; downloads a Node runtime on first run
+    "pytest>=8,<9",
+    "pytest-cov>=6,<8",
+    "ruff>=0.14,<0.15",          # pinned: minor releases change which rules fire
+]
+
+[tool.ruff]
+target-version = "py313"
+# Without this, notebooks are silently exempt from every rule below.
+extend-include = ["*.ipynb"]
+line-length = 220
+indent-width = 4
+
+[tool.ruff.lint]
+select = [
+    "E4", "E7", "E9", "F",   # pycodestyle subset + pyflakes
+    "I",                      # import sorting
+    "B",                      # bugbear
+    "UP",                     # pyupgrade
+    "SIM",                    # simplify
+    "RUF",                    # ruff-specific
+    "D",                      # pydocstyle
+    "ANN",                    # missing annotations
+    "PTH",                    # pathlib over os.path
+    "S",                      # bandit security checks
+    "RET",                    # return-statement hygiene
+    "C4",                     # comprehension quality
+    "LOG", "G",               # logging correctness and format style
+    "TID",                    # tidy imports
+    "N",                      # pep8-naming
+    "A",                      # builtin shadowing
+    "ARG",                    # unused arguments
+    "DTZ",                    # timezone-aware datetimes
+    "ERA",                    # commented-out code
+    "T20",                    # stray print
+    "SLF",                    # private member access
+    "PGH",                    # blanket noqa / bare type-ignore
+    "PT",                     # pytest style
+    "ASYNC",                  # async correctness
+    "INP",                    # implicit namespace packages
+]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# pytest's assert-based style and test-only fixtures trip the bandit rules.
+# pytest's assert-based style trips bandit; test names carry the meaning that
+# a mandatory docstring would only restate, so docstrings in tests are optional.
+"tests/**/*.py" = ["S101", "S105", "S106", "D100", "D103", "INP001"]
+# A file named test_*.py is a test file wherever it sits. Without these two
+# patterns the ignores above never match a test written beside its module.
+"test_*.py" = ["S101", "S105", "S106", "D100", "D103", "INP001"]
+"**/test_*.py" = ["S101", "S105", "S106", "D100", "D103", "INP001"]
+"conftest.py" = ["S101", "D100", "INP001"]
+# AST and metaprogramming code cannot satisfy strict unknown-type reporting.
+# A CLI tool prints by design; that is the intentional-output carve-out.
+"tools/**/*.py" = ["INP001", "T201"]
+
+[tool.ruff.lint.pydocstyle]
+# This already disables the conflicting D rules; do not add redundant D2xx ignores.
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.13"
+reportMissingTypeStubs = true
+reportUnknownMemberType = true
+stubPath = "stubs"
+
+[[tool.pyright.executionEnvironments]]
+# AST walking and other metaprogramming cannot satisfy strict unknown-type
+# reporting without scattering ignores. Relax deliberately, in one place.
+root = "tools"
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+disallow_any_explicit = false
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
