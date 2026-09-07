@@ -7,7 +7,18 @@
 name = "ParquetToXL"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "adlfs>=2026.4",            # Azure fsspec backend. 2026.4 is where `anon` began defaulting to false; before it,
+                                # an account_name-only path takes anonymous access instead of DefaultAzureCredential.
+    "universal-pathlib>=0.3.10",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/parquet_to_xl"]
 
 [dependency-groups]
 dev = [
