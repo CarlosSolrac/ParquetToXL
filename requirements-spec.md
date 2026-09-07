@@ -47,8 +47,8 @@ in a different order.
 
 ## New dependencies
 
-Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `xxhash`,
-`structlog`, `python-calamine`, `xlsxwriter`.
+Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `adlfs`,
+`xxhash`, `structlog`, `python-calamine`, `xlsxwriter`.
 Dev: none beyond the existing `pytest` / `pytest-cov`.
 `uv.lock` is regenerated and committed (CI installs `--locked`).
 

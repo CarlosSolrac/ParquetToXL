@@ -35,6 +35,7 @@ Two rules apply when this library runs on Spark.
 
 from __future__ import annotations
 
+import pickle
 from collections.abc import Mapping
 from typing import Any, Final
 
@@ -44,28 +45,41 @@ from upath.types import JoinablePathLike
 __all__ = ["ZPath", "zpath"]
 
 
-def _reject_live_credential(storage_options: Mapping[str, object]) -> None:
-    """Reject a credential object that cannot survive being sent to a Spark executor.
+def _reject_unpicklable_storage_options(storage_options: Mapping[str, object]) -> None:
+    """Reject storage options that cannot survive being sent to a Spark executor.
 
-    A SAS token is a string and is allowed. An ``azure.identity`` credential is
-    a live object holding an event loop, locks and sockets; it raises deep
-    inside ``pickle`` on the first task that captures a path built with it,
-    which is far from the call that caused it. Fail here instead.
+    ``UPath.__reduce__`` rebuilds a path from its storage options, so an option
+    holding an event loop, a lock or a socket -- an ``azure.identity``
+    credential, a ``boto3.Session``, a ``requests.Session`` -- raises deep
+    inside ``pickle`` on the first task that captures the path, far from the
+    call that caused it. Fail here instead.
+
+    The check is by value rather than by option name, because the names differ
+    per backend (``credential``, ``session``, ``token``, ``request_session``)
+    and a named-key check needs a new special case for each one.
 
     Args:
-        storage_options: The merged storage options destined for ``UPath``.
+        storage_options: The storage options of a constructed path, which
+            include any inherited from a ``UPath`` passed as an argument.
 
     Raises:
-        TypeError: If ``credential`` is present and is not a string.
+        TypeError: If any option cannot be pickled.
     """
-    credential: object | None = storage_options.get("credential")
-    if credential is None or isinstance(credential, str):
-        return
-    raise TypeError(
-        f"credential must be a SAS token string, not {type(credential).__name__}. "
-        "A live credential object cannot be pickled, so any path built with it fails as soon as a Spark task captures it. "
-        "Pass account_name and let adlfs resolve DefaultAzureCredential on each machine, or pass account_key/sas_token/connection_string.",
-    )
+    offenders: list[str] = []
+    key: str
+    value: object
+    for key, value in storage_options.items():
+        try:
+            pickle.dumps(value)
+        # Any failure to pickle disqualifies the value, whatever it raises.
+        except Exception:
+            offenders.append(f"{key}={type(value).__name__}")
+    if offenders:
+        raise TypeError(
+            f"storage options cannot be pickled: {', '.join(sorted(offenders))}. "
+            "A path carrying them fails as soon as a Spark task captures it, far from this call. "
+            "Pass account_name and let adlfs resolve DefaultAzureCredential on each machine, or pass a string credential such as account_key, sas_token or connection_string.",
+        )
 
 
 def zpath(
@@ -89,7 +103,8 @@ def zpath(
     Args:
         *args: Path or URI segments. The first determines the protocol unless
             ``protocol`` is given.
-        protocol: Explicit fsspec protocol, overriding any URI scheme in ``args``.
+        protocol: Explicit fsspec protocol, overriding any URI scheme in ``args``
+            and any ``protocol`` key in the storage options.
         storage_options: fsspec storage options, including credentials.
         **kwargs: Further storage options, taking precedence over ``storage_options``.
 
@@ -97,8 +112,7 @@ def zpath(
         The path, as the ``UPath`` subclass registered for its protocol.
 
     Raises:
-        TypeError: If ``credential`` is a live credential object rather than a
-            SAS token string.
+        TypeError: If any resulting storage option cannot be pickled.
 
     Examples:
         >>> zpath("az://container/data.parquet", account_name="myaccount").protocol
@@ -106,8 +120,15 @@ def zpath(
 
     """
     options: dict[str, Any] = {**(storage_options or {}), **kwargs}
-    _reject_live_credential(options)
-    return UPath(*args, protocol=protocol, **options)
+    if protocol is not None:
+        # Forwarded only when set. UPath copies a lone UPath argument verbatim
+        # but only when no keyword follows it; passing protocol=None instead
+        # rebuilds the path from its string form, which turns a relative path
+        # absolute against the wrong container.
+        options["protocol"] = protocol
+    path: UPath = UPath(*args, **options)
+    _reject_unpicklable_storage_options(path.storage_options)
+    return path
 
 
 ZPath: Final = zpath

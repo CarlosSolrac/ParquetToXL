@@ -948,7 +948,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "adlfs", specifier = ">=2024.7" },
+    { name = "adlfs", specifier = ">=2026.4" },
     { name = "universal-pathlib", specifier = ">=0.3.10" },
 ]
 

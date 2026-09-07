@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import pickle
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Final
@@ -89,12 +90,22 @@ def test_sas_token_string_is_accepted_as_a_credential() -> None:
 
 
 def test_live_credential_object_is_rejected() -> None:
-    class _FakeCredential:
-        def get_token(self, *_scopes: str) -> str:
-            return "token"
+    with pytest.raises(TypeError, match="credential=_LiveCredential"):
+        zpath("az://container/data.parquet", account_name="acct", credential=_LiveCredential())
 
-    with pytest.raises(TypeError, match="cannot be pickled"):
-        zpath("az://container/data.parquet", account_name="acct", credential=_FakeCredential())
+
+def test_live_credential_inherited_from_a_upath_argument_is_rejected() -> None:
+    # UPath merges the storage options of a UPath argument into its own, so a
+    # guard that only inspected this call's keywords would let it through.
+    raw: UPath = UPath("az://container/data.parquet", account_name="acct", credential=_LiveCredential())
+    with pytest.raises(TypeError, match="credential=_LiveCredential"):
+        zpath(raw)
+
+
+def test_unpicklable_option_under_any_name_is_rejected() -> None:
+    # The names differ per backend: session for s3fs, token for gcsfs.
+    with pytest.raises(TypeError, match="session=_LiveCredential"):
+        zpath("s3://bucket/data.parquet", session=_LiveCredential())
 
 
 def test_local_filesystem_round_trip(tmp_path: Path) -> None:
@@ -106,10 +117,17 @@ def test_local_filesystem_round_trip(tmp_path: Path) -> None:
 
 
 def test_memory_filesystem_round_trip() -> None:
-    path: UPath = zpath("memory://container/data.txt")
+    # MemoryFileSystem keeps its store on the class, shared by every instance in
+    # the process, so this cleans up after itself and uses a name no other test
+    # can collide with.
+    path: UPath = zpath("memory://test_memory_filesystem_round_trip/data.txt")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("hello")
-    assert path.read_text() == "hello"
+    try:
+        path.write_text("hello")
+        assert path.read_text() == "hello"
+    finally:
+        path.unlink(missing_ok=True)
+        path.parent.rmdir()
 
 
 def test_a_direct_upath_subclass_is_rejected_by_upath() -> None:
@@ -119,10 +137,37 @@ def test_a_direct_upath_subclass_is_rejected_by_upath() -> None:
     class _Direct(UPath):
         pass
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="incompatible with"):
         _Direct("az://container/data.parquet")
+
+
+def test_a_relative_path_argument_is_not_made_absolute() -> None:
+    # UPath copies a lone UPath argument verbatim, but only when no keyword
+    # follows it. Forwarding protocol=None unconditionally would rebuild this
+    # path from its string form as az://data.parquet/ -- a different container.
+    relative: UPath = UPath("az://container/dir/data.parquet", account_name="acct").relative_to("az://container/dir")
+    rebuilt: UPath = zpath(relative)
+    assert str(rebuilt) == str(relative)
+    assert not rebuilt.is_absolute()
+
+
+def test_protocol_may_be_supplied_through_the_storage_options_mapping() -> None:
+    path: UPath = zpath("/container/data.parquet", storage_options={"protocol": "az", "account_name": "acct"})
+    assert path.protocol == "az"
+    assert path.storage_options["account_name"] == "acct"
+
+
+def test_explicit_protocol_wins_over_the_storage_options_mapping() -> None:
+    assert zpath("/container/f.txt", protocol="memory", storage_options={"protocol": "az"}).protocol == "memory"
 
 
 def test_zpath_alias_is_the_factory() -> None:
     assert ZPath is zpath
     assert str(ZPath("az://container/data.parquet")) == "az://container/data.parquet"
+
+
+class _LiveCredential:
+    """Stand-in for an azure.identity credential: holds a lock, so it cannot be pickled."""
+
+    def __init__(self) -> None:
+        self.lock: threading.Lock = threading.Lock()
