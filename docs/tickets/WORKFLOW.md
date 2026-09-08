@@ -173,11 +173,25 @@ QWen produced or to read a gate failure.
 level, then drop to `high` to dispatch and verify the whole phase. One model change per
 phase, roughly seven in total — not two per ticket.
 
-Claude cannot change its own model or effort. It detects the current values via
+Claude cannot change its own model or effort. Where it can *detect* them, it reads
 `get_session` (`session_context.model`, `session_context.effort_level`), halts on
 mismatch, asks, and re-verifies before proceeding. Also compare `last_served_model`
 against `configured_model` on each dispatch: the runtime can fall back mid-session, and a
 frozen test authored under a fallback is worth knowing about.
+
+**`get_session` availability is not guaranteed.** It is a Claude Code Remote MCP tool,
+confirmed working in a cloud session; whether a local terminal session has that server
+attached is unverified. Check for it before relying on the mechanism. Without it the loop
+is open rather than closed: setting the level correctly falls to the operator before the
+session starts, and the dispatch script can only log what the ticket required, not confirm
+what was in effect. Record which mode is in use in the attempt log, so a later failure can
+be read correctly.
+
+Whichever mode applies, this concerns the **orchestrator only**. QWen never reads a
+ticket, touches git, or runs a gate — the dispatch script sends it one prompt and takes
+back one completion. An agentic QWen harness in an editor (Continue, Cline, or similar
+over Ollama) is not part of this design; single-shot is what keeps tool schemas and tool
+output out of the window.
 
 The dispatch script enforces this only during the authoring stage. Applying a patch and
 running gates is mechanical and does not need the authoring level.
