@@ -16,6 +16,35 @@ the spec puts out of scope. ``None`` is not a member: a missing value is modelle
 """
 
 
+def as_column_scalar(value: object) -> ColumnScalar | None:
+    """Return a value as a ``ColumnScalar``, refusing anything outside that set.
+
+    Polars declares ``Series.min()`` as returning its ``PythonLiteral``, which also admits
+    an ndarray and a list -- the nested dtypes this project puts out of scope. Narrowing by
+    an explicit runtime check rather than a cast means such a value fails loudly here rather
+    than being recorded as something no consumer of the metadata could interpret.
+
+    In practice Polars usually refuses first: ``min()`` on a ``List`` column raises
+    ``InvalidOperationError`` before this is reached. The check is the non-matching half of
+    a narrowing the type checkers require, and raising is better than silently reporting
+    ``None``, which would claim a column has no extreme when it has one.
+
+    Args:
+        value: A value read out of a column, typically an extreme.
+
+    Returns:
+        The value unchanged, or ``None`` when there was no value to report.
+
+    Raises:
+        TypeError: The value is not one of the ``ColumnScalar`` types.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool | int | float | str | bytes | dt.datetime | dt.date | dt.time | dt.timedelta | Decimal):
+        return value
+    raise TypeError(f"value of type {type(value).__name__} is not a ColumnScalar; nested dtypes are out of scope")
+
+
 def is_numeric(dtype: pl.DataType) -> bool:
     """Return whether the dtype holds numbers.
 

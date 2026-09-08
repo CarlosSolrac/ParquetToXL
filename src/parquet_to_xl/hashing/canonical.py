@@ -56,11 +56,11 @@ def encode_value(value: object) -> bytes:
     0x03   ``datetime.date``            ``struct.pack("<q", days_since_epoch)``
     0x04   ``datetime.datetime``        ``struct.pack("<q", micros_since_epoch)``
     0x05   ``datetime.time``            ``struct.pack("<q", nanos_since_midnight)``
-    0x06   ``int``                      ``str(v).encode("utf-8")``
+    0x06   ``int``                      ``str(v).encode("utf-8")``  (see the note on ranges)
     0x07   ``bool``                     ``b"\x01"`` if true else ``b"\x00"``
     0x08   ``bytes``                    the bytes themselves
     0x09   ``decimal.Decimal``          plain decimal text, trailing zeros stripped
-    0x0A   ``datetime.timedelta``       ``struct.pack("<q", microseconds)``
+    0x0A   ``datetime.timedelta``       ``str(microseconds).encode("utf-8")``
     0x0B   ``Datetime("ns")`` column     ``struct.pack("<q", nanos_since_epoch)``
     0x0C   ``Duration("ns")`` column     ``struct.pack("<q", nanoseconds)``
     ===== ============================ ================================================
@@ -88,10 +88,24 @@ def encode_value(value: object) -> bytes:
       ``normalize()``, which rounds to the ambient context precision and would make the
       digest depend on a global that no caller here controls.
 
+    Two payloads are decimal text rather than a packed integer, because their ranges do not
+    fit one: ``UInt64``'s maximum exceeds a signed 8-byte pack, and ``timedelta`` spans about
+    ten times what int64 microseconds can hold. The other integer payloads are packed,
+    because they cannot overflow -- ``Datetime`` tops out near 2.5e17 microseconds at year
+    9999 and ``Time`` near 8.6e13 nanoseconds at midnight-minus-one.
+
     Two payloads are computed with integer arithmetic rather than the obvious float route,
     because the obvious route loses precision inside the range Polars can represent:
     ``Datetime`` subtracts ``EPOCH_DATETIME`` as a ``timedelta`` instead of scaling
     ``timestamp()``, and ``Decimal`` formats rather than normalises.
+
+    This table is versioned by ``HashedDataframeBase.version``, and the two are only
+    consistent if they change together. Once any digest has been persisted, changing a tag
+    or a payload here **requires** incrementing that version: the digest of unchanged data
+    moves, and without a version bump a stored hash and a freshly computed one carry
+    identical algorithm labels while disagreeing, so unchanged data reads as modified.
+    Pre-release the encoding is still being settled and no digest has been written down, so
+    the version stays 1 and changes here are free.
 
     Two dispatch orders are load-bearing, because Python's type hierarchy works against
     the table above: ``bool`` is a subclass of ``int``, so it must be tested first or every
@@ -143,7 +157,10 @@ def encode_value(value: object) -> bytes:
         nanos: int = (seconds * MICROS_PER_SECOND + value.microsecond) * NANOS_PER_MICROSECOND
         return b"\x05" + struct.pack("<q", nanos)
     if isinstance(value, dt.timedelta):
-        return b"\x0a" + struct.pack("<q", value // dt.timedelta(microseconds=1))
+        # Decimal text, for the same reason as int above: timedelta spans roughly ten
+        # times what int64 microseconds can hold, so timedelta.max -- and any large
+        # Duration("ms") column, which Polars accepts -- overflows a packed "<q".
+        return b"\x0a" + str(value // dt.timedelta(microseconds=1)).encode("utf-8")
     if isinstance(value, Decimal):
         # format() never consults the ambient decimal context, so no significant digit
         # is rounded away and the encoding cannot change because an unrelated caller

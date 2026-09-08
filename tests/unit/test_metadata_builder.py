@@ -10,6 +10,7 @@ import datetime as dt
 from decimal import Decimal
 
 import polars as pl
+import pytest
 
 from parquet_to_xl.hashing.base import DataFrameHasherBaseClass
 from parquet_to_xl.hashing.binary_aggregate import BinaryAggregateHashedDataframe, DataFrameHasherBinaryAggregateHash
@@ -156,3 +157,15 @@ def test_empty_frame_still_produces_one_dataframe_hash_per_hasher() -> None:
 def test_the_result_round_trips_through_pydantic() -> None:
     result: DataframeColumnsMetadata = build_columns_metadata(_frame(), [DataFrameHasherBinaryAggregateHash()])
     assert DataframeColumnsMetadata.model_validate(result.model_dump()) == result
+
+
+def test_a_nested_extreme_is_refused_rather_than_recorded() -> None:
+    # Tested against the helper directly because Polars blocks the public route first:
+    # Series.min() on a List column raises InvalidOperationError before the builder sees a
+    # value. The guard still earns its place -- it is the non-matching half of the narrowing
+    # pyright requires, and raising beats silently recording "no value" for a column that
+    # has one.
+    assert scalars.as_column_scalar(None) is None
+    assert scalars.as_column_scalar(3) == 3
+    with pytest.raises(TypeError):
+        scalars.as_column_scalar([1, 2])

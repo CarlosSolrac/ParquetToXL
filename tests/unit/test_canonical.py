@@ -98,7 +98,7 @@ def test_aware_datetimes_are_converted_to_utc() -> None:
 def test_temporal_payloads_use_the_documented_epochs() -> None:
     assert encode_value(dt.date(2020, 1, 1)) == b"\x03" + struct.pack("<q", (dt.date(2020, 1, 1) - dt.date(1970, 1, 1)).days)
     assert encode_value(dt.time(1, 2, 3, 4)) == b"\x05" + struct.pack("<q", ((1 * 3600 + 2 * 60 + 3) * 1_000_000 + 4) * 1000)
-    assert encode_value(dt.timedelta(seconds=5)) == b"\x0a" + struct.pack("<q", 5_000_000)
+    assert encode_value(dt.timedelta(seconds=5)) == b"\x0a" + b"5000000"
 
 
 def test_integers_cover_the_full_signed_and_unsigned_range() -> None:
@@ -206,3 +206,17 @@ def test_encode_series_encodes_nulls_as_the_null_sentinel() -> None:
 def test_encode_series_delegates_untouched_dtypes_to_encode_value() -> None:
     column: pl.Series = pl.Series("n", [1.5, None, 2.5], dtype=pl.Float64)
     assert list(encode_series(column)) == [encode_value(1.5), encode_value(None), encode_value(2.5)]
+
+
+def test_durations_beyond_int64_microseconds_still_encode() -> None:
+    # timedelta spans roughly ten times what int64 microseconds holds, so a packed payload
+    # raised struct.error on values Polars accepts -- Duration("ms") reaches them easily.
+    assert encode_value(dt.timedelta.max).startswith(b"\x0a")
+    assert encode_value(dt.timedelta.min).startswith(b"\x0a")
+    assert encode_value(dt.timedelta.max) != encode_value(dt.timedelta.min)
+
+
+def test_a_large_millisecond_duration_column_hashes() -> None:
+    huge: pl.Series = pl.Series("x", [10_000_000_000_000_000], dtype=pl.Duration("ms"))
+    other: pl.Series = pl.Series("x", [10_000_000_000_000_001], dtype=pl.Duration("ms"))
+    assert list(encode_series(huge)) != list(encode_series(other))

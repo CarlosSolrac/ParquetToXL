@@ -161,7 +161,7 @@ nanosecond variants get tags `0x0B` and `0x0C` rather than being folded into `0x
 | `bool` | `b"\x07" + (b"\x01" if v else b"\x00")` |
 | `bytes` | `b"\x08" + v` |
 | `Decimal` | `b"\x09" +` plain decimal text with trailing zeros stripped, so `1.25` and `1.250` agree. Textual, not `normalize()`, which rounds to the ambient context precision and would let an unrelated caller change a digest |
-| `timedelta` | `b"\x0a" + struct.pack("<q", microseconds)` |
+| `timedelta` | `b"\x0a" + str(microseconds).encode("utf-8")` — decimal text, because `timedelta` spans about ten times what int64 microseconds can hold and a packed payload overflows on values Polars accepts |
 | `Datetime("ns")` column | `b"\x0b" + struct.pack("<q", nanos_since_epoch)` |
 | `Duration("ns")` column | `b"\x0c" + struct.pack("<q", nanoseconds)` |
 
@@ -192,6 +192,13 @@ class DataFrameHasherBaseClass(ABC):
 `identifier: Literal["binary-aggregate-xxh3-128"]`, `version: int = 1`,
 `scope: Literal["column", "dataframe"]`, `bit_width: Literal[128] = 128`,
 `digest_hex: str` (`Field(pattern=r"^[0-9a-f]{32}$")`).
+
+`version` and the `encode_value` tag table are one contract. Once any digest has been
+persisted, changing a tag or a payload requires incrementing `version` in the same change:
+otherwise a stored digest and a freshly computed one carry identical algorithm labels while
+disagreeing, and unchanged data reads as modified. Pre-release nothing has been written
+down — fixtures are generated on first run and gitignored, and no test hardcodes a digest —
+so the encoding is still being settled and `version` stays 1.
 `HashedDataframe = Annotated[BinaryAggregateHashedDataframe, Field(discriminator="identifier")]`
 — a one-member discriminated union, extensible without touching consumers. It is defined in
 `hashing/__init__.py`, not `base.py`: `base.py` would need the concrete subclass to build the
@@ -212,7 +219,7 @@ changes the digest.
 ### Column metadata — `metadata/column.py`, `columns.py`, `builder.py`
 
 `DataframeColumnMetadata(BaseModel, frozen=True)` — one per column:
-`description: str`, `name: str`, `polars_dtype: str` (str of the `pl.DataType`),
+`name: str`, `polars_dtype: str` (str of the `pl.DataType`),
 flags `is_numeric, is_float, is_integer, is_decimal, is_text, is_boolean: bool`
 (the first four delegate to Polars; `is_text` and `is_boolean` have no Polars predicate and
 are derived — `is_text` is true for `String` **and** `Categorical`, which is
@@ -225,8 +232,13 @@ stats `min_value: ColumnScalar | None`, `max_value: ColumnScalar | None`,
 `ColumnScalar = float | int | str | bool | bytes | datetime | date | time | timedelta | Decimal`.
 
 `DataframeColumnsMetadata(BaseModel, frozen=True)` — the wrapper:
-`description: str`, `columns: list[DataframeColumnMetadata]` (dataframe order),
+`columns: list[DataframeColumnMetadata]` (dataframe order),
 `dataframe_hashes: list[HashedDataframe]` (one per hasher, from `hash_dataframe`).
+
+Both models originally carried a `description: str`. It is dropped: `build_columns_metadata`
+receives a `pl.DataFrame`, which carries no column documentation, so nothing could populate
+the field and no consumer reads it. A required field no constructor can fill would have to
+be invented at every call site.
 
 `build_columns_metadata(df, hashers)` is the shared constructor used by both the
 source-frame path and every conversion: per column it derives the dtype flags, computes

@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from parquet_to_xl.metadata import scalars
+from parquet_to_xl.metadata.column import DataframeColumnMetadata
+from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     import polars as pl
 
     from parquet_to_xl.hashing.base import DataFrameHasherBaseClass
-    from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
 
 
 def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBaseClass]) -> DataframeColumnsMetadata:
@@ -40,4 +43,27 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
     Returns:
         The wrapper holding the per-column records and the frame-level digests.
     """
-    raise NotImplementedError
+    columns: list[DataframeColumnMetadata] = []
+    name: str
+    for name in df.columns:
+        series: pl.Series = df[name]
+        dtype: pl.DataType = series.dtype
+        columns.append(
+            DataframeColumnMetadata(
+                name=name,
+                polars_dtype=str(dtype),
+                is_numeric=scalars.is_numeric(dtype),
+                is_float=scalars.is_float(dtype),
+                is_integer=scalars.is_integer(dtype),
+                is_decimal=scalars.is_decimal(dtype),
+                is_text=scalars.is_text(dtype),
+                is_boolean=scalars.is_boolean(dtype),
+                hashes=[hasher.hash_column(series) for hasher in hashers],
+                min_value=scalars.as_column_scalar(series.min()),
+                max_value=scalars.as_column_scalar(series.max()),
+                value_count=len(series),
+                unique_count=series.n_unique(),
+                null_count=series.null_count(),
+            )
+        )
+    return DataframeColumnsMetadata(columns=columns, dataframe_hashes=[hasher.hash_dataframe(df) for hasher in hashers])
