@@ -151,3 +151,33 @@ Narrow targets only: `uv run pytest -x -q --no-header --tb=short <one test file>
 - Whether to raise Ollama's `num_ctx` above 32768. The model supports 262,144; the ceiling
   is a VRAM tradeoff, not a limit. On current evidence tickets use ~12% of 32k, so there
   is no pressure to.
+
+## Claude model and effort per phase
+
+`claude-opus-5` throughout. Effort is the lever, and the value below is what each phase
+requires to be **authored** — writing the stub and the frozen test — not to apply a patch
+QWen produced or to read a gate failure.
+
+| Phase | Effort | Why |
+| --- | --- | --- |
+| 0 · Prereq | `xhigh` | Infrastructure. Typing audit, layout, lockfile. |
+| 1 · Canonical + hashing | `max` | Tag design and the mod-2^128 identity; the frozen tests here are the ones later phases lean on. |
+| 2 · Metadata models | `high` | Declarative, exact fields given in the spec. |
+| 3 · Conversions | `xhigh`, `max` for idempotency | Per-dtype rules are mechanical; idempotency is load-bearing for the headline test. |
+| 4 · Extract | `high` | Straightforward once the models exist. |
+| 5 · Excel | `high`; `max` for `fast_excel_reader` | The reader carries an unresolved empirical question. |
+| 6 · Fixtures | `xhigh` | Large, cross-cutting, byte-identical regeneration. |
+| 7 · Integration | `max` | ZPath internals and the whole-system round-trip. |
+
+**Batch by phase.** Author every frozen test in a phase in one sitting at that phase's
+level, then drop to `high` to dispatch and verify the whole phase. One model change per
+phase, roughly seven in total — not two per ticket.
+
+Claude cannot change its own model or effort. It detects the current values via
+`get_session` (`session_context.model`, `session_context.effort_level`), halts on
+mismatch, asks, and re-verifies before proceeding. Also compare `last_served_model`
+against `configured_model` on each dispatch: the runtime can fall back mid-session, and a
+frozen test authored under a fallback is worth knowing about.
+
+The dispatch script enforces this only during the authoring stage. Applying a patch and
+running gates is mechanical and does not need the authoring level.
