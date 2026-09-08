@@ -122,8 +122,9 @@ body:
     attributes:
       label: QWen thinking
       description: |
-        Off for transcription against a contract already written. On only where there is
-        real algorithmic content — tag design, the mod-2^128 identity, idempotency.
+        Leave off. Measured at ~9x the tokens for a shorter, and in one case less correct,
+        answer — see the calibration in docs/tickets/SCHEMA.md. Turn on only for a ticket
+        that has already failed with it off, and say so in the ticket when you do.
       options:
         - "off"
         - "on"

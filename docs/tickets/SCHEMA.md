@@ -22,9 +22,10 @@ claude:
 qwen:
   applies: true
   model: qwen3.6:latest
-  think: false
+  think: false                 # MUST be explicit — omitting it turns thinking ON
   num_ctx: 32768
   temperature: 0.2
+  presence_penalty: 0          # model default is 1.5; hostile to code, see below
   seed: 20260908
   keep_alive: -1
   max_prompt_tokens: 20000
@@ -74,7 +75,8 @@ One prompt per phase rather than two per ticket.
 | `applies` | `true` or `false`. Always present. |
 | `reason` | Required when `applies: false`. Why this is not a single-shot ticket. |
 | `model` | Ollama tag, exactly as `ollama ps` reports it. |
-| `think` | Reasoning on or off. Off for transcription tickets; on only where there is real algorithmic content. |
+| `think` | Reasoning on or off. **Always send it explicitly** — omitting the field leaves thinking on. Default off for every ticket, including the algorithmic ones; see the calibration below. |
+| `presence_penalty` | Pinned to 0. The model ships with 1.5, which penalizes tokens for having appeared before — actively wrong for code, which repeats names and annotations by design. |
 | `num_ctx` | Hard ceiling. Ollama truncates silently past it — never rely on the server default. |
 | `temperature` | Low. Paired with `seed` so a failure is reproducible. |
 | `seed` | Recorded per attempt. Without it you cannot distinguish a bad ticket from a bad roll. |
@@ -95,3 +97,43 @@ across sessions is not a rule:
 3. **Measurement** — log `prompt_eval_count`, `eval_count`, `seed`, and
    `last_served_model` for every attempt. These accumulate into the real budget table and
    retire the estimates the workflow was designed against.
+
+## Measured calibration
+
+Run `tools/probe_ollama.py` against the serving host; these are the results that replaced
+the workflow's original estimates. Ollama 0.33.3, `qwen3.6:latest`, seed 20260908, one run
+per condition on a small sample ticket.
+
+| `think` | eval_count | thinking chars | content chars |
+| --- | --- | --- | --- |
+| omitted | 5,836 | 20,297 | 516 |
+| `false` | **669** | 0 | 2,740 |
+| `true` | 6,256 | 22,354 | 427 |
+
+Four things follow, and they are why the defaults above look the way they do.
+
+**Omitting `think` does not disable it.** The field must be sent as `false` on every
+request. This is the most likely way for the workflow to silently start costing nine times
+what it should.
+
+**Thinking is not worth it here.** Nine times the tokens for a shorter answer, and the
+`think: true` run built its illegal-character set as `[]:*?\` — dropping the `/` the
+contract explicitly listed, which the non-thinking run got right. The original plan
+enabled thinking for tickets with real algorithmic content; that is reversed. Default off
+everywhere, and turn it on for one ticket only after that ticket has demonstrably failed
+without it.
+
+Caveat: one run per condition on a deliberately easy task. The token ratio is solid; the
+quality comparison is a signal, not a finding.
+
+**Tickets are far cheaper than estimated.** 313 prompt tokens for ~1,400 characters, about
+4.5 chars per token. A ticket at the 400-line context cap is roughly 3,300 tokens; with a
+~700-token completion that is about 4,000 of 32,768 — twelve percent. The original 6–8k
+prompt estimate was around double the truth, and the 400-line cap is far tighter than the
+window requires. `max_prompt_tokens` stays at 20,000 as a guard against a ticket that has
+grown without anyone noticing, not because the budget is close.
+
+**32,768 is a configuration choice, not the model's limit.** `/api/show` reports
+`qwen35moe.context_length: 262144`. Ollama loaded the model with a 32k window; raising it
+costs VRAM for the KV cache. Worth knowing before treating the context ceiling as the
+thing that constrains ticket design — on this evidence it is not.
