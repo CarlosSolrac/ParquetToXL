@@ -12,6 +12,7 @@ dependencies = [
     "pydantic>=2.13.5",
     "python-calamine>=0.8.2",
     "structlog>=26.1.0",
+    "tzdata>=2026.3",
     "universal-pathlib>=0.3.10",
     "xlsxwriter>=3.2.9",
     "xxhash>=4.0.1",

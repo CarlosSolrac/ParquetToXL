@@ -48,7 +48,16 @@ in a different order.
 ## New dependencies
 
 Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `xxhash`,
-`structlog`, `python-calamine`, `xlsxwriter`.
+`structlog`, `python-calamine`, `xlsxwriter`, `tzdata`.
+
+`tzdata` is not optional and is deliberately unconditional. Windows ships no system
+timezone database, so without it `zoneinfo.TZPATH` is empty and **every** IANA lookup
+fails — including `ZoneInfo("UTC")`, which means simply reading a value out of a
+`Datetime("us", "UTC")` column raises `ZoneInfoNotFoundError`. Linux CI images usually
+do carry a system database, so omitting it produces the worst kind of bug: green in CI,
+broken on a developer's machine. Pinning it also makes conversions depend on the
+lockfile rather than on whatever tz database version the host happens to ship, which
+matters for a library whose entire purpose is comparing content digests across machines.
 Dev: none beyond the existing `pytest` / `pytest-cov`.
 `uv.lock` is regenerated and committed (CI installs `--locked`).
 
@@ -61,7 +70,8 @@ src/parquet_to_xl/
   paths.py              ZPath(UPath)
   hashing/
     canonical.py        encode_value(value) -> bytes                   (type-tagged, null sentinel)
-    base.py             DataFrameHasherBaseClass, HashedDataframeBase, HashedDataframe alias
+    __init__.py         HashedDataframe alias                          (see note below)
+    base.py             DataFrameHasherBaseClass, HashedDataframeBase
     binary_aggregate.py DataFrameHasherBinaryAggregateHash, BinaryAggregateHashedDataframe
   metadata/
     scalars.py          ColumnScalar type alias, dtype flag helpers
@@ -113,7 +123,17 @@ UPath dispatches through `__new__`; the tricky part is threading the kwarg throu
 
 `encode_value(value: object) -> bytes` maps a single Polars scalar to deterministic bytes.
 Every result is `tag_byte + payload` so a float `0.0` can never collide with an empty
-string. Operates on the **post-conversion** type set only:
+string. Tags `0x00`–`0x05` are exactly the **post-conversion** type set, so a frame that has been
+through `DataframeConversionToExcel` uses only those. Tags `0x06`–`0x0A` exist because
+`build_columns_metadata` also hashes the **source** frame, where `Int64`, `Boolean`,
+`Binary`, `Decimal` and `Duration` columns are still in their original dtypes — the
+original six-tag table could not hash a source frame at all.
+
+Two dispatch orders are load-bearing, because Python's type hierarchy works against the
+table: `bool` subclasses `int`, so it must be tested first or every boolean encodes as an
+integer; and `datetime` subclasses `date`, so it must be tested first or every timestamp
+silently loses its time of day.
+
 
 | Value | Encoding |
 | --- | --- |
@@ -123,6 +143,11 @@ string. Operates on the **post-conversion** type set only:
 | `Date` | `b"\x03" + struct.pack("<q", days_since_epoch)` |
 | `Datetime` | `b"\x04" + struct.pack("<q", micros_since_epoch)`; **naive → assumed UTC**, aware → converted to UTC |
 | `Time` | `b"\x05" + struct.pack("<q", nanos_since_midnight)` |
+| `int` | `b"\x06" + str(v).encode("utf-8")` — decimal text, because `UInt64`'s maximum does not fit a signed 8-byte pack |
+| `bool` | `b"\x07" + (b"\x01" if v else b"\x00")` |
+| `bytes` | `b"\x08" + v` |
+| `Decimal` | `b"\x09" + format(v.normalize(), "f").encode("utf-8")` — normalized so `1.25` and `1.250` agree |
+| `timedelta` | `b"\x0a" + struct.pack("<q", microseconds)` |
 
 The type tag is a property of the value, not the column, so it is kept under the
 "no column binding" decision. It is constant within a single-column digest, but
@@ -152,7 +177,12 @@ class DataFrameHasherBaseClass(ABC):
 `scope: Literal["column", "dataframe"]`, `bit_width: Literal[128] = 128`,
 `digest_hex: str` (`Field(pattern=r"^[0-9a-f]{32}$")`).
 `HashedDataframe = Annotated[BinaryAggregateHashedDataframe, Field(discriminator="identifier")]`
-— a one-member discriminated union, extensible without touching consumers. Round-trips
+— a one-member discriminated union, extensible without touching consumers. It is defined in
+`hashing/__init__.py`, not `base.py`: `base.py` would need the concrete subclass to build the
+alias while `binary_aggregate.py` needs `HashedDataframeBase` from `base.py`, which is a real
+import cycle that fails at runtime. The package module is the one place that knows every union
+member, so a second hasher is added there and nowhere else, and `base.py` never learns about
+any concrete hasher. Round-trips
 through `model_validate` / `model_dump` selecting the subclass by `identifier`.
 
 `DataFrameHasherBinaryAggregateHash`:
@@ -167,7 +197,11 @@ changes the digest.
 
 `DataframeColumnMetadata(BaseModel, frozen=True)` — one per column:
 `description: str`, `name: str`, `polars_dtype: str` (str of the `pl.DataType`),
-flags `is_numeric, is_float, is_integer, is_decimal, is_text, is_boolean: bool`,
+flags `is_numeric, is_float, is_integer, is_decimal, is_text, is_boolean: bool`
+(the first four delegate to Polars; `is_text` and `is_boolean` have no Polars predicate and
+are derived — `is_text` is true for `String` **and** `Categorical`, which is
+dictionary-encoded text and converts to `String`; note also that Polars reports `Decimal`
+as numeric and `Boolean` as *not* numeric),
 `hashes: list[HashedDataframe]`,
 stats `min_value: ColumnScalar | None`, `max_value: ColumnScalar | None`,
 `value_count: int`, `unique_count: int`, `null_count: int`.
