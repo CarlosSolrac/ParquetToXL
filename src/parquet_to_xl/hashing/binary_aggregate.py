@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, ClassVar, Literal
 
+import xxhash
 from pydantic import Field
 
 from parquet_to_xl.hashing.base import DataFrameHasherBaseClass, HashedDataframeBase
+from parquet_to_xl.hashing.canonical import encode_value
 
 if TYPE_CHECKING:
     import polars as pl
@@ -56,7 +58,11 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
             The record, with ``scope="column"`` and ``digest_hex`` the 32-character
             lowercase hex of the sum, zero-padded.
         """
-        raise NotImplementedError
+        total: int = 0
+        value: object
+        for value in column.to_list():
+            total = (total + xxhash.xxh3_128(encode_value(value)).intdigest()) % MODULUS
+        return BinaryAggregateHashedDataframe(scope="column", digest_hex=f"{total:032x}")
 
     def hash_dataframe(self, df: pl.DataFrame) -> BinaryAggregateHashedDataframe:
         """Return the modular sum of the per-value digests of every column.
@@ -70,4 +76,10 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
         Returns:
             The record, with ``scope="dataframe"``.
         """
-        raise NotImplementedError
+        total: int = 0
+        name: str
+        for name in df.columns:
+            value: object
+            for value in df[name].to_list():
+                total = (total + xxhash.xxh3_128(encode_value(value)).intdigest()) % MODULUS
+        return BinaryAggregateHashedDataframe(scope="dataframe", digest_hex=f"{total:032x}")

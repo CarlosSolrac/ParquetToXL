@@ -2,6 +2,23 @@
 
 from __future__ import annotations
 
+import datetime as dt
+import math
+import struct
+from decimal import Decimal
+from typing import Final
+
+CANONICAL_NAN: Final[bytes] = struct.pack("<d", float("nan"))
+"""The single payload every NaN collapses to, so a sign bit cannot change a digest."""
+
+EPOCH_DATE: Final[dt.date] = dt.date(1970, 1, 1)
+"""Day zero for the ``Date`` tag."""
+
+NANOS_PER_MICROSECOND: Final[int] = 1000
+MICROS_PER_SECOND: Final[int] = 1_000_000
+SECONDS_PER_HOUR: Final[int] = 3600
+SECONDS_PER_MINUTE: Final[int] = 60
+
 
 def encode_value(value: object) -> bytes:
     r"""Return deterministic bytes for one Polars scalar.
@@ -62,4 +79,38 @@ def encode_value(value: object) -> bytes:
             scope, and a silent fallback would let an unhashable column produce a digest
             that looked fine.
     """
-    raise NotImplementedError
+    if value is None:
+        return b"\x00"
+    # bool before int, and datetime before date: both are subclasses, and testing the
+    # parent first silently mis-encodes every value of the child type.
+    if isinstance(value, bool):
+        return b"\x07" + (b"\x01" if value else b"\x00")
+    if isinstance(value, float):
+        if math.isnan(value):
+            return b"\x01" + CANONICAL_NAN
+        # Catches -0.0 as well, since it compares equal to 0.0 while packing differently.
+        normalised: float = 0.0 if value == 0.0 else value
+        return b"\x01" + struct.pack("<d", normalised)
+    if isinstance(value, int):
+        # Decimal text rather than a packed integer: UInt64's maximum does not fit "<q".
+        return b"\x06" + str(value).encode("utf-8")
+    if isinstance(value, str):
+        return b"\x02" + value.encode("utf-8")
+    if isinstance(value, bytes):
+        return b"\x08" + value
+    if isinstance(value, dt.datetime):
+        aware: dt.datetime = value.replace(tzinfo=dt.UTC) if value.tzinfo is None else value
+        micros: int = int(aware.astimezone(dt.UTC).timestamp() * MICROS_PER_SECOND)
+        return b"\x04" + struct.pack("<q", micros)
+    if isinstance(value, dt.date):
+        return b"\x03" + struct.pack("<q", (value - EPOCH_DATE).days)
+    if isinstance(value, dt.time):
+        seconds: int = value.hour * SECONDS_PER_HOUR + value.minute * SECONDS_PER_MINUTE + value.second
+        nanos: int = (seconds * MICROS_PER_SECOND + value.microsecond) * NANOS_PER_MICROSECOND
+        return b"\x05" + struct.pack("<q", nanos)
+    if isinstance(value, dt.timedelta):
+        return b"\x0a" + struct.pack("<q", value // dt.timedelta(microseconds=1))
+    if isinstance(value, Decimal):
+        # normalize() collapses trailing zeros so 1.25 and 1.250 give one digest.
+        return b"\x09" + format(value.normalize(), "f").encode("utf-8")
+    raise TypeError(f"encode_value does not support {type(value).__name__}; nested dtypes are out of scope")

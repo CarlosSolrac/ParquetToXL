@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import datetime as dt
 from decimal import Decimal
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import polars as pl
+import polars as pl
 
 type ColumnScalar = float | int | str | bool | bytes | dt.datetime | dt.date | dt.time | dt.timedelta | Decimal
 """Every Python type a scalar Polars column yields when a value is read out of it.
@@ -30,7 +28,7 @@ def is_numeric(dtype: pl.DataType) -> bool:
     Returns:
         True for the integer, unsigned-integer, float and decimal dtypes.
     """
-    raise NotImplementedError
+    return dtype.is_numeric()
 
 
 def is_float(dtype: pl.DataType) -> bool:
@@ -42,7 +40,7 @@ def is_float(dtype: pl.DataType) -> bool:
     Returns:
         True for ``Float32`` and ``Float64`` only. ``Decimal`` is not a float.
     """
-    raise NotImplementedError
+    return dtype.is_float()
 
 
 def is_integer(dtype: pl.DataType) -> bool:
@@ -55,7 +53,7 @@ def is_integer(dtype: pl.DataType) -> bool:
         True for the signed and unsigned integer dtypes. ``Boolean`` is not an integer here,
         whatever Python's type hierarchy says about ``bool``.
     """
-    raise NotImplementedError
+    return dtype.is_integer()
 
 
 def is_decimal(dtype: pl.DataType) -> bool:
@@ -67,7 +65,7 @@ def is_decimal(dtype: pl.DataType) -> bool:
     Returns:
         True for ``Decimal`` only.
     """
-    raise NotImplementedError
+    return dtype.is_decimal()
 
 
 def is_text(dtype: pl.DataType) -> bool:
@@ -83,7 +81,7 @@ def is_text(dtype: pl.DataType) -> bool:
     Returns:
         True for ``String`` and ``Categorical``.
     """
-    raise NotImplementedError
+    return isinstance(dtype, pl.String | pl.Categorical)
 
 
 def is_boolean(dtype: pl.DataType) -> bool:
@@ -97,4 +95,4 @@ def is_boolean(dtype: pl.DataType) -> bool:
     Returns:
         True for ``Boolean`` only.
     """
-    raise NotImplementedError
+    return isinstance(dtype, pl.Boolean)
