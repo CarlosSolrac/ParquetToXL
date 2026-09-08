@@ -21,6 +21,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=1.18,<2",
+    "numpy>=2.5.3",
     "pre-commit>=4,<5",
     "pyright>=1.1.400,<2",       # PyPI wrapper; downloads a Node runtime on first run
     "pytest>=8,<9",
