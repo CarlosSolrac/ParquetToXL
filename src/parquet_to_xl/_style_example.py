@@ -1,4 +1,4 @@
-"""Golden style reference, read by every QWen ticket.
+"""Golden style reference, read by every ticket.
 
 This is the shortest module that exercises each house rule an implementation is judged
 against, so a ticket can point at a worked example instead of restating prose. It is not

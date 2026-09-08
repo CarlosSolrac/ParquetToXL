@@ -1,162 +1,157 @@
-# QWen dispatch workflow
+# Implementation workflow
 
-How `requirements-spec.md` gets built: Claude Code orchestrates, a local QWen implements
-one function body at a time, Codex reviews the diff. TDD throughout, as the spec mandates.
+How `requirements-spec.md` gets built: Claude Code implements one unit at a time against a
+frozen test, Codex reviews the diff. TDD throughout, as the spec mandates.
 
-Ticket front-matter and the measured Ollama calibration are in `SCHEMA.md`. This file is
-the plan those tickets execute.
+Ticket front-matter is in `SCHEMA.md`. This file is the plan those tickets execute.
 
 ## Roles
 
-**Claude Code (orchestrator).** Owns `requirements-spec.md`, decomposition, stubs, frozen
-tests, all integration and wiring, git, and the full gate run
-(`pre-commit run --all-files` plus coverage). Anything cross-file is Claude's, never a
-QWen ticket.
-
-**QWen** (`qwen3.6:latest` via Ollama, single-shot). One function body per dispatch. Fresh
-request every time — never a continued conversation, never a retry inside the same context.
+**Claude Code.** Owns `requirements-spec.md`, decomposition, stubs, frozen tests,
+implementation, integration, git, and the full gate run (`pre-commit run --all-files` plus
+coverage).
 
 **Codex.** Reviews the diff plus the ticket, never the repository. Two standing questions
 beyond ordinary review: does the implementation satisfy the docstring contract or merely
-the tests, and were any frozen tests weakened or made trivially true? That is the check
-QWen is structurally least able to perform on itself.
+the tests, and were any frozen tests weakened or made trivially true? Those are the checks
+an author is structurally least able to perform on their own work, which is why this role
+stays with a second pair of eyes rather than being folded into the first.
 
-## The two mechanisms that make it work
+## Why there is no third model
 
-**Interface-first.** Claude writes the stub — full signature, Google docstring stating the
-contract, `raise NotImplementedError`. QWen fills in the body only. It never invents a
-name, a type, or a module path, so it cannot drift, and Codex reviews against a stable
-interface.
+An earlier version of this workflow dispatched each unit to a local `qwen3.6` over Ollama,
+single-shot, with Claude authoring the stub and frozen test. It was removed after one
+ticket went through end to end and the numbers were measured rather than assumed.
 
-**Frozen tests.** Claude writes the failing test. QWen receives it read-only and is told:
-if a test looks wrong, stop and report — do not edit it. This is the most important rule in
-the workflow. The classic small-model failure is deleting the assertion that will not pass,
-and everything downstream assumes the test is the spec.
+**The contract has to be at least as precise as the code.** For a tool-less model to fill a
+body single-shot it needs a docstring that names every value to configure. On T-001 that
+was 32 lines of contract for 23 lines of body; across Phase 1 it was roughly 238 lines of
+contract for about 40 lines of implementation. Writing a specification that exact *is*
+writing the code, in prose, and usually at greater length.
+
+**The dispatch overhead is per-ticket, not amortised.** Each ticket needs a snapshot
+inlining the stub, the frozen test and the golden style module; the completion has to be
+read back, applied, and gated; a failure needs a fresh ticket carrying the diagnostics.
+T-001 took two attempts to go green and still needed a lint fix applied by hand.
+
+**Verifying the frozen test duplicates the work.** Confirming a frozen test is satisfiable
+means writing an implementation that passes it. Once that exists, dispatching the same body
+to another model produces code that is already in hand.
+
+None of this says the local model was bad — it produced correct, house-style code on the
+second attempt. It says the split put the expensive half of the work on the orchestrator
+and the cheap half on the implementer. The mechanisms that made it work are worth keeping;
+the dispatch is not.
+
+The machinery itself is still in the tree and is now unused: `tools/dispatch_ticket.py`,
+`tools/probe_ollama.py`, `docs/tickets/calibration-2026-09-08.json`, and the `.tickets/T-001`
+records. It is left in place deliberately rather than deleted — the calibration and the two
+attempt logs are the evidence behind the decision above, and deleting the evidence would
+make the reasoning unauditable. Nothing imports any of it.
+
+## The two mechanisms worth keeping
+
+**Interface-first.** Write the stub — full signature, Google docstring stating the contract,
+`raise NotImplementedError` — before the body. The contract is then a written artifact that
+Codex can review against, rather than something reconstructed from the implementation.
+
+**Frozen tests.** Write the failing test first and commit it red; the commit *is* the
+demonstrated failure the spec's TDD mandate calls for. Do not edit a test to make an
+implementation pass. If a test looks wrong, stop and say why.
+
+**Prove a frozen test is satisfiable, not merely red.** A test that cannot be made green
+poisons everything built on it. Before relying on one, confirm an implementation exists that
+passes it. This is cheap when the implementation follows immediately.
 
 ## The loop
 
-1. Claude writes the stub and the frozen test; commits with the test red. The commit *is*
-   the demonstrated failure the spec's TDD mandate calls for.
-2. Dispatch to QWen, single-shot. It never calls a tool, never reads pytest output, never
-   explores.
-3. Claude applies the patch and runs the gates.
-4. Gate failures come back as a **new** ticket with the truncated error — never as a
-   continued conversation. A fresh window beats a polluted one.
-5. Codex reviews the diff.
-6. Claude commits.
+1. Write the stub and the frozen test; commit with the test red.
+2. Implement the body.
+3. Run the gates on narrow targets.
+4. Codex reviews the diff.
+5. Commit.
 
-**Two-strike rule.** If a ticket fails twice, do not attempt a third time. The ticket is
-too big: split it into sub-issues of the original and label the parent `needs-split`. A
-repository full of `needs-split` issues is the signal that ticket sizing is wrong, and it
-is data, not failure.
+## Verify assumptions against a live interpreter
 
-## Why single-shot
+The most expensive mistakes in this project have all been assumptions frozen into a test
+before anyone checked them. Every one of these was found by running code, not by reading:
 
-Ollama is inference, not an agent harness — and building a loop on top of it would be a
-mistake. Single-shot removes tool schemas and tool output from the window entirely, which
-were the two largest and least predictable consumers. Measured cost of a full dispatch is
-about 12% of a 32k window (see `SCHEMA.md`), so the design has room rather than running at
-the edge.
+- `tzdata` was missing, so `zoneinfo` could not resolve any IANA key including `"UTC"`, and
+  reading a value out of a `Datetime("us","UTC")` column raised. Linux CI carries a system
+  tz database, so this would have been green in CI and broken locally.
+- The spec's own module layout could not be imported: the `HashedDataframe` alias in
+  `base.py` needed a class from `binary_aggregate.py`, which needs `base.py`.
+- `encode_value` was specified for six tags but had to hash source frames containing five
+  more dtypes.
+- Polars reports `Decimal` as numeric and `Boolean` as not numeric, and offers no `is_text`
+  predicate at all.
+
+Check the fact before writing the assertion.
 
 ## Issue tracking
 
-GitHub Issues are the control plane; files are the payload.
+GitHub Issues are the control plane; files are the payload. Author each ticket through
+`.github/ISSUE_TEMPLATE/`. Labels carry state: `ready`, `in-progress`, `needs-split`.
 
-Author each ticket through `.github/ISSUE_TEMPLATE/qwen-ticket.yml`. At dispatch, snapshot
-the issue body to `.tickets/T-NNN.md` and give QWen **only that file**. An issue body is
-mutable and grows a comment thread; a snapshot is byte-exact and tells you later precisely
-what a failing attempt was shown.
-
-Labels carry state: `ready`, `dispatched`, `strike-1`, `strike-2`, `needs-split`,
-`agent:qwen`, `agent:claude`. Splits become sub-issues of the parent. Codex findings go to
-the PR review, not the issue.
+**Two-strike rule.** If a unit resists implementation twice, do not force a third attempt.
+It is too big: split it into sub-issues of the original and label the parent `needs-split`.
+A repository full of `needs-split` issues is the signal that sizing is wrong, and it is
+data, not failure.
 
 ## Backlog
 
-Derived from the test-module table at `requirements-spec.md` lines 307–319, which is
-already close to a 1:1 ticket list — rows are split where one row carries several
-independent assertion groups. Roughly 37 tickets; 22–25 are QWen-sized.
+Derived from the test-module table at `requirements-spec.md`, which is already close to a
+1:1 ticket list — rows are split where one row carries several independent assertion groups.
 
-| Phase | Tickets | Owner |
+| Phase | Tickets | Status |
 | --- | --- | --- |
-| 0 · Prereq | deps + `[build-system]` + src layout + delete `main.py`; **typing/stubs audit**; `configure_logging`; golden style module + `conftest.py` | Claude (logging → QWen) |
-| 1 · Canonical + hashing | dtype flag helpers + `ColumnScalar`; `encode_value` null/float; `encode_value` string; `encode_value` temporal; hash Pydantic models + union round-trip; hasher ABC; `hash_column`; `hash_dataframe` | QWen — all 8 |
-| 2 · Metadata models | `DataframeColumnMetadata`; `DataframeColumnsMetadata`; `DataframeMetadata`; builder/flags; builder/stats; builder/hash wiring | QWen |
-| 3 · Conversions | `ConvertedDataframe` + base + `None`; ToExcel numeric; ToExcel boolean; ToExcel string truncation; ToExcel binary→hex; ToExcel categorical + duration; **ToExcel idempotency + `schema_or_data_changed`** | QWen |
-| 4 · Extract | happy path; tz dict + `modified_utc`; failure → `None` + `logger.exception` | QWen |
-| 5 · Excel | writer registry; `ExcelWriteConfig`; `PolarsExcelWriter.write`; `fast_excel_reader` | QWen (reader → Claude) |
-| 6 · Fixtures | per-dtype column builders (3–4); edge-case row table; `parquet_b` one-cell delta; `ensure_fixtures()` orchestration; Excel file generation | Mixed |
-| 7 · Integration | `ZPath`; headline round-trip test; reader parallelization benchmark | Claude |
-
-### Reserved for Claude, with reasons
-
-- **`ZPath`** — the spec itself flags it (lines 109–110): threading `storage_options`
-  through UPath's `__new__` *and* `__init__` without breaking its protocol handlers.
-  Requires reading UPath internals. Not single-shot.
-- **`fast_excel_reader`** — `ThreadPoolExecutor` plus an open empirical question the spec
-  leaves unresolved (line 285): whether per-sheet extraction on one workbook handle
-  actually parallelizes. Needs benchmarking.
-- **`tests/fixtures/generate.py`** — 19 dtypes × 1000 rows × edge-case tables ×
-  byte-identical regeneration. The largest single unit in the project.
-- **The integration test** — whole-system view by definition.
+| 0 · Prereq | deps + `[build-system]` + src layout + delete `main.py`; typing/stubs audit; `configure_logging`; golden style module + `conftest.py` | done |
+| 1 · Canonical + hashing | dtype flag helpers + `ColumnScalar`; `encode_value`; hash Pydantic models + union round-trip; hasher ABC; `hash_column`; `hash_dataframe` | done |
+| 2 · Metadata models | `DataframeColumnMetadata`; `DataframeColumnsMetadata`; `DataframeMetadata`; builder/flags; builder/stats; builder/hash wiring | |
+| 3 · Conversions | `ConvertedDataframe` + base + `None`; ToExcel numeric; boolean; string truncation; binary→hex; categorical + duration; **idempotency + `schema_or_data_changed`** | |
+| 4 · Extract | happy path; tz dict + `modified_utc`; failure → `None` + `logger.exception` | |
+| 5 · Excel | writer registry; `ExcelWriteConfig`; `PolarsExcelWriter.write`; `fast_excel_reader` | |
+| 6 · Fixtures | per-dtype column builders; edge-case row table; `parquet_b` one-cell delta; `ensure_fixtures()`; Excel file generation | |
+| 7 · Integration | `ZPath`; headline round-trip test; reader parallelization benchmark | |
 
 ### Sequencing notes
 
 Do the Pydantic models early. They are declarative, the spec gives exact fields including
 the `digest_hex` pattern constraint, and they are the type foundation every later stub
-imports. Cheap wins that also calibrate ticket sizing against real behaviour before
-anything hard.
+imports.
 
 Give ToExcel idempotency its own ticket. Spec line 136: `_convert` must be idempotent on
 already-converted frames, because the headline test runs both operands through it. Subtle,
 load-bearing, and it will not fall out of the per-dtype tickets by accident.
 
-## Phase 0 blockers
+`ZPath`, `fast_excel_reader`, `tests/fixtures/generate.py` and the integration test are the
+four largest units. The first two carry open questions — threading `storage_options`
+through UPath's `__new__` *and* `__init__`, and whether per-sheet extraction on one workbook
+handle actually parallelizes — so budget exploration time for them rather than sizing them
+like the rest.
 
-Resolve before dispatching anything.
+## Gate discipline
 
-**The typing audit is the big one.** Seven runtime dependencies land under `pyright`
-strict with `reportMissingTypeStubs = true` and `mypy --strict`. If any of them —
-`python-calamine` is the likeliest — ships no `py.typed`, then *every* QWen ticket that
-imports it fails on an error that has nothing to do with the ticket, and QWen will spend
-its window flailing at it. Audit all seven, populate `stubs/` where needed, and confirm a
-trivial module passes both checkers before the first dispatch.
-
-**Warm pyright once.** The PyPI wrapper downloads a Node runtime on first run; do it
-outside the ticket loop.
-
-**Reconcile the coverage gate.** `requirements-spec.md` line 332 says "≥ 90% stmt / 85%
-branch on changed code"; `pyproject.toml` says `fail_under = 90` with `branch = true`
-globally. Those are different gates, and a global 90 fails on a partially-built repo.
-Recommend making it merge-only.
-
-## Commands QWen's dispatch must never run
-
-Not applicable under single-shot dispatch, but they belong in any ticket's "done when"
-block, which Claude executes:
+Never run these during the loop:
 
 - `pre-commit run --all-files --show-diff-on-failure` — dumps the whole repo diff
-- `pytest --cov` — a global gate that fails on a partial repo
+- `pytest --cov` as a gate — the threshold is merge-only, applied by CI
 - any recursive `grep` or `find`
 
-Narrow targets only: `uv run pytest -x -q --no-header --tb=short <one test file>`,
-`uv run ruff check <one path>`, `uv run pyright <one path>`.
+Narrow targets only:
 
-## Open
+```
+uv run pytest -x -q --no-header --tb=short <one test file>
+uv run ruff check <one path>
+uv run pyright <one path>
+uv run python tools/check_declarations.py <one path>
+```
 
-- The `think: true` run dropped `/` from an illegal-character set the contract listed
-  (`SCHEMA.md`, calibration). One sample. Re-run the probe with two or three different
-  seeds before treating "thinking hurts correctness" as established rather than "thinking
-  costs 9× and did not help here."
-- Whether to raise Ollama's `num_ctx` above 32768. The model supports 262,144; the ceiling
-  is a VRAM tradeoff, not a limit. On current evidence tickets use ~12% of 32k, so there
-  is no pressure to.
-
-## Claude model and effort per phase
+## Claude effort per phase
 
 `claude-opus-5` throughout. Effort is the lever, and the value below is what each phase
-requires to be **authored** — writing the stub and the frozen test — not to apply a patch
-QWen produced or to read a gate failure.
+requires to be **authored** — writing the stub and the frozen test — not to implement
+against one that already exists or to read a gate failure.
 
 | Phase | Effort | Why |
 | --- | --- | --- |
@@ -170,28 +165,10 @@ QWen produced or to read a gate failure.
 | 7 · Integration | `max` | ZPath internals and the whole-system round-trip. |
 
 **Batch by phase.** Author every frozen test in a phase in one sitting at that phase's
-level, then drop to `high` to dispatch and verify the whole phase. One model change per
-phase, roughly seven in total — not two per ticket.
+level, then drop to `high` to implement and verify the whole phase.
 
-Claude cannot change its own model or effort. Where it can *detect* them, it reads
-`get_session` (`session_context.model`, `session_context.effort_level`), halts on
-mismatch, asks, and re-verifies before proceeding. Also compare `last_served_model`
-against `configured_model` on each dispatch: the runtime can fall back mid-session, and a
-frozen test authored under a fallback is worth knowing about.
-
-**`get_session` availability is not guaranteed.** It is a Claude Code Remote MCP tool,
-confirmed working in a cloud session; whether a local terminal session has that server
-attached is unverified. Check for it before relying on the mechanism. Without it the loop
-is open rather than closed: setting the level correctly falls to the operator before the
-session starts, and the dispatch script can only log what the ticket required, not confirm
-what was in effect. Record which mode is in use in the attempt log, so a later failure can
-be read correctly.
-
-Whichever mode applies, this concerns the **orchestrator only**. QWen never reads a
-ticket, touches git, or runs a gate — the dispatch script sends it one prompt and takes
-back one completion. An agentic QWen harness in an editor (Continue, Cline, or similar
-over Ollama) is not part of this design; single-shot is what keeps tool schemas and tool
-output out of the window.
-
-The dispatch script enforces this only during the authoring stage. Applying a patch and
-running gates is mechanical and does not need the authoring level.
+Claude cannot change its own model or effort, and cannot reliably read them either:
+`get_session` is a Claude Code Remote MCP tool that a local terminal session may not have
+attached. Check for it; if it is absent, say so plainly rather than implying a verification
+that did not happen, and treat the level as operator-asserted. Setting it correctly falls
+to the operator before the session starts.

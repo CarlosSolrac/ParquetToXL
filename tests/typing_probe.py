@@ -1,10 +1,9 @@
 """Proof that every runtime dependency type-checks clean under pyright strict and mypy strict.
 
-Phase 0 of the QWen dispatch workflow depends on this. A dependency that ships no inline
-types fails ``reportMissingTypeStubs`` at the *import* line, which means every ticket that
-imports it fails on a diagnostic having nothing to do with the ticket -- and a single-shot
-QWen dispatch has no way to tell the two apart. So the audit is settled once, here, before
-the first dispatch.
+A dependency that ships no inline types fails ``reportMissingTypeStubs`` at the *import*
+line, which means every ticket importing it fails on a diagnostic having nothing to do with
+the ticket. Settling the audit once, here, keeps that class of failure out of the
+implementation loop entirely.
 
 This module is a checked artifact, not a test: it is never collected or executed. Each
 dependency is imported and one representative member is touched, because
