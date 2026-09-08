@@ -135,7 +135,12 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
+# Without this the figure covers whatever happened to be imported, tests and
+# tools included. Scope it to the library so the number means the library.
+source = ["src/parquet_to_xl"]
 
 [tool.coverage.report]
-fail_under = 90
+# No fail_under: the gate is merge-only, applied as --cov-fail-under in CI. A
+# global threshold fails every phase-level run while the package is still
+# mostly unimplemented stubs, for reasons unrelated to the change under test.
 show_missing = true

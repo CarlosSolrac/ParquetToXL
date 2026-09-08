@@ -328,13 +328,25 @@ uv lock
 uv run pytest tests/unit -q
 uv run pytest tests/integration/test_excel_hash_roundtrip.py -q
 
-# full gate
-uv run pytest tests --cov=parquet_to_xl --cov-report=term-missing --cov-branch   # >= 90% stmt / 85% branch on changed code
+# full gate -- reports locally; the threshold is applied by CI on merge (see below)
+uv run pytest tests --cov --cov-report=term-missing --cov-branch
 uv run pre-commit run --files <changed files>                                    # ruff, ruff-format, check-declarations, pyright, mypy
 uv run python -m tools.check_declarations src tests
 uv run pyright src tests
 uv run mypy src tests
 ```
+
+The coverage threshold is **merge-only**. `[tool.coverage.run] source` scopes the figure to
+`src/parquet_to_xl`, and `pyproject.toml` carries no `fail_under`, so local and per-phase runs
+report without failing while the package is still largely unimplemented stubs. CI adds
+`--cov-fail-under=90` on the pull-request job.
+
+That 90 is coverage.py's **combined** statement-and-branch figure when `branch = true` --
+`(executed statements + taken branches) / (total statements + total branches)` -- not two
+separate thresholds. A single `fail_under` cannot express "90% statement and 85% branch";
+enforcing those independently would mean parsing `coverage json` in CI. This paragraph
+replaces the earlier "≥ 90% stmt / 85% branch on changed code" note, which described a gate
+that could not be configured as written.
 
 End-to-end check: after `uv run pytest tests/integration -q`, confirm the 8 files exist
 under `tests/fixtures/data/` and a second run reuses them (no regeneration).
