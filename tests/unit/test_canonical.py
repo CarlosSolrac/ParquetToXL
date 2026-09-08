@@ -9,7 +9,7 @@ from __future__ import annotations
 import datetime as dt
 import struct
 import zoneinfo
-from decimal import Decimal
+from decimal import Context, Decimal, localcontext
 
 import pytest
 
@@ -126,3 +126,51 @@ def test_unsupported_types_raise_rather_than_hashing_to_something_plausible() ->
         encode_value([1, 2, 3])
     with pytest.raises(TypeError):
         encode_value({"a": 1})
+
+
+# ---- precision regressions, found in review -----------------------------------------
+# These pin two silent collisions: values that differ in the data hashing to one digest.
+# Both were reachable with types and ranges Polars represents, not theoretical edges.
+
+
+def test_high_precision_decimals_do_not_collide() -> None:
+    # normalize() rounds to the ambient 28-digit context, inventing digits the data never
+    # had: both of these previously encoded as ...567900.
+    left: Decimal = Decimal("123456789012345678901234567890")
+    right: Decimal = Decimal("123456789012345678901234567891")
+    assert left != right
+    assert encode_value(left) != encode_value(right)
+
+
+def test_decimal_encoding_ignores_the_ambient_context() -> None:
+    # A digest must not change because unrelated code touched a process-global.
+    value: Decimal = Decimal("1.2345678901234567890123456789012345")
+    baseline: bytes = encode_value(value)
+    ctx: Context
+    with localcontext() as ctx:
+        ctx.prec = 50
+        assert encode_value(value) == baseline
+    with localcontext() as ctx:
+        ctx.prec = 6
+        assert encode_value(value) == baseline
+
+
+def test_negative_zero_decimal_encodes_as_zero() -> None:
+    # Decimal("-0") == Decimal("0"), so they are one value and must be one digest --
+    # the same rule the float path applies to -0.0.
+    assert encode_value(Decimal("-0")) == encode_value(Decimal("0"))
+    assert encode_value(Decimal("-0.00")) == encode_value(Decimal("0"))
+
+
+def test_far_future_datetimes_keep_microsecond_precision() -> None:
+    # float64's mantissa runs out around 2255. Polars holds year 3000 without complaint and
+    # the fixture spec calls for far-future dates, so this is reachable data.
+    earlier: dt.datetime = dt.datetime(2300, 1, 1, 0, 0, 0, 1, tzinfo=dt.UTC)
+    later: dt.datetime = dt.datetime(2300, 1, 1, 0, 0, 0, 2, tzinfo=dt.UTC)
+    assert encode_value(earlier) != encode_value(later)
+
+
+def test_datetime_payload_is_exact_integer_microseconds() -> None:
+    moment: dt.datetime = dt.datetime(2300, 1, 1, 0, 0, 0, 1, tzinfo=dt.UTC)
+    expected: int = (moment - dt.datetime(1970, 1, 1, tzinfo=dt.UTC)) // dt.timedelta(microseconds=1)
+    assert encode_value(moment) == b"" + struct.pack("<q", expected)

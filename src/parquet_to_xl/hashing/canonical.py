@@ -14,6 +14,9 @@ CANONICAL_NAN: Final[bytes] = struct.pack("<d", float("nan"))
 EPOCH_DATE: Final[dt.date] = dt.date(1970, 1, 1)
 """Day zero for the ``Date`` tag."""
 
+EPOCH_DATETIME: Final[dt.datetime] = dt.datetime(1970, 1, 1, tzinfo=dt.UTC)
+"""Instant zero for the ``Datetime`` tag, subtracted with integer timedelta arithmetic."""
+
 NANOS_PER_MICROSECOND: Final[int] = 1000
 MICROS_PER_SECOND: Final[int] = 1_000_000
 SECONDS_PER_HOUR: Final[int] = 3600
@@ -43,7 +46,7 @@ def encode_value(value: object) -> bytes:
     0x06   ``int``                      ``str(v).encode("utf-8")``
     0x07   ``bool``                     ``b"\x01"`` if true else ``b"\x00"``
     0x08   ``bytes``                    the bytes themselves
-    0x09   ``decimal.Decimal``          ``format(v.normalize(), "f").encode("utf-8")``
+    0x09   ``decimal.Decimal``          plain decimal text, trailing zeros stripped
     0x0A   ``datetime.timedelta``       ``struct.pack("<q", microseconds)``
     ===== ============================ ================================================
 
@@ -52,7 +55,7 @@ def encode_value(value: object) -> bytes:
     ``build_columns_metadata`` also hashes the *source* frame, where ``Int64``, ``Boolean``,
     ``Binary``, ``Decimal`` and ``Duration`` columns are still in their original dtypes.
 
-    Three normalisations, each pinned by a test:
+    Four normalisations, each pinned by a test:
 
     - ``-0.0`` encodes identically to ``0.0``. IEEE-754 gives them different bit patterns
       but they are the same number.
@@ -62,6 +65,15 @@ def encode_value(value: object) -> bytes:
     - A naive ``datetime`` is assumed to be UTC; an aware one is converted to UTC. This is
       what lets a frame read back from Excel, where ``calamine`` returns naive datetimes,
       hash equal to the frame that was written.
+    - A ``Decimal`` drops insignificant trailing zeros, so ``1.25`` and ``1.250`` agree, but
+      keeps every significant digit. Both are done textually rather than through
+      ``normalize()``, which rounds to the ambient context precision and would make the
+      digest depend on a global that no caller here controls.
+
+    Two payloads are computed with integer arithmetic rather than the obvious float route,
+    because the obvious route loses precision inside the range Polars can represent:
+    ``Datetime`` subtracts ``EPOCH_DATETIME`` as a ``timedelta`` instead of scaling
+    ``timestamp()``, and ``Decimal`` formats rather than normalises.
 
     Two dispatch orders are load-bearing, because Python's type hierarchy works against
     the table above: ``bool`` is a subclass of ``int``, so it must be tested first or every
@@ -100,7 +112,11 @@ def encode_value(value: object) -> bytes:
         return b"\x08" + value
     if isinstance(value, dt.datetime):
         aware: dt.datetime = value.replace(tzinfo=dt.UTC) if value.tzinfo is None else value
-        micros: int = int(aware.astimezone(dt.UTC).timestamp() * MICROS_PER_SECOND)
+        # Integer timedelta arithmetic, not float timestamp(): a float64 mantissa runs
+        # out around 2255, and two datetimes a microsecond apart in the year 2300 --
+        # which polars holds happily, and which the fixture spec asks for as a
+        # far-future edge case -- would otherwise encode identically.
+        micros: int = (aware.astimezone(dt.UTC) - EPOCH_DATETIME) // dt.timedelta(microseconds=1)
         return b"\x04" + struct.pack("<q", micros)
     if isinstance(value, dt.date):
         return b"\x03" + struct.pack("<q", (value - EPOCH_DATE).days)
@@ -111,6 +127,12 @@ def encode_value(value: object) -> bytes:
     if isinstance(value, dt.timedelta):
         return b"\x0a" + struct.pack("<q", value // dt.timedelta(microseconds=1))
     if isinstance(value, Decimal):
-        # normalize() collapses trailing zeros so 1.25 and 1.250 give one digest.
-        return b"\x09" + format(value.normalize(), "f").encode("utf-8")
+        # format() never consults the ambient decimal context, so no significant digit
+        # is rounded away and the encoding cannot change because an unrelated caller
+        # altered getcontext(). normalize() does both, and silently.
+        text: str = format(value, "f")
+        if "." in text:
+            text = text.rstrip("0").rstrip(".")
+        # Decimal("-0") equals Decimal("0"), so they encode alike, as -0.0 does.
+        return b"\x09" + ("0" if text == "-0" else text).encode("utf-8")
     raise TypeError(f"encode_value does not support {type(value).__name__}; nested dtypes are out of scope")

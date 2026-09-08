@@ -141,12 +141,12 @@ silently loses its time of day.
 | `Float64` | `b"\x01" + struct.pack("<d", v)`; `NaN → canonical quiet NaN`, `-0.0 → 0.0` |
 | `String` | `b"\x02" + v.encode("utf-8")` |
 | `Date` | `b"\x03" + struct.pack("<q", days_since_epoch)` |
-| `Datetime` | `b"\x04" + struct.pack("<q", micros_since_epoch)`; **naive → assumed UTC**, aware → converted to UTC |
+| `Datetime` | `b"\x04" + struct.pack("<q", micros_since_epoch)`; **naive → assumed UTC**, aware → converted to UTC. Microseconds come from integer `timedelta` subtraction, not `timestamp()`: a float64 mantissa runs out around 2255, well inside the range Polars holds and inside the far-future dates the fixtures specify |
 | `Time` | `b"\x05" + struct.pack("<q", nanos_since_midnight)` |
 | `int` | `b"\x06" + str(v).encode("utf-8")` — decimal text, because `UInt64`'s maximum does not fit a signed 8-byte pack |
 | `bool` | `b"\x07" + (b"\x01" if v else b"\x00")` |
 | `bytes` | `b"\x08" + v` |
-| `Decimal` | `b"\x09" + format(v.normalize(), "f").encode("utf-8")` — normalized so `1.25` and `1.250` agree |
+| `Decimal` | `b"\x09" +` plain decimal text with trailing zeros stripped, so `1.25` and `1.250` agree. Textual, not `normalize()`, which rounds to the ambient context precision and would let an unrelated caller change a digest |
 | `timedelta` | `b"\x0a" + struct.pack("<q", microseconds)` |
 
 The type tag is a property of the value, not the column, so it is kept under the

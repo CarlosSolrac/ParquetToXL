@@ -144,4 +144,8 @@ source = ["src/parquet_to_xl"]
 # No fail_under: the gate is merge-only, applied as --cov-fail-under in CI. A
 # global threshold fails every phase-level run while the package is still
 # mostly unimplemented stubs, for reasons unrelated to the change under test.
+# _style_example.py is a style reference that nothing imports and nothing calls.
+# It is not library behaviour, so measuring it measures the wrong thing -- and it
+# alone dragged the gate from 100% to 85%.
+omit = ["*/_style_example.py"]
 show_missing = true
