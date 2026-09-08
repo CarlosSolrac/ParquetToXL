@@ -7,7 +7,15 @@
 name = "ParquetToXL"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "polars>=1.44.1",
+    "pydantic>=2.13.5",
+    "python-calamine>=0.8.2",
+    "structlog>=26.1.0",
+    "universal-pathlib>=0.3.10",
+    "xlsxwriter>=3.2.9",
+    "xxhash>=4.0.1",
+]
 
 [dependency-groups]
 dev = [
@@ -18,6 +26,18 @@ dev = [
     "pytest-cov>=6,<8",
     "ruff>=0.14,<0.15",          # pinned: minor releases change which rules fire
 ]
+
+# Declared so uv installs the package itself, editable, into the project
+# environment. Without it uv treats this as a virtual project and `import
+# parquet_to_xl` only resolves by accident of sys.path.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# The distribution name normalizes to `parquettoxl`, which hatchling would not
+# find on its own under src layout; name the import package explicitly.
+packages = ["src/parquet_to_xl"]
 
 [tool.ruff]
 target-version = "py313"
@@ -104,6 +124,7 @@ reportUnknownArgumentType = false
 
 [tool.mypy]
 python_version = "3.13"
+mypy_path = "stubs"
 strict = true
 warn_unreachable = true
 disallow_any_explicit = false
