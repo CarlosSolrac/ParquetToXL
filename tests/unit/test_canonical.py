@@ -11,9 +11,10 @@ import struct
 import zoneinfo
 from decimal import Context, Decimal, localcontext
 
+import polars as pl
 import pytest
 
-from parquet_to_xl.hashing.canonical import encode_value
+from parquet_to_xl.hashing.canonical import encode_series, encode_value
 
 
 def test_null_is_a_bare_sentinel() -> None:
@@ -174,3 +175,34 @@ def test_datetime_payload_is_exact_integer_microseconds() -> None:
     moment: dt.datetime = dt.datetime(2300, 1, 1, 0, 0, 0, 1, tzinfo=dt.UTC)
     expected: int = (moment - dt.datetime(1970, 1, 1, tzinfo=dt.UTC)) // dt.timedelta(microseconds=1)
     assert encode_value(moment) == b"" + struct.pack("<q", expected)
+
+
+# ---- encode_series: the polars-to-Python precision boundary --------------------------
+
+
+def test_encode_series_matches_encode_value_for_microsecond_times() -> None:
+    # The Time path reads physical nanoseconds, but must stay byte-identical to the scalar
+    # path for microsecond-granular data, or every digest recorded so far would change.
+    moment: dt.time = dt.time(1, 2, 3, 4)
+    column: pl.Series = pl.Series("t", [moment], dtype=pl.Time)
+    assert list(encode_series(column)) == [encode_value(moment)]
+
+
+def test_encode_series_keeps_sub_microsecond_time_distinct() -> None:
+    # datetime.time cannot hold these; going through to_list() collapses them to 00:00.
+    one: pl.Series = pl.Series("t", [1], dtype=pl.Time)
+    many: pl.Series = pl.Series("t", [999], dtype=pl.Time)
+    assert list(one.to_list()) == list(many.to_list())
+    assert list(encode_series(one)) != list(encode_series(many))
+
+
+def test_encode_series_encodes_nulls_as_the_null_sentinel() -> None:
+    column: pl.Series = pl.Series("t", [dt.time(0, 0, 0, 1), None], dtype=pl.Time)
+    encoded: list[bytes] = list(encode_series(column))
+    assert encoded[1] == b"\x00"
+    assert encoded[0] != encoded[1]
+
+
+def test_encode_series_delegates_untouched_dtypes_to_encode_value() -> None:
+    column: pl.Series = pl.Series("n", [1.5, None, 2.5], dtype=pl.Float64)
+    assert list(encode_series(column)) == [encode_value(1.5), encode_value(None), encode_value(2.5)]

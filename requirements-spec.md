@@ -134,6 +134,20 @@ table: `bool` subclasses `int`, so it must be tested first or every boolean enco
 integer; and `datetime` subclasses `date`, so it must be tested first or every timestamp
 silently loses its time of day.
 
+Hashers call `encode_series(column)`, never `encode_value` over `Series.to_list()`. Three
+dtypes store more precision than the Python scalar they convert to, and the conversion is
+silent — the values simply come back equal. `Time` is always nanoseconds since midnight
+while `datetime.time` resolves only to microseconds, so *every* `Time` column loses its
+bottom three digits; `Datetime("ns")` and `Duration("ns")` lose the same three to
+`datetime.datetime` and `datetime.timedelta`. For those three `encode_series` encodes the
+physical `int64` directly.
+
+`Time` keeps tag `0x05` and its nanosecond payload, which is byte-identical to the scalar
+path for microsecond-granular data, so no digest recorded before this change moves. The two
+nanosecond variants get tags `0x0B` and `0x0C` rather than being folded into `0x04` and
+`0x0A`: those payloads are microseconds, and widening them to nanoseconds would overflow
+`int64` in 2262 — before the far-future dates the fixtures call for.
+
 
 | Value | Encoding |
 | --- | --- |
@@ -148,6 +162,8 @@ silently loses its time of day.
 | `bytes` | `b"\x08" + v` |
 | `Decimal` | `b"\x09" +` plain decimal text with trailing zeros stripped, so `1.25` and `1.250` agree. Textual, not `normalize()`, which rounds to the ambient context precision and would let an unrelated caller change a digest |
 | `timedelta` | `b"\x0a" + struct.pack("<q", microseconds)` |
+| `Datetime("ns")` column | `b"\x0b" + struct.pack("<q", nanos_since_epoch)` |
+| `Duration("ns")` column | `b"\x0c" + struct.pack("<q", nanoseconds)` |
 
 The type tag is a property of the value, not the column, so it is kept under the
 "no column binding" decision. It is constant within a single-column digest, but

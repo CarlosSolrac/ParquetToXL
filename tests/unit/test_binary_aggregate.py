@@ -6,6 +6,7 @@ editing it: everything downstream assumes the test is the specification.
 
 from __future__ import annotations
 
+import datetime as dt
 import inspect
 
 import polars as pl
@@ -136,3 +137,41 @@ def test_the_hasher_satisfies_the_abstract_interface() -> None:
     assert isinstance(DataFrameHasherBinaryAggregateHash(), DataFrameHasherBaseClass)
     assert inspect.isabstract(DataFrameHasherBaseClass)
     assert not inspect.isabstract(DataFrameHasherBinaryAggregateHash)
+
+
+# ---- nanosecond precision, found in review -------------------------------------------
+# Polars stores Time, Datetime("ns") and Duration("ns") as nanoseconds, but the Python
+# scalars they convert to resolve only to microseconds. Hashing through to_list() made
+# distinct cells agree, which breaks the one property this hasher exists to provide.
+
+
+def test_sub_microsecond_times_do_not_collide_in_either_path() -> None:
+    hasher: DataFrameHasherBinaryAggregateHash = DataFrameHasherBinaryAggregateHash()
+    one: pl.Series = pl.Series("t", [1], dtype=pl.Time)
+    many: pl.Series = pl.Series("t", [999], dtype=pl.Time)
+    assert hasher.hash_column(one).digest_hex != hasher.hash_column(many).digest_hex
+    # hash_dataframe walks columns itself, so it needs its own assertion.
+    assert hasher.hash_dataframe(pl.DataFrame([one])).digest_hex != hasher.hash_dataframe(pl.DataFrame([many])).digest_hex
+
+
+def test_sub_microsecond_nanosecond_datetimes_do_not_collide() -> None:
+    hasher: DataFrameHasherBinaryAggregateHash = DataFrameHasherBinaryAggregateHash()
+    one: pl.Series = pl.Series("d", [1], dtype=pl.Datetime("ns"))
+    many: pl.Series = pl.Series("d", [999], dtype=pl.Datetime("ns"))
+    assert hasher.hash_column(one).digest_hex != hasher.hash_column(many).digest_hex
+
+
+def test_sub_microsecond_nanosecond_durations_do_not_collide() -> None:
+    hasher: DataFrameHasherBinaryAggregateHash = DataFrameHasherBinaryAggregateHash()
+    one: pl.Series = pl.Series("x", [1], dtype=pl.Duration("ns"))
+    many: pl.Series = pl.Series("x", [999], dtype=pl.Duration("ns"))
+    assert hasher.hash_column(one).digest_hex != hasher.hash_column(many).digest_hex
+
+
+def test_microsecond_granular_time_digests_are_unchanged() -> None:
+    # Reading physical nanoseconds must not move a digest that was already correct.
+    hasher: DataFrameHasherBinaryAggregateHash = DataFrameHasherBinaryAggregateHash()
+    column: pl.Series = pl.Series("t", [dt.time(1, 2, 3, 4), dt.time(5, 6, 7, 8)], dtype=pl.Time)
+    shuffled: pl.Series = pl.Series("t", [dt.time(5, 6, 7, 8), dt.time(1, 2, 3, 4)], dtype=pl.Time)
+    assert hasher.hash_column(column).digest_hex == hasher.hash_column(shuffled).digest_hex
+    assert int(hasher.hash_column(column).digest_hex, 16) != 0

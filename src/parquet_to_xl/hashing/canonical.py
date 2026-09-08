@@ -1,12 +1,20 @@
-"""Deterministic byte encoding of a single Polars scalar, used by every hasher."""
+"""Deterministic byte encoding of Polars values, used by every hasher.
+
+``encode_value`` encodes one scalar. ``encode_series`` encodes a whole column and is what
+hashers should call: some Polars dtypes carry more precision than the Python scalar they
+convert to, and going through ``Series.to_list()`` silently discards it.
+"""
 
 from __future__ import annotations
 
 import datetime as dt
 import math
 import struct
+from collections.abc import Iterator
 from decimal import Decimal
 from typing import Final
+
+import polars as pl
 
 CANONICAL_NAN: Final[bytes] = struct.pack("<d", float("nan"))
 """The single payload every NaN collapses to, so a sign bit cannot change a digest."""
@@ -16,6 +24,11 @@ EPOCH_DATE: Final[dt.date] = dt.date(1970, 1, 1)
 
 EPOCH_DATETIME: Final[dt.datetime] = dt.datetime(1970, 1, 1, tzinfo=dt.UTC)
 """Instant zero for the ``Datetime`` tag, subtracted with integer timedelta arithmetic."""
+
+NULL_TAG: Final[bytes] = b"\x00"
+TIME_TAG: Final[bytes] = b"\x05"
+DATETIME_NANOS_TAG: Final[bytes] = b"\x0b"
+DURATION_NANOS_TAG: Final[bytes] = b"\x0c"
 
 NANOS_PER_MICROSECOND: Final[int] = 1000
 MICROS_PER_SECOND: Final[int] = 1_000_000
@@ -48,12 +61,17 @@ def encode_value(value: object) -> bytes:
     0x08   ``bytes``                    the bytes themselves
     0x09   ``decimal.Decimal``          plain decimal text, trailing zeros stripped
     0x0A   ``datetime.timedelta``       ``struct.pack("<q", microseconds)``
+    0x0B   ``Datetime("ns")`` column     ``struct.pack("<q", nanos_since_epoch)``
+    0x0C   ``Duration("ns")`` column     ``struct.pack("<q", nanoseconds)``
     ===== ============================ ================================================
 
     Tags 0x00 to 0x05 are exactly the post-conversion type set, so a frame that has been
     through ``DataframeConversionToExcel`` uses only those. Tags 0x06 to 0x0A exist because
     ``build_columns_metadata`` also hashes the *source* frame, where ``Int64``, ``Boolean``,
     ``Binary``, ``Decimal`` and ``Duration`` columns are still in their original dtypes.
+    Tags 0x0B and 0x0C are emitted only by ``encode_series``, which never converts a
+    nanosecond column to a Python scalar; ``encode_value`` cannot produce them because by
+    the time it sees a value the precision is already gone.
 
     Four normalisations, each pinned by a test:
 
@@ -136,3 +154,60 @@ def encode_value(value: object) -> bytes:
         # Decimal("-0") equals Decimal("0"), so they encode alike, as -0.0 does.
         return b"\x09" + ("0" if text == "-0" else text).encode("utf-8")
     raise TypeError(f"encode_value does not support {type(value).__name__}; nested dtypes are out of scope")
+
+
+def _encode_physical(column: pl.Series, tag: bytes) -> Iterator[bytes]:
+    """Yield ``tag + int64`` for each value of a column, reading its physical storage.
+
+    Args:
+        column: Column whose physical representation carries the full precision.
+        tag: Type tag to prefix each payload with.
+
+    Yields:
+        The encoding of each value, with nulls encoded as the null sentinel.
+    """
+    stored: int | None
+    for stored in column.to_physical().to_list():
+        yield NULL_TAG if stored is None else tag + struct.pack("<q", stored)
+
+
+def encode_series(column: pl.Series) -> Iterator[bytes]:
+    """Yield the canonical encoding of every value in a column.
+
+    This is what a hasher should call, not ``encode_value`` over ``Series.to_list()``.
+    Three Polars dtypes store more precision than the Python scalar they convert to, and
+    the conversion is silent -- the values simply come back equal:
+
+    - ``Time`` is always nanoseconds since midnight, but ``datetime.time`` resolves only to
+      microseconds, so every ``Time`` column loses its bottom three digits.
+    - ``Datetime("ns")`` and ``Duration("ns")`` lose the same three digits to
+      ``datetime.datetime`` and ``datetime.timedelta``.
+
+    For those three the physical ``int64`` is encoded directly. ``Time`` keeps tag 0x05 and
+    its nanosecond payload, which is byte-identical to what ``encode_value`` produces for a
+    microsecond-granular time -- so no existing digest changes. The two nanosecond variants
+    get their own tags rather than being folded into 0x04 and 0x0A, because those payloads
+    are microseconds and widening them to nanoseconds would overflow ``int64`` before the
+    far-future dates the fixtures call for.
+
+    Every other dtype goes through ``encode_value``, which is lossless for them.
+
+    Args:
+        column: The column to encode.
+
+    Yields:
+        The encoding of each value, in column order.
+    """
+    dtype: pl.DataType = column.dtype
+    if isinstance(dtype, pl.Time):
+        yield from _encode_physical(column, TIME_TAG)
+        return
+    if isinstance(dtype, pl.Datetime) and dtype.time_unit == "ns":
+        yield from _encode_physical(column, DATETIME_NANOS_TAG)
+        return
+    if isinstance(dtype, pl.Duration) and dtype.time_unit == "ns":
+        yield from _encode_physical(column, DURATION_NANOS_TAG)
+        return
+    scalar: object
+    for scalar in column.to_list():
+        yield encode_value(scalar)

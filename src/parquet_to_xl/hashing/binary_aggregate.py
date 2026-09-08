@@ -8,7 +8,7 @@ import xxhash
 from pydantic import Field
 
 from parquet_to_xl.hashing.base import DataFrameHasherBaseClass, HashedDataframeBase
-from parquet_to_xl.hashing.canonical import encode_value
+from parquet_to_xl.hashing.canonical import encode_series
 
 if TYPE_CHECKING:
     import polars as pl
@@ -47,7 +47,7 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
     def hash_column(self, column: pl.Series) -> BinaryAggregateHashedDataframe:
         """Return the modular sum of the per-value digests of one column.
 
-        Each value is passed through ``encode_value`` and hashed with ``xxh3_128``; the
+        Each value is passed through ``encode_series`` and hashed with ``xxh3_128``; the
         integer digests are summed modulo 2**128. An empty column digests to zero, which
         renders as 32 zero characters rather than as an error.
 
@@ -59,9 +59,9 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
             lowercase hex of the sum, zero-padded.
         """
         total: int = 0
-        value: object
-        for value in column.to_list():
-            total = (total + xxhash.xxh3_128(encode_value(value)).intdigest()) % MODULUS
+        encoded: bytes
+        for encoded in encode_series(column):
+            total = (total + xxhash.xxh3_128(encoded).intdigest()) % MODULUS
         return BinaryAggregateHashedDataframe(scope="column", digest_hex=f"{total:032x}")
 
     def hash_dataframe(self, df: pl.DataFrame) -> BinaryAggregateHashedDataframe:
@@ -79,7 +79,7 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
         total: int = 0
         name: str
         for name in df.columns:
-            value: object
-            for value in df[name].to_list():
-                total = (total + xxhash.xxh3_128(encode_value(value)).intdigest()) % MODULUS
+            encoded: bytes
+            for encoded in encode_series(df[name]):
+                total = (total + xxhash.xxh3_128(encoded).intdigest()) % MODULUS
         return BinaryAggregateHashedDataframe(scope="dataframe", digest_hex=f"{total:032x}")
