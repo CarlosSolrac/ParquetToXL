@@ -1,0 +1,153 @@
+name: Implementation ticket
+description: One unit of work, sized for a single-shot QWen dispatch or reserved for Claude.
+title: "T-000 — "
+labels: ["ticket"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One public function or class per ticket. If two assertion groups do not share
+        setup, this is probably two tickets — split it. See `docs/tickets/SCHEMA.md`.
+
+  - type: input
+    id: phase
+    attributes:
+      label: Phase
+      description: 0 Prereq · 1 Canonical+hashing · 2 Metadata · 3 Conversions · 4 Extract · 5 Excel · 6 Fixtures · 7 Integration
+      placeholder: "3"
+    validations:
+      required: true
+
+  - type: input
+    id: depends_on
+    attributes:
+      label: Depends on
+      description: Comma-separated ticket IDs that must land first. "none" if independent.
+      placeholder: "T-011"
+    validations:
+      required: true
+
+  - type: textarea
+    id: do
+    attributes:
+      label: Do
+      description: The single change. Name the exact symbol and file.
+      placeholder: |
+        Implement the body of `DataframeConversionToExcel._convert`'s boolean branch in
+        src/parquet_to_xl/conversion/to_excel.py. Nothing else. Do not create files.
+        Do not modify tests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: One WRITE path. Every READ path with its line count. Nothing else may be opened.
+      placeholder: |
+        WRITE   src/parquet_to_xl/conversion/to_excel.py       (stub, 31 lines)
+        READ    tests/unit/test_conversion_to_excel.py         (frozen, 74 lines)
+        READ    src/parquet_to_xl/_style_example.py            (golden style, 40 lines)
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: contract
+    attributes:
+      label: Contract
+      description: The docstring, verbatim. This is the spec — never a pointer to requirements-spec.md.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: done_when
+    attributes:
+      label: Done when
+      description: Exact commands. Narrow targets only — never --all-files, never --cov.
+      value: |
+        uv run pytest -x -q --no-header --tb=short tests/unit/<test file>
+        uv run ruff check <write path>
+        uv run pyright <write path>
+      render: text
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "## Claude settings — orchestrator"
+
+  - type: dropdown
+    id: claude_effort
+    attributes:
+      label: Claude effort (to author this ticket)
+      description: |
+        The level needed to write the stub and the frozen test — not to apply a patch or
+        read a failure. `max` for anything whose frozen test is subtle or load-bearing.
+        Checked against `get_session`; a mismatch halts and asks.
+      options:
+        - high
+        - xhigh
+        - max
+      default: 1
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "## QWen settings — always filled in, even when it does not apply"
+
+  - type: dropdown
+    id: qwen_applies
+    attributes:
+      label: Applies to QWen?
+      description: "No = Claude implements directly. A reason is then mandatory."
+      options:
+        - "yes"
+        - "no"
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: qwen_reason
+    attributes:
+      label: If no — why not
+      description: Required when the answer above is "no". Why this is not a single-shot ticket.
+      placeholder: Exploratory; needs to read UPath internals to thread the kwarg through __new__.
+
+  - type: dropdown
+    id: qwen_think
+    attributes:
+      label: QWen thinking
+      description: |
+        Off for transcription against a contract already written. On only where there is
+        real algorithmic content — tag design, the mod-2^128 identity, idempotency.
+      options:
+        - "off"
+        - "on"
+      default: 0
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        `model`, `num_ctx`, `temperature`, `seed`, `keep_alive`, and `max_prompt_tokens`
+        are filled from the workflow defaults at snapshot time and recorded per attempt.
+        Do not set them here.
+
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Definition of ready
+      options:
+        - label: Stub committed with full signature, docstring, and `raise NotImplementedError`
+          required: true
+        - label: Frozen test committed and demonstrated red
+          required: true
+        - label: Contract above is pasted text, not a reference
+          required: true
+        - label: Attached context is under 400 lines total
+          required: true
