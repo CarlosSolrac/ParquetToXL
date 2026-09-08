@@ -83,6 +83,30 @@ One prompt per phase rather than two per ticket.
 | `keep_alive` | `-1` keeps the model resident. The default 5-minute TTL expires during the gate runs between dispatches, forcing a 23 GB reload. |
 | `max_prompt_tokens` | Pre-flight guard. The script refuses to dispatch above this, and hard-fails if the returned `prompt_eval_count` exceeds it. |
 
+**Why the pin is `qwen3.6:latest` and not `qwen3.6-code:latest`.** The serving host also
+carries a `qwen3.6-code:latest` tag. It is the same weights — same blob, same passthrough
+template, no system prompt — differing only in baked-in Modelfile defaults: `temperature`
+1 → 0.2, `presence_penalty` 1.5 → 0, and `num_ctx` unset → 65536. That is precisely the
+pair of code-hostile defaults this schema pins, already corrected.
+
+Measured against the live host, request `options` do override those defaults: `seed`,
+`temperature` and `presence_penalty` each demonstrably change the output at the settings
+this schema uses. Since `tools/dispatch_ticket.py` sends all four explicitly on every
+request, the two tags behave identically under dispatch, and switching would buy nothing.
+
+Take care measuring this yourself. A short, fully-constrained prompt is nearly greedy and
+will show no difference for any sampling parameter, which reads as "the option was
+ignored" when it means "the prompt had no entropy to spend". `seed` likewise cannot show
+an effect at `temperature` 0. Test sampling parameters on an open-ended prompt.
+
+The pin stays on the base tag because moving it would invert where the safety lives.
+Relying on `-code` would take `presence_penalty 0` out of the ticket and put it in a
+Modelfile on one machine — unversioned, invisible to review, and gone the moment a
+dispatch runs from anywhere else. Ollama also keys its runner by model name rather than by
+blob, so the switch costs a 23 GB reload for no behavioural change. Keep the `-code` tag
+on the host for anything that bypasses this script, such as an interactive `ollama run`,
+where the base tag fails hostile at 1.5 and `-code` fails safe at 0.
+
 ## What the dispatch script enforces
 
 Three invariants, mechanically, because a rule that depends on Claude remembering it
