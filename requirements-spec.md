@@ -103,21 +103,26 @@ tests/
 
 ### `ZPath` — `paths.py`
 
-Thin subclass of `upath.UPath`. Overrides construction only, as the single future seam for
-cloud credentials:
+A module-level binding, `ZPath = UPath`, and the single future seam for cloud credentials.
+Every call site in this library uses `ZPath`, never `Path`/`UPath` directly.
+`isinstance(ZPath(...), UPath)` holds. No normalization, no protocol pinning.
 
-```python
-class ZPath(UPath):
-    def __init__(self, *args: str | os.PathLike[str],
-                 storage_options: Mapping[str, str] | None = None,
-                 **kwargs: object) -> None:
-```
+This was originally specified as a thin subclass overriding `__init__` to pop and store a
+`storage_options` mapping. That cannot be built on `universal-pathlib` 0.3.10, measured:
+UPath selects **one concrete class per protocol** from a registry, so a bare
+`class ZPath(UPath)` raises `_IncompatibleProtocolError` for every protocol including the
+empty local one; subclassing the concrete local class fails identically; and registering a
+subclass works only for a protocol of its own, so it cannot span local and cloud as one type.
 
-For now it pops `storage_options`, stores it on the instance, and forwards everything else
-to `super().__init__`. No normalization, no protocol pinning. `isinstance(ZPath(...), UPath)`
-holds. Every call site in this library uses `ZPath`, never `Path`/`UPath` directly.
-UPath dispatches through `__new__`; the tricky part is threading the kwarg through both
-`__new__` and `__init__` without breaking UPath's protocol handlers — pinned by tests.
+The seam survives because what it was for already exists: UPath 0.3.10 accepts
+`**storage_options` natively and exposes them, so `ZPath("s3://b/k", anon=True)` carries
+credentials with no subclass. Wiring real credentials later changes this one binding, not
+every call site.
+
+It is a binding rather than a factory function for a toolchain reason: a function named
+`ZPath` trips Ruff `N802`, and a factory class whose `__new__` returns a `UPath` is rejected
+by mypy, which requires `__new__` to return a subtype of its own class. Both need a
+suppression; the binding needs none, and it stays valid as an annotation.
 
 ### Canonical value encoding — `hashing/canonical.py`
 
