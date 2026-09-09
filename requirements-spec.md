@@ -25,7 +25,7 @@ in a different order.
 | Conversions | **explicit required parameter** to `extract_metadata_from_dataframe` |
 | Hasher API | base class exposes **both** `hash_column()` and `hash_dataframe()` |
 | Dtype coverage | **all scalar Polars dtypes**, no nested types |
-| `fast_excel_reader` | `python-calamine` + `ThreadPoolExecutor` across sheets; one path in, one frame out |
+| `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given `schema_overrides` it returns the model's dtypes directly instead of a column of mixed Python types |
 | Binary aggregate hash | **xxh3_128**, per-value hash summed mod 2¹²⁸ (row-order independent); **no column binding** |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
 | `ZPath` | thin hook-point subclass of `UPath`; override init only (future Azure/AWS credential wiring) |
@@ -41,6 +41,8 @@ in a different order.
 - `timezones` is `list[str]` of IANA names; converted with `zoneinfo.ZoneInfo`.
 - ToExcel boolean mapping: `True → -1.0`, `False → 0.0`, `null → null`, dtype `Float64`.
 - ToExcel `Duration → Float64` seconds; `Binary →` lowercase-hex `String`; `Categorical → String`.
+- ToExcel also models three losses a real round trip inflicts: `""` → null, `NaN`/`±inf` → null,
+  and `Datetime` truncated to whole seconds. See the conversion section.
 - The two 500-row Excel files are rows `[0:500]` and `[500:1000]` of the 1000-row frame.
 - Fixture RNG is stdlib `random` seeded with a module constant (no numpy dependency).
 - Excel string cell limit treated as 32,767 characters.
@@ -48,7 +50,13 @@ in a different order.
 ## New dependencies
 
 Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `xxhash`,
-`structlog`, `python-calamine`, `xlsxwriter`, `tzdata`.
+`structlog`, `fastexcel`, `python-calamine`, `rustpy-xlsxwriter`, `xlsxwriter`, `duckdb`,
+`tzdata`.
+
+`rustpy-xlsxwriter` is the default Excel writer and `fastexcel` the reader. `xlsxwriter` and
+`python-calamine` are kept as the second writer and as a cross-check reader; `duckdb` writes
+the third fixture workbook. Three independent writers are a standing sanity check: where they
+agree the behaviour is Excel's, where they disagree it is the writer's.
 
 `tzdata` is not optional and is deliberately unconditional. Windows ships no system
 timezone database, so without it `zoneinfo.TZPATH` is empty and **every** IANA lookup
@@ -282,14 +290,33 @@ class DataframeConversionBaseClass(ABC):
 `DataframeConversionNone._convert` → `(df, False)`.
 
 `DataframeConversionToExcel._convert` applies the Excel round-trip model, then reports
-`schema_or_data_changed = converted.schema != df.schema or any_string_truncated`:
-- `Int*/UInt*/Float32/Decimal → Float64`
+`schema_or_data_changed = converted.schema != df.schema or any_value_moved`:
+- `Int*/UInt*/Decimal → Float64`
+- `Float32/Float64 → Float64`, and **`NaN`/`±inf` become null**
 - `Boolean → Float64` via `True→-1.0`, `False→0.0`, `null→null`
-- `String → String` truncated at 32,767 chars (records whether any row was cut)
-- `Binary →` lowercase-hex `String`, then the same truncation
-- `Categorical → String` (labels)
+- `String`/`Categorical` `→ String` cut at 32,767 chars, and **`""` becomes null**
+- `Binary →` lowercase-hex `String`, then the same rule (so `b""` becomes null)
 - `Duration → Float64` seconds
-- `Date` / `Datetime(UTC)` / `Time` unchanged; `Null` unchanged
+- **`Datetime` truncated to whole seconds**
+- `Date` / `Time` unchanged; `Null` unchanged
+
+Three of those rules destroy information, and each was added after measuring that a real
+round trip destroys it first. The conversion has to lose exactly what the file loses, or no
+digest taken before writing can match one taken after:
+
+- **`""` → null.** A worksheet cannot distinguish an empty string cell from an empty cell.
+  The two readers do not even agree on what comes back — `fastexcel` returns `None`,
+  `python-calamine` returns `''` — which is itself proof the distinction cannot be kept.
+- **`NaN`/`±inf` → null.** No writer measured can store them: `xlsxwriter` refuses outright
+  without `nan_inf_to_errors`, and `rustpy-xlsxwriter` emits an empty cell.
+- **`Datetime` → whole seconds.** Measured, `23:47:16.854775` reads back as `23:47:16`.
+
+`Categorical` is also cut at the limit, though the original table listed truncation for
+`String` and `Binary` only: without it an oversized label survives the first pass and is cut
+by the second, which breaks idempotency.
+
+With these rules, all 19 fixture columns round-trip exactly — write the converted frame,
+read it back with the converted schema, and dtype and value both match.
 
 The metadata and hashes for this conversion are computed on the **converted** values, so
 they describe what Excel will actually hold.
@@ -328,7 +355,7 @@ def register_excel_writer(cls): ...            # decorator
 def get_excel_writer(identifier: str) -> ExcelWriterBase: ...   # raises on unknown
 
 class ExcelWriteConfig(BaseModel):
-    writer: str = "polars-xlsxwriter"
+    writer: str = "rustpy-xlsxwriter"
     options: dict[str, object] = {}
 ```
 
@@ -344,11 +371,16 @@ def fast_excel_reader(
 ) -> pl.DataFrame:
 ```
 
-Opens `python_calamine.CalamineWorkbook.from_path(str(path))`, resolves target sheets
+Reads through `fastexcel` (`pl.read_excel`), resolves target sheets
 (all, or `sheet_names`), submits one `_read_sheet` job per sheet to a `ThreadPoolExecutor`
-(`calamine` releases the GIL while parsing), builds a `pl.DataFrame` per sheet from the
-cell matrix (`infer_schema_length=None`), and returns `pl.concat(frames, how="vertical_relaxed")`
+(the Rust parser releases the GIL), builds a `pl.DataFrame` per sheet, and returns `pl.concat(frames, how="vertical_relaxed")`
 in sheet order. `max_workers=1` and the default must return identical data — asserted.
+
+**The reader is given the target schema; it never infers.** Callers pass the dtypes of the
+ToExcel-converted frame as `schema_overrides`. This is not an optimization: `pl.read_excel`
+with no schema **fails outright** on real data, because it downcasts integral-looking floats
+and overflows on `Int64`'s maximum. With the schema supplied, all 19 fixture columns come
+back matching the model in both dtype and value.
 Implementation note to validate with the benchmark test: if per-sheet extraction on one
 workbook handle does not actually parallelize, open one handle per worker thread.
 

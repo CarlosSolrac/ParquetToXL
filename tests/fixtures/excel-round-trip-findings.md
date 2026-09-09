@@ -158,20 +158,42 @@ preserves NUL, CRLF and surrounding whitespace while also not shifting timestamp
   and streaming is what makes constant-memory mode meaningful. Verified: generator and list
   produce byte-identical workbooks.
 
-## Consequences for the conversion
+## Consequences for the conversion — all now resolved
 
-1. **Nulls and empty strings merge.** Round-tripping cannot distinguish them, so a digest
-   computed on a frame containing nulls will not match one computed from its workbook unless
-   the conversion maps them to a single representation first.
-2. **NaN and ±inf do not survive rustpy.** They read back as `''`. `encode_value`
-   canonicalises NaN, but there will be nothing left to canonicalise.
-3. **Timestamps need an explicit contract.** Midnight UTC degrades to a bare `date` and
-   sub-second precision is lost at the range edges.
-4. **The reader cannot infer dtypes.** A column returns mixed Python types, so
-   `fast_excel_reader` must coerce per column against the source schema rather than letting
-   Polars guess.
-5. **Truncation is the project's rule.** Only rustpy enforces the 32,767 limit, and it does
-   so by raising, so the conversion must truncate before the writer sees the value.
+Each of these was a gap between what `DataframeConversionToExcel` modelled and what a file
+actually does. All five are closed; the first three by amending the model, the last two by
+choosing a reader and keeping the truncation rule.
+
+1. **Nulls and empty strings merge.** Resolved: the conversion maps `""` to null. The two
+   readers do not even agree on what an empty cell returns — `fastexcel` says `None`,
+   `python-calamine` says `''` — which is itself proof the distinction cannot be carried.
+2. **NaN and ±inf do not survive.** Resolved: the conversion maps them to null. No writer
+   measured can store them.
+3. **Timestamps lose sub-second precision.** Resolved: the conversion truncates `Datetime`
+   to whole seconds. Measured, `23:47:16.854775` reads back as `23:47:16`.
+4. **The reader cannot infer dtypes.** Resolved by giving it the schema instead of letting
+   it guess. This is not a nicety: `pl.read_excel` with no schema **fails outright** on this
+   data, downcasting integral-looking floats and overflowing on `Int64`'s maximum.
+5. **Truncation is the project's rule.** Unchanged: only rustpy enforces the 32,767 limit,
+   and it enforces by raising, so the conversion truncates before the writer sees a value.
+
+**Verified end to end.** Convert the fixture frame, write it with the default writer, read it
+back with the converted schema: **all 19 columns match the model in both dtype and value.**
+
+## Choosing the reader: fastexcel over python-calamine
+
+They are bindings to the same Rust calamine crate, but they are not interchangeable.
+
+| | python-calamine | fastexcel |
+| --- | --- | --- |
+| `date(1899,12,31)` | `time(0, 0)` — date destroyed | **recovered** |
+| `datetime(1899,12,31)` | `time(0, 0)` — unrecoverable | **recovered** |
+| empty cell | `''` | `None` |
+| column typing | mixed Python types per column | the model's dtypes, given `schema_overrides` |
+
+Schema-driven coercion of the calamine output reaches 17 of 19 columns. The last two cannot
+be fixed downstream: by the time a cell arrives the pre-1900 date is already gone, replaced
+by a bare time-of-day. `fastexcel` needs no coercion layer at all.
 
 `DataframeConversionToExcel` implements the spec's cast table with one deliberate departure,
 found by a Codex review: **`Categorical` is truncated as well as cast to `String`**, though
@@ -205,3 +227,73 @@ workbook hashes.
 
 One trap worth knowing: three rows contain NaN, and NaN never equals itself, so a naive
 `==` comparison reports the concatenation check as failing when it is fine.
+
+## The writers fail soft; guard rails were needed
+
+Five rounds of review on `excel/writer.py` turned up the same shape of defect repeatedly:
+`polars.write_excel` builds an Excel *table*, and `xlsxwriter.add_table` **warns, discards
+data, and still returns**. A caller sees success and an empty or truncated workbook. All
+measured:
+
+| Input | `polars-xlsxwriter` | `rustpy-xlsxwriter` |
+| --- | --- | --- |
+| string beginning `=` | live formula; read back `0.0` | literal text |
+| URL over 2,079 chars | **cell dropped**, warning only | preserved |
+| columns `a` and `A` | one column and all rows lost | correct |
+| 16,385 columns | workbook reads back `(0, 0)` | raises |
+| zero-row frame | headers kept | **no header row at all** |
+| empty column name `""` | renamed `Column1` | renamed `1`, **row dropped** |
+
+`XLSXWRITER_WORKBOOK_OPTIONS` now disables formula and URL reinterpretation. The dimension
+and case-collision checks refuse the frame before the destination is opened, so a bad input
+cannot replace a good file with an empty one. An empty column name is refused by **both**
+writers, since neither preserves it.
+
+## A reader limitation, not a writer one
+
+Column names Polars reads as selectors — `*`, and anything shaped `^...$` — are legal
+Parquet names, and **both writers store them correctly**. Verified against the raw sheet:
+`header=['*', 'b'], data=[[1.0, 2.0]]`.
+
+`pl.read_excel` is what cannot read them back, raising
+`DuplicateError: projections contained duplicate output name 'b'`. This was initially
+reported as a writer defect; it is not. It belongs to `fast_excel_reader`, which will need
+to avoid letting Polars interpret header text as a selector — the same trap the conversion
+hit with `pl.col(name)`, solved there by selecting on position instead.
+
+## Verdict: only the default writer is round-trip safe
+
+Seven rounds of review on `excel/writer.py` settled this. `rustpy-xlsxwriter` round-trips the
+converted fixture frame exactly. `polars-xlsxwriter` does not, and two of its losses cannot
+be guarded around -- only avoided -- because they are how `xlsxwriter` serializes:
+
+| ordinary converted value | `rustpy-xlsxwriter` | `polars-xlsxwriter` |
+| --- | --- | --- |
+| `1.2345678901234567` | exact | **`1.234567890123457`** |
+| `1900-01-01 12:00 UTC` | exact | **`1899-12-31 12:00`** |
+
+Neither is an edge case; the first is an ordinary `Float64`. Fixing either means not calling
+`write_excel` at all, at which point it stops being the Polars writer. So the guarantee is
+scoped instead: **the digest contract belongs to the default writer.** `PolarsExcelWriter`
+stays registered as the pure-Python fallback for platforms without the Rust wheel, and as a
+second implementation that fails differently -- which is exactly what caught most of the
+findings above. Its tests assert shape, not values, and its two losses are pinned so that a
+future release fixing them shows up as a failure.
+
+The 1900-01-01 shift is Excel's inherited Lotus 1-2-3 leap-year bug, which DuckDB also has.
+
+## What `fast_excel_reader` still has to solve
+
+Two problems are the reader's, not the writer's, and neither is fixed yet:
+
+1. **Trailing all-null rows vanish.** A row whose cells are all empty produces no `<row>`
+   element, so the row extent is not stored. Measured on `[1.0, None, None]`: both writers
+   produce a workbook that reads back with one row. The metadata already carries the fix --
+   `DataframeColumnMetadata.value_count` is the row count -- so the reader can restore the
+   extent rather than trusting the sheet.
+2. **Selector-shaped headers break `pl.read_excel`.** `*` and `^...$` are legal Parquet
+   column names, both writers store them correctly, and the read raises
+   `DuplicateError: projections contained duplicate output name`. The reader must not let
+   Polars interpret header text as a selector -- the same trap the conversion hit with
+   `pl.col(name)`, solved there by selecting on position.
+
