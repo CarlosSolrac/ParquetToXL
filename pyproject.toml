@@ -8,9 +8,11 @@ name = "ParquetToXL"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "duckdb>=1.5.5",
     "polars>=1.44.1",
     "pydantic>=2.13.5",
     "python-calamine>=0.8.2",
+    "rustpy-xlsxwriter>=0.6.1",
     "structlog>=26.1.0",
     "tzdata>=2026.3",
     "universal-pathlib>=0.3.10",

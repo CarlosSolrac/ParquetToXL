@@ -3,15 +3,25 @@
 Audited in Phase 0: of the seven runtime dependencies, this is the only one without inline
 types, and there is no ``types-xlsxwriter`` or ``xlsxwriter-stubs`` on PyPI (checked, 404).
 
-Deliberately covers only ``Workbook``, and only as a type. This project never constructs a
-workbook: ``PolarsExcelWriter`` calls ``df.write_excel(workbook=str(path), ...)`` and polars
--- which is ``py.typed`` -- owns the xlsxwriter interaction from there. Declaring
-``__init__`` or the writer methods here would be inventing a signature for a call site that
-does not exist, and a speculative stub type-checks silently when it is wrong.
+Covers only what this project actually calls, and each member was added against the real
+runtime signature rather than guessed, because a speculative stub type-checks silently when
+it is wrong. An access to anything not declared here is a hard error, which is intended.
 
-If a later ticket genuinely needs a member, add that member then, against the real
-signature. An access to anything not declared here is a hard error, which is the intended
-behaviour: it means the assumption above stopped holding.
+``__init__`` and ``close`` were added for ``tests/fixtures/generate.py``, which does
+construct a workbook. The Phase 0 note said this project never would -- polars owns the
+xlsxwriter interaction and accepts a path -- and that stopped holding: writing the fixture
+workbooks needs the ``remove_timezone`` and ``nan_inf_to_errors`` options, which
+``DataFrame.write_excel`` exposes no parameter for. Passing a pre-configured ``Workbook``
+is the only route to them.
+
+``filename`` is narrowed to ``str | PathLike[str]`` from the runtime's wider union: the
+file-object and ``None`` forms are real but unused here, and a stub that admits arguments
+no call site passes is a stub that cannot catch a mistake at those call sites.
 """
 
-class Workbook: ...
+from os import PathLike
+from typing import Any
+
+class Workbook:
+    def __init__(self, filename: str | PathLike[str], options: dict[str, Any] | None = None) -> None: ...
+    def close(self) -> None: ...

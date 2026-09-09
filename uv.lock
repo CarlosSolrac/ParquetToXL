@@ -127,6 +127,28 @@ wheels = [
 ]
 
 [[package]]
+name = "duckdb"
+version = "1.5.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/19/e57151753576373c6696a12022648546cca6038e8833fda2908ee2342d9b/duckdb-1.5.5.tar.gz", hash = "sha256:72f33ee57ca7595b23957671a2cc7f7fe2be0ecc2d68f63abedcfcaa3a5c1238", size = 18066741, upload-time = "2026-07-22T10:55:17.819Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/37/4a38116e7700720fd152c666292214fd3abdf916496991296d8d1f66efbf/duckdb-1.5.5-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:cd98829b67788609017e65c761bd42a5dd0f9129441bed8bda4d6881ccf819f0", size = 32754294, upload-time = "2026-07-22T10:54:29.822Z" },
+    { url = "https://files.pythonhosted.org/packages/66/42/7d392f1ba1eee0eaf4ab4c8c7a604bfe3536cd63f979cf5c98798664f807/duckdb-1.5.5-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:feead93c56679b79592d437c62975d39cb67adedffa7592c763baf8160ac7366", size = 17368211, upload-time = "2026-07-22T10:54:33.359Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/a5/0a6f4fa60562faa615e55e15bd1953a2f2b17a8edd8105e5cda215e43457/duckdb-1.5.5-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:49c963d9469373d7aba8d750d9ea565ab823e94166efed953f184dd9b169b98c", size = 15509136, upload-time = "2026-07-22T10:54:36.369Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/cb/023c89f51978545b9fab318581bba0c457a58e7530d2d933e54ae7d8647c/duckdb-1.5.5-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a736217825461732b5442d05a220f3da2e23a0dae114efbf08c9bf171b53098a", size = 19392147, upload-time = "2026-07-22T10:54:39.551Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/c5/41bef391fb8b23dbc133c9f2ba016e7a7a8124513d2cc1b430f1897d87e4/duckdb-1.5.5-cp313-cp313-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:078e6a60dd8eedde5832f45422ca5c4a6b8c837aeabd8a56ca0b7d933f588053", size = 21511060, upload-time = "2026-07-22T10:54:42.788Z" },
+    { url = "https://files.pythonhosted.org/packages/07/9f/c44dfc1f924ac29b3252dc1b91393c01d009dbfe9f8ed33f10b986151bd1/duckdb-1.5.5-cp313-cp313-win_amd64.whl", hash = "sha256:6826504277dba513c0c5d71d828456c94d729c9d2482f94b2e289f90a9167e28", size = 13168028, upload-time = "2026-07-22T10:54:46.127Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/88/591384b2cd59abddd6f5dc175e60374f9abae6064429f0c4402854c10f44/duckdb-1.5.5-cp313-cp313-win_arm64.whl", hash = "sha256:baa9c5702002fabb559ded2a39008f9f421fcbc7237d388b8213eff1e08858de", size = 13989955, upload-time = "2026-07-22T10:54:49.262Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/56/12c65bfa2d2605b81981b264788891bcf11ec72227889554cead5d8d13b9/duckdb-1.5.5-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:8e6413dd40facb7b8ab21bd844450cd8f549b29e138635be9cf090ef4d2049e2", size = 32761946, upload-time = "2026-07-22T10:54:53.412Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/46/682ce155f17e0d2822d4f13ee3db9ca4b5b7c2da61b841b2629035e1f4bc/duckdb-1.5.5-cp314-cp314-macosx_10_15_x86_64.whl", hash = "sha256:64078acfd16541132ac6e191eb81b2845554444a0305cc1aa581ba107e514aa8", size = 17375069, upload-time = "2026-07-22T10:54:57.269Z" },
+    { url = "https://files.pythonhosted.org/packages/39/ce/a24bcbd3289c8f305a430759c5fc12242740b4af3e17f7593f3a34e333d2/duckdb-1.5.5-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:8c11775cc99a447618d5f1840126db17f2652f3eae05529df4f81f40e2df7151", size = 15519791, upload-time = "2026-07-22T10:55:00.681Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/76/3a01afbc615c1d418c0de58a6b68ac5ce2a8563232c0464bfbc2ce552398/duckdb-1.5.5-cp314-cp314-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:77bbc1e6ba12e1e06f9020117bdf848627ecfdf36f907550e62e008e6109dece", size = 19398251, upload-time = "2026-07-22T10:55:04.168Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/43/3a5e81d1728f4d234c79bfe385808ee7c04834f7c37a4b5c257459c25614/duckdb-1.5.5-cp314-cp314-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:fbf0f2d48b43c6c304d00463b463c27ead6c4b01c3c1816b750f728decf71afe", size = 21513851, upload-time = "2026-07-22T10:55:07.864Z" },
+    { url = "https://files.pythonhosted.org/packages/91/41/fc7c829172c60ca22485251eab285f4f1a0d87b486a024c726f21471d86e/duckdb-1.5.5-cp314-cp314-win_amd64.whl", hash = "sha256:9dc826c4b50e64f6c4e4d07a3a9cb075ef70ba3899dc43ec5493dc3d7b04b353", size = 13691858, upload-time = "2026-07-22T10:55:11.181Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/2c/95d9216b79e9273689d7ebce125a54503ed0c9bd7da931f0265888e99779/duckdb-1.5.5-cp314-cp314-win_arm64.whl", hash = "sha256:63e48d4b74b15aeacd688976432a7225163df8c226eddeb8536bba2d4d4ff433", size = 14470180, upload-time = "2026-07-22T10:55:14.445Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.32.5"
 source = { registry = "https://pypi.org/simple" }
@@ -378,9 +400,11 @@ name = "parquettoxl"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "duckdb" },
     { name = "polars" },
     { name = "pydantic" },
     { name = "python-calamine" },
+    { name = "rustpy-xlsxwriter" },
     { name = "structlog" },
     { name = "tzdata" },
     { name = "universal-pathlib" },
@@ -401,9 +425,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "duckdb", specifier = ">=1.5.5" },
     { name = "polars", specifier = ">=1.44.1" },
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "python-calamine", specifier = ">=0.8.2" },
+    { name = "rustpy-xlsxwriter", specifier = ">=0.6.1" },
     { name = "structlog", specifier = ">=26.1.0" },
     { name = "tzdata", specifier = ">=2026.3" },
     { name = "universal-pathlib", specifier = ">=0.3.10" },
@@ -747,6 +773,60 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2c/aa/9f89c719c467dfaf8ad799b9bae0df494513fb21d31a6059cb5870e57e74/ruff-0.14.14-py3-none-win32.whl", hash = "sha256:b530c191970b143375b6a68e6f743800b2b786bbcf03a7965b06c4bf04568167", size = 10502442, upload-time = "2026-01-22T22:30:38.93Z" },
     { url = "https://files.pythonhosted.org/packages/87/44/90fa543014c45560cae1fffc63ea059fb3575ee6e1cb654562197e5d16fb/ruff-0.14.14-py3-none-win_amd64.whl", hash = "sha256:3dde1435e6b6fe5b66506c1dff67a421d0b7f6488d466f651c07f4cab3bf20fd", size = 11630486, upload-time = "2026-01-22T22:30:10.852Z" },
     { url = "https://files.pythonhosted.org/packages/9e/6a/40fee331a52339926a92e17ae748827270b288a35ef4a15c9c8f2ec54715/ruff-0.14.14-py3-none-win_arm64.whl", hash = "sha256:56e6981a98b13a32236a72a8da421d7839221fa308b223b9283312312e5ac76c", size = 10920448, upload-time = "2026-01-22T22:30:15.417Z" },
+]
+
+[[package]]
+name = "rustpy-xlsxwriter"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/76/cc649ee859672e033ea1fe6c54bb1c3781ebc7c55704acb36232fba67486/rustpy_xlsxwriter-0.6.1.tar.gz", hash = "sha256:50a2a93c03c51cd3eb3ca826c57061529be97199f28459c9d7c90a7a4777f706", size = 115445, upload-time = "2026-08-04T04:35:06.588Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1f/f6/985fcf1d49b9303d3d6b5dd729f12017e64d73035046ca9d82c2ce31b338/rustpy_xlsxwriter-0.6.1-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:f087e4fe1a73bfce3d1e703b309f47ff448090cea0ad46f6fbb77ac5eb1a587c", size = 1274713, upload-time = "2026-08-04T04:33:13.805Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/62/97b05b4f22e076dccfc90b4dcf164bf816d3262244efac6e714084321a0f/rustpy_xlsxwriter-0.6.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:f68a44218fdcfefd0d0a7117552adf76a509db7e676bc29ca8ef7aef915a2f22", size = 1217886, upload-time = "2026-08-04T04:33:15.105Z" },
+    { url = "https://files.pythonhosted.org/packages/57/70/a60854ba49be2f29ecaf3430346aac2553a50195774127d4c006f704429d/rustpy_xlsxwriter-0.6.1-cp313-cp313-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:35e8e08659e3f958de612b5c2d1d62f47859bec0cd57f272d07e3f75a767a8b9", size = 1458791, upload-time = "2026-08-04T04:33:16.597Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/56/14e40d5a65974d915b7a64c9f1b16b881c46d4450a773c6794ba3f013168/rustpy_xlsxwriter-0.6.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1ca52908336cf932f13fe96fc434a79f4260ece14e86449d80c042eac4e2fb9d", size = 1283548, upload-time = "2026-08-04T04:33:17.931Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/34/2affe1b6948c69b8342763c31f2b61149d76a29329d96ec1a371f2bf88d2/rustpy_xlsxwriter-0.6.1-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c7ef68a268925627c3b60774af128e81978ab95d2be244152c18ef46cfb9d17f", size = 1370550, upload-time = "2026-08-04T04:33:19.19Z" },
+    { url = "https://files.pythonhosted.org/packages/87/22/271093f490815fd8193732924fd38375312a49050215a8496a7ecc057e47/rustpy_xlsxwriter-0.6.1-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:1027709272a2c95e4db74225617ad5fac0c5f12a94b0a1aba2e24dcf41791051", size = 1448464, upload-time = "2026-08-04T04:33:20.661Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/53/b7a9ef15130696eea6a4d9cf6aa92806c7bf43c7730a212d4c86489198bd/rustpy_xlsxwriter-0.6.1-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f460c3a57f205524487a5d7d56fe62d6e3d0db3dab67a9e12d6007d5b19d3edd", size = 1475141, upload-time = "2026-08-04T04:33:22.031Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/5f/24a333d6b9c687fbefab491b79b7be7e8883420189615927f6143c1caa2a/rustpy_xlsxwriter-0.6.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:adefb44669d753adfe03ea696f2b40ee8d84949cfefe4b391b22228f5a28f6cb", size = 1322127, upload-time = "2026-08-04T04:33:23.546Z" },
+    { url = "https://files.pythonhosted.org/packages/97/95/8875b0674f54f81323420891d57cef7307d0021c40243a8871464b0d0baa/rustpy_xlsxwriter-0.6.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:79e1e1833e6db0719264af900c654535f9bb919acc7f0e67ca6da1661790423c", size = 1467835, upload-time = "2026-08-04T04:33:24.79Z" },
+    { url = "https://files.pythonhosted.org/packages/df/e1/7a7259455c8d99d04c818f90fd9f3e86da29f86b22309070c7b75ae1c5f5/rustpy_xlsxwriter-0.6.1-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:e40af1e6cf1f5f6ef255c9b2f23db9dc18a9cd8008c84a2b967c555939055773", size = 1651273, upload-time = "2026-08-04T04:33:26.193Z" },
+    { url = "https://files.pythonhosted.org/packages/05/ad/66ce82272704551e9f5d95acedcee69e563975edeafb1890d7ec693199dc/rustpy_xlsxwriter-0.6.1-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:8053968d9df92782efb1511e05acd7767fe309445869a9d52f000fbb422daf61", size = 1655559, upload-time = "2026-08-04T04:33:27.572Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/e3/221576f30b951a2d301f31742466703fda2b3c0a130f92b3674484cea59a/rustpy_xlsxwriter-0.6.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:82fcdf7b02c93e95de441ca80714541d2ee1c0311589d4fea4e80c0c57d30633", size = 1572237, upload-time = "2026-08-04T04:33:29.044Z" },
+    { url = "https://files.pythonhosted.org/packages/be/17/10bec1229be11c8e0c3f12e3c1867a1bbf4686f558d54904e4b9cb0291d3/rustpy_xlsxwriter-0.6.1-cp313-cp313-win32.whl", hash = "sha256:7da941584ca34a8cfb0fe59a7e61e53f4b7477c4c0da5dd81bd888db2530425a", size = 1249971, upload-time = "2026-08-04T04:33:30.467Z" },
+    { url = "https://files.pythonhosted.org/packages/95/92/fb7744d205ecdfa8fdd37fc96062521958446e5a97156c74a9b3700f6115/rustpy_xlsxwriter-0.6.1-cp313-cp313-win_amd64.whl", hash = "sha256:484560b3739cc7917e8ee4a684b6b87a60bd099e9f87038e7f3fd8dcd7a6125f", size = 1310434, upload-time = "2026-08-04T04:33:31.867Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/4b/82da2b97994ff7a8d20ed87c8b8ca893bc7a8ae15e456b964540b2cc73bb/rustpy_xlsxwriter-0.6.1-cp313-cp313-win_arm64.whl", hash = "sha256:92a362333f00a7ab49d99b826e226656ffbfc9f214043cdc94e6df657400125a", size = 1227278, upload-time = "2026-08-04T04:33:33.192Z" },
+    { url = "https://files.pythonhosted.org/packages/07/c6/605fda9810a89b8b159d1770071e9849fb22270940609e523ad89286bff9/rustpy_xlsxwriter-0.6.1-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:9727c2b0d3b7b06ba0e3e01886f37c4742422e6d07766f10c599a5732f404366", size = 1274811, upload-time = "2026-08-04T04:33:34.553Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/b0/f19d94fc920885bc2423eaa9727849bf21d326d77082736663751a28de8e/rustpy_xlsxwriter-0.6.1-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:37565336fa69b7422aa3b338422822c94eae97ca4af6b8defc31df5d5aa90c82", size = 1217805, upload-time = "2026-08-04T04:33:35.894Z" },
+    { url = "https://files.pythonhosted.org/packages/31/56/a89918e39d7eb349e8c6d236272630e75af6e515ccee4b48e980be70412f/rustpy_xlsxwriter-0.6.1-cp314-cp314-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:3ec956bfae6429ed21b7d580a30605f472ad34e3342110116b9c6c3c0e8f67a3", size = 1458975, upload-time = "2026-08-04T04:33:37.358Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/9f/23379e80df6d8b93f4a2656247b2bc7c0ccd3692bcbd8504480430a37399/rustpy_xlsxwriter-0.6.1-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8c3b8be34fce010fae964f237f3f1188dd94c3323c1189da928176e5ec86b3c8", size = 1283537, upload-time = "2026-08-04T04:33:38.795Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/ee/616a008efd16b62e7b92b6c4f8c14931bc127871a292d7f5b2bf9d40912d/rustpy_xlsxwriter-0.6.1-cp314-cp314-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c2963a429298a1abeeb748ace6d0ef0469229333b3f8f0b404059c7f4062f69d", size = 1370539, upload-time = "2026-08-04T04:33:40.051Z" },
+    { url = "https://files.pythonhosted.org/packages/8b/f1/219ea7ca470f28ec85307d1bd885a23e2e1ab0a6675afe558716954823af/rustpy_xlsxwriter-0.6.1-cp314-cp314-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:333334efbef2d79be4f46c5707cf911f1bce9ca422051da2c21a116e88681c5c", size = 1449503, upload-time = "2026-08-04T04:33:41.491Z" },
+    { url = "https://files.pythonhosted.org/packages/10/12/47ed74f7ec14ea958a3ae7e92b96c9e7e227e9ca1273b713acbbcbee04b1/rustpy_xlsxwriter-0.6.1-cp314-cp314-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:5b0c329486a96f896f4c4955d566db2ea0834bc28e814e58267cda8fd2d2321e", size = 1476014, upload-time = "2026-08-04T04:33:42.901Z" },
+    { url = "https://files.pythonhosted.org/packages/65/c3/180d511d9312506f7578007a5ffe01087f4ed1e30f0a8da0e70b18c3c165/rustpy_xlsxwriter-0.6.1-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fab1ea0a4fa4c311edb33db2e566885aa83ea8efc9ef2a94eec6de9c6353bef5", size = 1322575, upload-time = "2026-08-04T04:33:44.378Z" },
+    { url = "https://files.pythonhosted.org/packages/af/e8/efb03504148627118e0c7f520dbbdf4c512e79b7262cd8aafd3e7cd2cec7/rustpy_xlsxwriter-0.6.1-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:f5abaac2438a152d9c7afa9e9dbee86904c57710935dd916e7b84cf5ef64cf4e", size = 1467824, upload-time = "2026-08-04T04:33:45.823Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/2c/a088f36ea6dd125f9812c91df9cb8ecfdf34adbbcbe9a9f96f6084858e88/rustpy_xlsxwriter-0.6.1-cp314-cp314-musllinux_1_2_armv7l.whl", hash = "sha256:875c19606d72d06b93614f27867ae2ca175efb2e1a1211f4f600aadaeb35c590", size = 1651267, upload-time = "2026-08-04T04:33:47.207Z" },
+    { url = "https://files.pythonhosted.org/packages/af/b5/a3607ae5006f95763d638eed9220b16a79c519e1ae6d764d62522d3f42c6/rustpy_xlsxwriter-0.6.1-cp314-cp314-musllinux_1_2_i686.whl", hash = "sha256:443b53c0e1267fdebfeceb90a480ecaecbbe16e5d4a379bf5665410a22d598a6", size = 1655703, upload-time = "2026-08-04T04:33:48.69Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/ad/1c064e682447a0f33754055b7da08516380c51aea76aa825961732d87ab3/rustpy_xlsxwriter-0.6.1-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:69026a54cb931354574c632a44f4088b6550e12b2935023c7b73760ae126d502", size = 1572795, upload-time = "2026-08-04T04:33:50.044Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/ea/4bdf03631d2df22e69829969bb24bcfa69641f3f424873edfad0351d43d9/rustpy_xlsxwriter-0.6.1-cp314-cp314-win_amd64.whl", hash = "sha256:37bb658797efc7cb051b293fa6313c76cd1ff416f2386142b376a3224dd6ea46", size = 1310435, upload-time = "2026-08-04T04:33:51.423Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/3d/49f75f96ae9fdd960b0311af8133491dc766bec0e4421c60bcf23efdeab7/rustpy_xlsxwriter-0.6.1-cp314-cp314-win_arm64.whl", hash = "sha256:2dd01df83d4aaf3785cd611dd2b5968cad8d9592ed3d492fc9a8f8633e6905ad", size = 1227225, upload-time = "2026-08-04T04:33:53.032Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/e0/7ebeb72771e727e99de3ff3efe9f149e765ebac8a214d03062e27ffb1a91/rustpy_xlsxwriter-0.6.1-cp314-cp314t-macosx_10_12_x86_64.whl", hash = "sha256:d046ccaf0b87506f10027a3f1748a52ae4e155d77d96e8882d3360dc8f1c2615", size = 1271749, upload-time = "2026-08-04T04:33:54.641Z" },
+    { url = "https://files.pythonhosted.org/packages/82/42/254f2c891841a5dfec84a9cffbbea8a18ad7f59e68f2391a045cec66d3a4/rustpy_xlsxwriter-0.6.1-cp314-cp314t-macosx_11_0_arm64.whl", hash = "sha256:86aa698b228019c3c8c8c40f7639efb44782f373d6efeeb06f567e4b448de1e4", size = 1213267, upload-time = "2026-08-04T04:33:56.061Z" },
+    { url = "https://files.pythonhosted.org/packages/af/c8/d5ec970519a31af78628364125dd8c242760c1a69d200d4ec0a1773c229e/rustpy_xlsxwriter-0.6.1-cp314-cp314t-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:51b59883c64a1812ba18fdc3998329de3514ad22cf2a19b6699ee13c5ad5a182", size = 1455685, upload-time = "2026-08-04T04:33:57.929Z" },
+    { url = "https://files.pythonhosted.org/packages/29/c5/3e05df7d9a728fe2d02d401461faf59cd242803a0ab0698f967ffeae5bc4/rustpy_xlsxwriter-0.6.1-cp314-cp314t-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aaeff1f72f3630cf1fa14804a843aac3280567886f2fa8509f78cd6f5545bd00", size = 1280372, upload-time = "2026-08-04T04:33:59.6Z" },
+    { url = "https://files.pythonhosted.org/packages/52/d5/846d427b1a5fdbf1fe51a79f92f77b3e7ff211d6442fdd46d2ec1e570133/rustpy_xlsxwriter-0.6.1-cp314-cp314t-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:d43c1e74e08f0eafc207c0edb028ac21fda363158d42f1ae9d8b2c55bb8bd88a", size = 1364702, upload-time = "2026-08-04T04:34:01.276Z" },
+    { url = "https://files.pythonhosted.org/packages/88/6f/e0b37238863488da4433f57fdcfbc1e08d4917165d6b62193d32632e068c/rustpy_xlsxwriter-0.6.1-cp314-cp314t-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c82e52bbdb5311ef6e520c484a1ba5ce751eebe5c1cf2cb01c26222db346753b", size = 1443864, upload-time = "2026-08-04T04:34:02.709Z" },
+    { url = "https://files.pythonhosted.org/packages/50/80/55ac598b4459063ceb5959bd4e8764104ba3618079c92443df10780944ff/rustpy_xlsxwriter-0.6.1-cp314-cp314t-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:cf16dfd395dc71ef4049ef6b8fb2dfb7769118f87d58b54abe4d1aeb50719286", size = 1472213, upload-time = "2026-08-04T04:34:04.145Z" },
+    { url = "https://files.pythonhosted.org/packages/df/7b/7918525695f4d3c9689236af86abd59f1ad3043a16ca8dd57de4bd5b6427/rustpy_xlsxwriter-0.6.1-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:46558b76bfd0676d399c861f0767aa7fdf3ab594e97631f33360d9fe0eae6be1", size = 1319751, upload-time = "2026-08-04T04:34:05.55Z" },
+    { url = "https://files.pythonhosted.org/packages/17/b4/94935eb928f23a3774319072bc9493f1aa67a7dc30f3730c563f0772e59a/rustpy_xlsxwriter-0.6.1-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:931bd964514f7baa5cc10e846b3212c1945f3bda627f529d99dc859fbac255bc", size = 1464836, upload-time = "2026-08-04T04:34:07.075Z" },
+    { url = "https://files.pythonhosted.org/packages/af/e1/24d7c6ea64bf5865fda2eb194ad65b13fdb341556735cd6bc93f8abb295b/rustpy_xlsxwriter-0.6.1-cp314-cp314t-musllinux_1_2_armv7l.whl", hash = "sha256:c40b6d50284cb3c799d3236847dc51a14d2b9091210ec7069b569189d117862e", size = 1646251, upload-time = "2026-08-04T04:34:08.814Z" },
+    { url = "https://files.pythonhosted.org/packages/93/df/32f304a81882d3158e9eb0dfb7da4ee0bf57967d7e20594695db00530977/rustpy_xlsxwriter-0.6.1-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:ade71e0641e466540dabe1da993d1a6f2b890543940737185979579d3492ef86", size = 1652101, upload-time = "2026-08-04T04:34:10.259Z" },
+    { url = "https://files.pythonhosted.org/packages/80/31/e9735de94043bd3fafd6f1b975dfe21e0c13d47f6b4c4e211026ec7c7b67/rustpy_xlsxwriter-0.6.1-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:c854197422c7cf953748e962881a78fea4c7f4462c61eaf110c170e8e602de20", size = 1569871, upload-time = "2026-08-04T04:34:11.644Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/12/fcdf3409e18189f588c3b70acde0d73aab07d2e930a2d85964a558f2ad33/rustpy_xlsxwriter-0.6.1-cp314-cp314t-win_amd64.whl", hash = "sha256:d9ab64bc68cddb4441b42490d4ea9fbc8301c6b8dc142847f7f64173ca81fc7e", size = 1310095, upload-time = "2026-08-04T04:34:13.484Z" },
+    { url = "https://files.pythonhosted.org/packages/88/30/d4416e2bbd06988473f30b65f4d86b64eec39997578443c9c1c0cd92a9fa/rustpy_xlsxwriter-0.6.1-cp315-cp315-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:933bc10bcbe28daa45e34fe1a71f14141c2cc2fffb3b3c8b9e79bb67fd78359b", size = 1459083, upload-time = "2026-08-04T04:34:14.976Z" },
+    { url = "https://files.pythonhosted.org/packages/56/40/3bf8434bfa8a3b79ce56c90404619b282ed97ee2e5382bc380e8066313a0/rustpy_xlsxwriter-0.6.1-cp315-cp315-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0d5a2d9d2650961793981acf12d4107206cf66244f86f515ef1110c7c6ce41ec", size = 1322457, upload-time = "2026-08-04T04:34:16.438Z" },
+    { url = "https://files.pythonhosted.org/packages/47/ae/d3a454ee50cdf40afd8726228fc88e903290e31c78e040c2679aeecf04b9/rustpy_xlsxwriter-0.6.1-cp315-cp315t-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:a46c93b80122ced4ad5fa5be98377695fcd8e127a7522098bd96ded01cf60776", size = 1455916, upload-time = "2026-08-04T04:34:18.001Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/29/86456a326211dfb8d6e6a4c1f05d3660b6e557f11ba39d3df3c3f9b94adf/rustpy_xlsxwriter-0.6.1-cp315-cp315t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:530d0841d02cdd96b6e99de53d9524bb0d8c4547a1e1efd70fd30686a2961116", size = 1319511, upload-time = "2026-08-04T04:34:19.398Z" },
 ]
 
 [[package]]
