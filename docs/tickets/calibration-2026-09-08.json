@@ -1,0 +1,30 @@
+{
+  "host": "http://localhost:11434",
+  "model": "qwen3.6:latest",
+  "num_ctx_requested": 32768,
+  "prompt_source": "built-in sample",
+  "probes": {
+    "version": { "ok": true, "version": "0.33.3" },
+    "capabilities": {
+      "ok": true,
+      "capabilities": ["completion", "vision", "tools", "thinking"],
+      "parameters": "temperature 1\ntop_k 20\ntop_p 0.95\nmin_p 0\npresence_penalty 1.5\nrepeat_penalty 1",
+      "context_length": { "qwen35moe.context_length": 262144 }
+    },
+    "chat(think=None)": {
+      "ok": true, "think_field_accepted": true, "returned_thinking": true,
+      "thinking_chars": 20297, "content_chars": 516,
+      "prompt_eval_count": 313, "eval_count": 5836, "seed": 20260908
+    },
+    "chat(think=False)": {
+      "ok": true, "think_field_accepted": true, "returned_thinking": false,
+      "thinking_chars": 0, "content_chars": 2740,
+      "prompt_eval_count": 315, "eval_count": 669, "seed": 20260908
+    },
+    "chat(think=True)": {
+      "ok": true, "think_field_accepted": true, "returned_thinking": true,
+      "thinking_chars": 22354, "content_chars": 427,
+      "prompt_eval_count": 313, "eval_count": 6256, "seed": 20260908
+    }
+  }
+}

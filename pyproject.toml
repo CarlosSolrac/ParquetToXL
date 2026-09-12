@@ -10,25 +10,41 @@ requires-python = ">=3.13"
 dependencies = [
     "adlfs>=2026.4",            # Azure fsspec backend. 2026.4 is where `anon` began defaulting to false; before it,
                                 # an account_name-only path takes anonymous access instead of DefaultAzureCredential.
+    "duckdb>=1.5.5",
+    "fastexcel>=0.21.0",
+    "polars>=1.44.1",
+    "pydantic>=2.13.5",
+    "python-calamine>=0.8.2",
+    "rustpy-xlsxwriter>=0.6.1",
+    "structlog>=26.1.0",
+    "tzdata>=2026.3",
     "universal-pathlib>=0.3.10",
+    "xlsxwriter>=3.2.9",
+    "xxhash>=4.0.1",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/parquet_to_xl"]
 
 [dependency-groups]
 dev = [
     "mypy>=1.18,<2",
+    "numpy>=2.5.3",
     "pre-commit>=4,<5",
     "pyright>=1.1.400,<2",       # PyPI wrapper; downloads a Node runtime on first run
     "pytest>=8,<9",
     "pytest-cov>=6,<8",
     "ruff>=0.14,<0.15",          # pinned: minor releases change which rules fire
 ]
+
+# Declared so uv installs the package itself, editable, into the project
+# environment. Without it uv treats this as a virtual project and `import
+# parquet_to_xl` only resolves by accident of sys.path.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# The distribution name normalizes to `parquettoxl`, which hatchling would not
+# find on its own under src layout; name the import package explicitly.
+packages = ["src/parquet_to_xl"]
 
 [tool.ruff]
 target-version = "py313"
@@ -115,6 +131,7 @@ reportUnknownArgumentType = false
 
 [tool.mypy]
 python_version = "3.13"
+mypy_path = "stubs"
 strict = true
 warn_unreachable = true
 disallow_any_explicit = false
@@ -125,7 +142,16 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 branch = true
+# Without this the figure covers whatever happened to be imported, tests and
+# tools included. Scope it to the library so the number means the library.
+source = ["src/parquet_to_xl"]
 
 [tool.coverage.report]
-fail_under = 90
+# No fail_under: the gate is merge-only, applied as --cov-fail-under in CI. A
+# global threshold fails every phase-level run while the package is still
+# mostly unimplemented stubs, for reasons unrelated to the change under test.
+# _style_example.py is a style reference that nothing imports and nothing calls.
+# It is not library behaviour, so measuring it measures the wrong thing -- and it
+# alone dragged the gate from 100% to 85%.
+omit = ["*/_style_example.py"]
 show_missing = true
