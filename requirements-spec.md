@@ -28,7 +28,7 @@ in a different order.
 | `fast_excel_reader` | `python-calamine` + `ThreadPoolExecutor` across sheets; one path in, one frame out |
 | Binary aggregate hash | **xxh3_128**, per-value hash summed mod 2¹²⁸ (row-order independent); **no column binding** |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
-| `ZPath` | thin hook-point subclass of `UPath`; override init only (future Azure/AWS credential wiring) |
+| `ZPath` | `zpath()` factory returning a real `UPath`, not a subclass; construction is the only seam (future Azure/AWS credential wiring) |
 | `HashedDataframe` | Pydantic **discriminated union on `identifier`**, per-hasher subclass + `version` |
 | Reload flag | named **`schema_or_data_changed`**; `True` when a converter altered data or schema |
 | Excel writer | `polars.write_excel` behind a small config-driven **writer registry** (speed first) |
@@ -47,8 +47,8 @@ in a different order.
 
 ## New dependencies
 
-Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `xxhash`,
-`structlog`, `python-calamine`, `xlsxwriter`.
+Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `adlfs`,
+`xxhash`, `structlog`, `python-calamine`, `xlsxwriter`.
 Dev: none beyond the existing `pytest` / `pytest-cov`.
 `uv.lock` is regenerated and committed (CI installs `--locked`).
 
@@ -58,7 +58,7 @@ Dev: none beyond the existing `pytest` / `pytest-cov`.
 src/parquet_to_xl/
   __init__.py
   logging.py            configure_logging(json_output: bool) -> None   (structlog + stdlib bridge)
-  paths.py              ZPath(UPath)
+  paths.py              zpath() -> UPath, ZPath alias
   hashing/
     canonical.py        encode_value(value) -> bytes                   (type-tagged, null sentinel)
     base.py             DataFrameHasherBaseClass, HashedDataframeBase, HashedDataframe alias
@@ -91,23 +91,38 @@ tests/
 
 ## Components
 
-### `ZPath` — `paths.py`
+### `zpath()` — `paths.py`
 
-Thin subclass of `upath.UPath`. Overrides construction only, as the single future seam for
+A factory function, not a subclass. Overrides construction only, as the single seam for
 cloud credentials:
 
 ```python
-class ZPath(UPath):
-    def __init__(self, *args: str | os.PathLike[str],
-                 storage_options: Mapping[str, str] | None = None,
-                 **kwargs: object) -> None:
+def zpath(*args: JoinablePathLike,
+          protocol: str | None = None,
+          storage_options: Mapping[str, object] | None = None,
+          **kwargs: object) -> UPath:
+
+ZPath: Final = zpath  # CapWords alias, so call sites read as a constructor
 ```
 
-For now it pops `storage_options`, stores it on the instance, and forwards everything else
-to `super().__init__`. No normalization, no protocol pinning. `isinstance(ZPath(...), UPath)`
-holds. Every call site in this library uses `ZPath`, never `Path`/`UPath` directly.
-UPath dispatches through `__new__`; the tricky part is threading the kwarg through both
-`__new__` and `__init__` without breaking UPath's protocol handlers — pinned by tests.
+It merges `storage_options` with the native `**kwargs` spelling (kwargs win), rejects a live
+credential object, and returns `UPath(...)`. No normalization, no protocol pinning. Every call
+site in this library uses `zpath`/`ZPath`, never `Path`/`UPath` directly; paths are *annotated*
+as `UPath`, since the factory returns whichever implementation is registered for the protocol.
+
+A subclass is not an option: since universal-pathlib 0.3.9, `UPath.__new__` raises `TypeError`
+for a subclass that is not registered for the detected protocol — for cloud URIs *and* for local
+paths — and the `_protocol_dispatch = False` escape hatch is deprecated in favour of
+`upath.extensions.ProxyUPath`. The factory is also what keeps `os.fspath()` working on local
+paths, since it returns the real `LocalPath` (a `pathlib.Path` subclass) that polars and
+calamine accept directly.
+
+Credential resolution beyond explicit arguments is left to `adlfs`, which already reads the
+`AZURE_STORAGE_*` environment variables and falls back to `DefaultAzureCredential` — the
+mechanism that makes the same code work against `az login` locally and a managed identity on a
+cluster. On PySpark, pass `str(path)` across the driver/executor boundary and rebuild with
+`zpath()` there: `UPath.__reduce__` carries storage options, so pickling a path pickles its
+credentials.
 
 ### Canonical value encoding — `hashing/canonical.py`
 
@@ -232,7 +247,7 @@ they describe what Excel will actually hold.
 ```python
 def extract_metadata_from_dataframe(
     df: pl.DataFrame,
-    path: ZPath,
+    path: UPath,
     timezones: Sequence[str],
     hashers: Sequence[DataFrameHasherBaseClass],
     conversions: Sequence[DataframeConversionBaseClass],
@@ -254,7 +269,7 @@ and returns `None`. On success returns `DataframeMetadata(frozen=True)`:
 class ExcelWriterBase(ABC):
     identifier: ClassVar[str]
     @abstractmethod
-    def write(self, df: pl.DataFrame, path: ZPath, options: Mapping[str, object]) -> None: ...
+    def write(self, df: pl.DataFrame, path: UPath, options: Mapping[str, object]) -> None: ...
 
 EXCEL_WRITERS: dict[str, type[ExcelWriterBase]] = {}
 def register_excel_writer(cls): ...            # decorator
@@ -273,7 +288,7 @@ creation speed. The fixture builder selects its writer through `ExcelWriteConfig
 
 ```python
 def fast_excel_reader(
-    path: ZPath, *, sheet_names: Sequence[str] | None = None, max_workers: int | None = None
+    path: UPath, *, sheet_names: Sequence[str] | None = None, max_workers: int | None = None
 ) -> pl.DataFrame:
 ```
 
@@ -306,7 +321,7 @@ session-scoped `conftest.py` fixture):
 
 | Module | Key assertions |
 | --- | --- |
-| `unit/test_paths.py` | `ZPath` is a `UPath`; string round-trip; `storage_options` accepted and stored; forwards to UPath without breaking local-fs ops |
+| `unit/test_paths.py` | `zpath()` returns the registered implementation; local paths satisfy `os.fspath()`; string round-trip; `storage_options` accepted via mapping and kwargs and inherited by derived paths; pickle round-trip; live credential objects rejected; a direct `UPath` subclass raises |
 | `unit/test_canonical.py` | type tags; null sentinel distinct; `NaN` / `-0.0` normalized; float `0.0` ≠ `""`; date/datetime/time stable |
 | `unit/test_binary_aggregate.py` | row-shuffle → same digest; one cell changed → different digest; dataframe digest == mod-2¹²⁸ sum of column digests; concat of halves == whole; `digest_hex` is 32 lowercase hex; discriminated-union `model_validate`/`model_dump` round-trip |
 | `unit/test_conversion_none.py` | frame unchanged; `schema_or_data_changed is False`; metadata columns mirror input |
@@ -321,7 +336,7 @@ session-scoped `conftest.py` fixture):
 ## Verification
 
 ```bash
-uv add polars pydantic universal-pathlib xxhash structlog python-calamine xlsxwriter
+uv add polars pydantic universal-pathlib adlfs xxhash structlog python-calamine xlsxwriter
 uv lock
 
 # per-unit, test-first
@@ -342,7 +357,7 @@ under `tests/fixtures/data/` and a second run reuses them (no regeneration).
 ## Out of scope
 
 Nested dtypes (`List`, `Struct`, `Array`, `Object`); Excel formatting/styling; additional
-hashers or converters beyond the two named; real Azure/AWS credential wiring in `ZPath`
+hashers or converters beyond the two named; real Azure/AWS credential wiring in `zpath()`
 (hook only); reading `.xls`; streaming/lazy frames; a CLI (`main.py` is removed).
 
 ## Execution notes
