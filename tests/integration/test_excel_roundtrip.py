@@ -21,15 +21,19 @@ from typing import TYPE_CHECKING, Any
 import polars as pl
 import pytest
 
+from parquet_to_xl.conversion.none import DataframeConversionNone
 from parquet_to_xl.conversion.to_excel import DataframeConversionToExcel
 from parquet_to_xl.excel.writer import ExcelWriteConfig, get_excel_writer
 from parquet_to_xl.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
+from parquet_to_xl.metadata.extract import extract_metadata_from_dataframe
 from parquet_to_xl.paths import ZPath
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from upath import UPath
+
+    from parquet_to_xl.metadata.dataframe import DataframeMetadata
 
 FIXTURE_STEMS: list[str] = ["parquet_a", "parquet_b"]
 
@@ -49,7 +53,7 @@ def _digest(frame: pl.DataFrame) -> str:
     return DataFrameHasherBinaryAggregateHash().hash_dataframe(frame).digest_hex
 
 
-def _same(left: Any, right: Any) -> bool:
+def _same(left: object, right: object) -> bool:
     if isinstance(left, float) and isinstance(right, float) and math.isnan(left) and math.isnan(right):
         return True
     try:
@@ -104,3 +108,31 @@ def test_the_conversion_settles_before_the_workbook_is_written(stem: str, fixtur
     assert conversion.metadata_of_converted_dataframe(once, []).schema_or_data_changed is False
     target: UPath = ZPath(str(tmp_path / f"{stem}-settled.xlsx"))
     assert _digest(_write_and_read(twice, target)) == _digest(once)
+
+
+@pytest.mark.parametrize("stem", FIXTURE_STEMS)
+def test_the_digest_extract_records_is_the_one_a_workbook_reproduces(stem: str, fixture_files: dict[str, Path], tmp_path: Path) -> None:
+    # The spec's headline claim, minus the split-workbook half: the ToExcel digest written
+    # into a file's metadata is exactly what you get back by writing that file's frame to a
+    # workbook and hashing what reads out. Every other test here checks one side of that;
+    # this is the only one that joins them.
+    source_path: Path = fixture_files[stem]
+    source: pl.DataFrame = pl.read_parquet(source_path)
+    hashers: list[DataFrameHasherBinaryAggregateHash] = [DataFrameHasherBinaryAggregateHash()]
+    recorded: DataframeMetadata | None = extract_metadata_from_dataframe(
+        source,
+        ZPath(str(source_path)),
+        [],
+        hashers,
+        [DataframeConversionNone(), DataframeConversionToExcel()],
+    )
+    assert recorded is not None
+
+    to_excel_digest: str = recorded.column_metadata_of_conversions[1].dataframe_hashes[0].digest_hex
+    target: UPath = ZPath(str(tmp_path / f"{stem}-recorded.xlsx"))
+    reproduced: str = _digest(_write_and_read(_converted(source_path), target))
+    assert reproduced == to_excel_digest
+
+    # And the source digest must differ from it, or the conversion would be modelling nothing.
+    source_digest: str = recorded.source_columns_metadata.dataframe_hashes[0].digest_hex
+    assert source_digest != to_excel_digest
