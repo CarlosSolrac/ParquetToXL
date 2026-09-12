@@ -327,10 +327,14 @@ class PolarsExcelWriter(ExcelWriterBase):
             [pl.nth(index).dt.to_string(MICROSECOND_TIME_FORMAT).alias(column) for index, column in enumerate(df.columns) if isinstance(df.schema[column], pl.Time)],
         )
         workbook: xlsxwriter.Workbook = xlsxwriter.Workbook(str(path), XLSXWRITER_WORKBOOK_OPTIONS)
-        try:
-            textual.write_excel(workbook=workbook, worksheet=name, include_header=True, autofit=False)
-        finally:
-            workbook.close()
+        # write_excel never touches `path` itself: xlsxwriter buffers everything in memory and
+        # only writes to disk inside `close()`. Closing unconditionally -- e.g. in a `finally`
+        # -- would still persist an empty or partial workbook to `path` after a failure here.
+        # Measured with an invalid sheet name: write_excel raised, but the finally still ran and
+        # replaced an existing, readable workbook with an empty one. Closing only on success
+        # leaves the destination untouched if writing fails.
+        textual.write_excel(workbook=workbook, worksheet=name, include_header=True, autofit=False)
+        workbook.close()
 
 
 class ExcelWriteConfig(BaseModel):

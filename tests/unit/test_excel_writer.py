@@ -271,6 +271,26 @@ def test_polars_refuses_more_rows_than_a_worksheet_holds(tmp_path: Path, monkeyp
     assert not target.exists()
 
 
+def test_a_failed_polars_write_does_not_corrupt_an_existing_workbook(tmp_path: Path) -> None:
+    # Regression, from a Codex review. A sheet name is not validated up front, so an invalid
+    # one -- "bad/name" -- reaches write_excel, which raises after the workbook has already
+    # been opened at the destination path. The write's `finally: workbook.close()` still
+    # persisted an empty workbook there regardless of the exception, replacing a previously
+    # good report with nothing. Measured: a good workbook followed by a failed rewrite left an
+    # unreadable file where a readable one used to be.
+    frame: pl.DataFrame = _converted()
+    target: UPath = ZPath(str(tmp_path / "existing.xlsx"))
+    PolarsExcelWriter().write(frame, target, {})
+    original: bytes = target.read_bytes()
+
+    with pytest.raises(Exception, match="Invalid Excel character"):
+        PolarsExcelWriter().write(frame, target, {"sheet_name": "bad/name"})
+
+    assert target.read_bytes() == original
+    back: pl.DataFrame = _read_back(target, dict(frame.schema))
+    assert back.to_dicts() == frame.to_dicts()
+
+
 @pytest.mark.parametrize("identifier", ["rustpy-xlsxwriter", "polars-xlsxwriter"])
 def test_an_empty_column_name_is_refused_by_both_writers(identifier: str, tmp_path: Path) -> None:
     # Regression, from a Codex review, reproduced differently than reported: it is not
