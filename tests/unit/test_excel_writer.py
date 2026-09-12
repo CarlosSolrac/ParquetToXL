@@ -28,6 +28,8 @@ from parquet_to_xl.excel.writer import (
 from parquet_to_xl.paths import ZPath
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from upath import UPath
 
 
@@ -70,6 +72,7 @@ def test_the_registry_resolves_an_identifier_to_an_instance() -> None:
 
 
 def test_an_unknown_identifier_raises_and_names_what_is_registered() -> None:
+    caught: pytest.ExceptionInfo[KeyError]
     with pytest.raises(KeyError) as caught:
         get_excel_writer("no-such-writer")
     assert "rustpy-xlsxwriter" in str(caught.value)
@@ -80,7 +83,7 @@ def test_registering_a_duplicate_identifier_raises() -> None:
     class _Clashing(ExcelWriterBase):
         identifier: ClassVar[str] = "rustpy-xlsxwriter"
 
-        def write(self, df: pl.DataFrame, path: UPath, options: dict[str, object]) -> None:
+        def write(self, df: pl.DataFrame, path: UPath, options: Mapping[str, object]) -> None:
             """Never called."""
 
     with pytest.raises(ValueError, match="already registered"):
