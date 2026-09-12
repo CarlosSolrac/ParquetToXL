@@ -1,8 +1,8 @@
 {
-  "permissions": {
-    "allow": [
-      "Read(//home/carlos/.claude/**)",
-      "Bash(uv sync *)"
-    ]
-  }
+    "permissions": {
+        "allow": [
+            "Read(//home/carlos/.claude/**)",
+            "Bash(uv sync *)"
+        ]
+    }
 }
