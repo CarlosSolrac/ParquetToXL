@@ -107,12 +107,29 @@ Derived from the test-module table at `requirements-spec.md`, which is already c
 | --- | --- | --- |
 | 0 · Prereq | deps + `[build-system]` + src layout + delete `main.py`; typing/stubs audit; `configure_logging`; golden style module + `conftest.py` | done |
 | 1 · Canonical + hashing | dtype flag helpers + `ColumnScalar`; `encode_value`; hash Pydantic models + union round-trip; hasher ABC; `hash_column`; `hash_dataframe` | done |
-| 2 · Metadata models | `DataframeColumnMetadata`; `DataframeColumnsMetadata`; `DataframeMetadata`; builder/flags; builder/stats; builder/hash wiring | |
-| 3 · Conversions | `ConvertedDataframe` + base + `None`; ToExcel numeric; boolean; string truncation; binary→hex; categorical + duration; **idempotency + `schema_or_data_changed`** | |
-| 4 · Extract | happy path; tz dict + `modified_utc`; failure → `None` + `logger.exception` | |
-| 5 · Excel | writer registry; `ExcelWriteConfig`; `PolarsExcelWriter.write`; `fast_excel_reader` | |
-| 6 · Fixtures | per-dtype column builders; edge-case row table; `parquet_b` one-cell delta; `ensure_fixtures()`; Excel file generation | |
-| 7 · Integration | `ZPath`; headline round-trip test; reader parallelization benchmark | |
+| 2 · Metadata models | `DataframeColumnMetadata`; `DataframeColumnsMetadata`; `DataframeMetadata`; builder/flags; builder/stats; builder/hash wiring | done |
+| 3 · Conversions | `ConvertedDataframe` + base + `None`; ToExcel numeric; boolean; string truncation; binary→hex; categorical + duration; **idempotency + `schema_or_data_changed`** | done |
+| 4 · Extract | happy path; tz dict + `modified_utc`; failure → `None` + `logger.exception` | done |
+| 5 · Excel | writer registry; `ExcelWriteConfig`; `RustpyExcelWriter` (default) + `PolarsExcelWriter`; `fast_excel_reader` | writers done; **reader pending** |
+| 6 · Fixtures | per-dtype column builders; edge-case row table; `parquet_b` one-cell delta; `ensure_fixtures()`; Excel file generation | done |
+| 7 · Integration | `ZPath`; headline round-trip test; reader parallelization benchmark | `ZPath` done; round trip **half done**; benchmark pending |
+
+### What the phases actually cost, in hindsight
+
+Worth recording, because the sequencing notes below were written before any of it was built
+and two of them turned out to be wrong:
+
+- **`ZPath` is a phase 4 prerequisite, not a phase 7 unit.** `extract` takes one, and so do
+  the phase 5 writer and reader. It was built during phase 4. Its open question resolved the
+  opposite way from the guess: the problem was not threading `storage_options` through
+  `__new__` and `__init__`, it was that the spec's subclass cannot be constructed at all.
+- **The expensive part of phase 3 was not the cast table.** The per-dtype rules were
+  mechanical, as predicted. What cost time was discovering, by measurement, that the table
+  did not model what a workbook actually does -- and the amendments that followed.
+- **Excel writers fail soft.** Seven rounds of review on one module, each finding a case
+  where a writer warned, discarded data, and returned successfully. That is the single
+  biggest source of defects in this project so far, and none of it was predictable from the
+  documentation.
 
 ### Sequencing notes
 

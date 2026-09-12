@@ -9,7 +9,8 @@ from typing import Any
 
 import pytest
 import structlog
-from fixtures.generate import ensure_fixtures
+
+from tests.fixtures.generate import ensure_fixtures
 
 
 @pytest.fixture(autouse=True)

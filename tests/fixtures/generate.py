@@ -82,8 +82,9 @@ ROW_COUNT: int = 1000
 EDGE_ROW_COUNT: int = 48
 """Rows 0 to 47 hold the per-dtype edge cases.
 
-Sized by the widest column rather than chosen: the string column carries 41 distinct cases
-and ``_padded`` truncates anything longer than this, which would silently drop the tail.
+Sized by the widest column rather than chosen: the string column carries 42 distinct cases
+and ``padded`` truncates anything longer than this, which would silently drop the tail.
+``tests/unit/test_fixtures.py`` fails before a column fills every slot.
 """
 
 DELTA_ROW: int = EDGE_ROW_COUNT
@@ -158,7 +159,7 @@ class _Lcg:
         return (self.state >> 16) % bound
 
 
-def _padded[T](edges: list[T]) -> list[T]:
+def padded[T](edges: list[T]) -> list[T]:
     """Cycle a column's edge values up to ``EDGE_ROW_COUNT``.
 
     Columns carry different numbers of interesting values, but the delta row has to sit at
@@ -202,7 +203,7 @@ def _integer_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
         dtype, low, high = spec[name]
         # Both bounds matter: the extremes are exactly where a float64 Excel cell stops
         # being able to hold the value, which is what uint64 demonstrates.
-        values: list[int | None] = _padded([low, high, 0 if low < 0 else 1, None, low + 1, high - 1])
+        values: list[int | None] = padded([low, high, 0 if low < 0 else 1, None, low + 1, high - 1])
         values.append(1 if delta else 0)
         while len(values) < ROW_COUNT:
             values.append(low + rng.below(high - low + 1))
@@ -225,7 +226,7 @@ def _float_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
     for name in ("float32", "float64"):
         dtype: pl.DataType = pl.Float32() if name == "float32" else pl.Float64()
         largest: float = 3.4028234663852886e38 if name == "float32" else 1.7976931348623157e308
-        values: list[float | None] = _padded([0.0, -0.0, float("nan"), float("inf"), float("-inf"), 1.5, None, largest, -largest])
+        values: list[float | None] = padded([0.0, -0.0, float("nan"), float("inf"), float("-inf"), 1.5, None, largest, -largest])
         values.append(2.5 if delta else 1.25)
         while len(values) < ROW_COUNT:
             values.append(rng.below(1000000) / 1000.0)
@@ -247,11 +248,11 @@ def _temporal_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
     Returns:
         The columns, keyed by name.
     """
-    dates: list[dt.date | None] = _padded([dt.date(1970, 1, 1), dt.date(1899, 12, 31), dt.date(1900, 1, 1), dt.date(9999, 12, 31), None, dt.date(2000, 2, 29), dt.date(2262, 4, 11)])
+    dates: list[dt.date | None] = padded([dt.date(1970, 1, 1), dt.date(1899, 12, 31), dt.date(1900, 1, 1), dt.date(9999, 12, 31), None, dt.date(2000, 2, 29), dt.date(2262, 4, 11)])
     dates.append(dt.date(2024, 6, 1) if delta else dt.date(2024, 5, 31))
-    times: list[dt.time | None] = _padded([dt.time(0, 0), dt.time(23, 59, 59, 999999), None, dt.time(12, 0), dt.time(0, 0, 0, 1)])
+    times: list[dt.time | None] = padded([dt.time(0, 0), dt.time(23, 59, 59, 999999), None, dt.time(12, 0), dt.time(0, 0, 0, 1)])
     times.append(dt.time(6, 30) if delta else dt.time(6, 29))
-    stamps: list[dt.datetime | None] = _padded(
+    stamps: list[dt.datetime | None] = padded(
         [
             dt.datetime(1970, 1, 1, tzinfo=dt.UTC),
             dt.datetime(1899, 12, 31, tzinfo=dt.UTC),
@@ -263,7 +264,7 @@ def _temporal_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
     )
     stamps.append(dt.datetime(2024, 6, 1, tzinfo=dt.UTC) if delta else dt.datetime(2024, 5, 31, tzinfo=dt.UTC))
     # Duration("us") is int64 microseconds, so timedelta.max does not fit; 100000 days does.
-    spans: list[dt.timedelta | None] = _padded([dt.timedelta(0), dt.timedelta(microseconds=1), dt.timedelta(microseconds=-1), dt.timedelta(days=100000), dt.timedelta(days=-100000), None, dt.timedelta(seconds=1)])
+    spans: list[dt.timedelta | None] = padded([dt.timedelta(0), dt.timedelta(microseconds=1), dt.timedelta(microseconds=-1), dt.timedelta(days=100000), dt.timedelta(days=-100000), None, dt.timedelta(seconds=1)])
     spans.append(dt.timedelta(hours=2) if delta else dt.timedelta(hours=1))
     while len(dates) < ROW_COUNT:
         dates.append(dt.date(1970, 1, 1) + dt.timedelta(days=rng.below(30000)))
@@ -291,9 +292,9 @@ def _other_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
     Returns:
         The columns, keyed by name.
     """
-    flags: list[bool | None] = _padded([True, False, None])
+    flags: list[bool | None] = padded([True, False, None])
     flags.append(bool(delta))
-    texts: list[str | None] = _padded(
+    texts: list[str | None] = padded(
         [
             # Plain and structural cases.
             "",
@@ -353,11 +354,11 @@ def _other_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
         ]
     )
     texts.append("delta-b" if delta else "delta-a")
-    blobs: list[bytes | None] = _padded([b"", b"\x00", b"\xff\xfe", None, bytes(range(256)), b"\x00\x01\x02"])
+    blobs: list[bytes | None] = padded([b"", b"\x00", b"\xff\xfe", None, bytes(range(256)), b"\x00\x01\x02"])
     blobs.append(b"\xbb" if delta else b"\xaa")
-    numbers: list[Decimal | None] = _padded([Decimal("0.0000"), Decimal("1.2500"), Decimal("-9.9900"), None, Decimal("99999999999999.9999"), Decimal("-99999999999999.9999")])
+    numbers: list[Decimal | None] = padded([Decimal("0.0000"), Decimal("1.2500"), Decimal("-9.9900"), None, Decimal("99999999999999.9999"), Decimal("-99999999999999.9999")])
     numbers.append(Decimal("2.5000") if delta else Decimal("1.5000"))
-    labels: list[str | None] = _padded(["alpha", "beta", None, "gamma", ""])
+    labels: list[str | None] = padded(["alpha", "beta", None, "gamma", ""])
     labels.append("delta" if delta else "epsilon")
     while len(flags) < ROW_COUNT:
         flags.append(rng.below(2) == 0)

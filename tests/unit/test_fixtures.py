@@ -15,14 +15,15 @@ import math
 from typing import TYPE_CHECKING, Any
 
 import polars as pl
-from fixtures.generate import (
+
+from tests.fixtures.generate import (
     DELTA_ROW,
     EDGE_ROW_COUNT,
     PART_ROW_COUNT,
     ROW_COUNT,
     SLICES,
-    _padded,
     build_frame,
+    padded,
 )
 
 if TYPE_CHECKING:
@@ -42,8 +43,8 @@ def _same(left: object, right: object) -> bool:
 
 
 def test_padded_returns_exactly_the_edge_row_count() -> None:
-    assert len(_padded(["only"])) == EDGE_ROW_COUNT
-    assert _padded(["a", "b"])[:4] == ["a", "b", "a", "b"]
+    assert len(padded(["only"])) == EDGE_ROW_COUNT
+    assert padded(["a", "b"])[:4] == ["a", "b", "a", "b"]
 
 
 def test_padded_silently_drops_anything_past_the_cap() -> None:
@@ -51,9 +52,9 @@ def test_padded_silently_drops_anything_past_the_cap() -> None:
     # than EDGE_ROW_COUNT loses the tail with no error at all, and the fixture would quietly
     # stop testing what its source says it tests. The guard against that is the next test.
     oversized: list[int] = list(range(EDGE_ROW_COUNT + 5))
-    padded: list[int] = _padded(oversized)
-    assert len(padded) == EDGE_ROW_COUNT
-    assert set(oversized) - set(padded) == set(range(EDGE_ROW_COUNT, EDGE_ROW_COUNT + 5))
+    kept: list[int] = padded(oversized)
+    assert len(kept) == EDGE_ROW_COUNT
+    assert set(oversized) - set(kept) == set(range(EDGE_ROW_COUNT, EDGE_ROW_COUNT + 5))
 
 
 def test_the_widest_column_still_has_headroom_under_the_cap() -> None:
@@ -157,7 +158,7 @@ def test_regenerating_reuses_the_files_already_on_disk(fixture_files: dict[str, 
     # ensure_fixtures is called on every session; rewriting twenty files each time would
     # make the suite slower and the workbooks churn, since two of the three writers stamp a
     # creation time into them.
-    from fixtures.generate import ensure_fixtures
+    from tests.fixtures.generate import ensure_fixtures
 
     before: dict[str, float] = {name: path.stat().st_mtime_ns for name, path in fixture_files.items()}
     again: dict[str, Path] = ensure_fixtures()

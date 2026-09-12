@@ -1,12 +1,38 @@
 # ParquetToXL — Dataframe Metadata, Hashing & Fast Excel I/O
 
-**Status:** design approved 2026-09-06; implementation pending (separate session).
+**Status:** design approved 2026-09-06. Implemented through phase 5 except
+`fast_excel_reader`; see *Implementation status* below. Amended repeatedly against
+measurement -- every amendment records what was measured and why the original text did not
+survive contact with the libraries.
+
+## Implementation status
+
+| Phase | State | Notes |
+| --- | --- | --- |
+| 0 · Prereq | **done** | deps, `[build-system]`, src layout, `configure_logging`, golden style module |
+| 1 · Canonical + hashing | **done** | `encode_value` / `encode_series`, tags `0x00`-`0x0C`, additive xxh3-128 |
+| 2 · Metadata models | **done** | the three models and `build_columns_metadata` |
+| 3 · Conversions | **done** | base, `None`, `ToExcel` at version 2.0, idempotency pinned |
+| 4 · Extract | **done** | `extract_metadata_from_dataframe`, five failure modes pinned |
+| 5 · Excel | **writers done, reader pending** | registry, `ExcelWriteConfig`, both writers. `fast_excel_reader` is the one unbuilt unit |
+| 6 · Fixtures | **done** | `generate.py`, 20 files across three writers, invariants under test |
+| 7 · Integration | **partly done** | `ZPath` landed early as a phase 4 prerequisite; the single-workbook half of the headline test is in `integration/test_excel_roundtrip.py`. The split-workbook half and the reader benchmark wait on the reader |
+
+At the time of writing: 240 tests, 100% statement and 100% branch coverage, all five
+pre-commit hooks, no suppressions anywhere in `src/`, `tests/` or `stubs/`.
+
+**What is left.** `fast_excel_reader`, and the headline test's split-workbook half that
+depends on it. The reader also inherits two measured problems that are its to solve, not the
+writers': a trailing all-null row leaves no trace in a sheet and must be restored from
+`value_count`, and `pl.read_excel` raises `DuplicateError` on selector-shaped column names
+(`*`, `^...$`) that both writers store correctly.
 
 ## Context
 
 `ParquetToXL` is a Python 3.13 project (uv, Ruff strict rule set, pyright + mypy strict,
-pytest with a 90% branch-coverage gate, `tools/check_declarations.py`). At the time this
-spec was written there was no runtime code and no runtime dependencies.
+pytest with a merge-only coverage gate, `tools/check_declarations.py`). At the time this
+spec was written there was no runtime code and no runtime dependencies; the package now
+sits at 100% statement and 100% branch coverage while CI still only enforces 90.
 
 The goal is a library that, given a Polars DataFrame loaded from a Parquet file, produces a
 validated metadata record describing every column, computes **order-independent** content
@@ -28,10 +54,10 @@ in a different order.
 | `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given `schema_overrides` it returns the model's dtypes directly instead of a column of mixed Python types |
 | Binary aggregate hash | **xxh3_128**, per-value hash summed mod 2¹²⁸ (row-order independent); **no column binding** |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
-| `ZPath` | thin hook-point subclass of `UPath`; override init only (future Azure/AWS credential wiring) |
+| `ZPath` | **a module-level binding `ZPath = UPath`**, not a subclass. Amended on measurement: UPath 0.3.10 picks one concrete class per protocol from a registry, so a bare `class ZPath(UPath)` cannot be constructed at all. UPath now accepts `**storage_options` natively, so the seam survives as one name in one place |
 | `HashedDataframe` | Pydantic **discriminated union on `identifier`**, per-hasher subclass + `version` |
 | Reload flag | named **`schema_or_data_changed`**; `True` when a converter altered data or schema |
-| Excel writer | `polars.write_excel` behind a small config-driven **writer registry** (speed first) |
+| Excel writer | a config-driven **writer registry**, default **`rustpy-xlsxwriter`**. Amended on measurement: `polars.write_excel` is five times slower than DuckDB at 50k rows and is **not round-trip safe** -- it loses `Float64` precision and shifts 1900-01-01 by a day. It stays registered as the pure-Python fallback and as a second implementation that fails differently |
 | Package | `src/parquet_to_xl/`, src layout; remove the empty `main.py` |
 | Build backend | add `[build-system]` = `hatchling` + `[tool.hatch.build.targets.wheel] packages = ["src/parquet_to_xl"]`; uv installs the package editable so tests run against the installed package |
 | Method | **TDD** — test first for every unit, watch it fail, then implement |
@@ -44,7 +70,10 @@ in a different order.
 - ToExcel also models three losses a real round trip inflicts: `""` → null, `NaN`/`±inf` → null,
   and `Datetime` truncated to whole seconds. See the conversion section.
 - The two 500-row Excel files are rows `[0:500]` and `[500:1000]` of the 1000-row frame.
-- Fixture RNG is stdlib `random` seeded with a module constant (no numpy dependency).
+- Fixture RNG is a small linear congruential generator written out in `generate.py`, not
+  stdlib `random`. Amended: `random` trips Ruff `S311`, which this project does not
+  suppress, and the standard library does not promise identical streams across versions --
+  which byte-identical regeneration needs. numpy is still not a runtime dependency.
 - Excel string cell limit treated as 32,767 characters.
 
 ## New dependencies
@@ -66,7 +95,7 @@ do carry a system database, so omitting it produces the worst kind of bug: green
 broken on a developer's machine. Pinning it also makes conversions depend on the
 lockfile rather than on whatever tz database version the host happens to ship, which
 matters for a library whose entire purpose is comparing content digests across machines.
-Dev: none beyond the existing `pytest` / `pytest-cov`.
+Dev: `pytest`, `pytest-cov`, `ruff`, `pyright`, `mypy`, `pre-commit`, `numpy`.
 `uv.lock` is regenerated and committed (CI installs `--locked`).
 
 ## Package layout
@@ -75,7 +104,8 @@ Dev: none beyond the existing `pytest` / `pytest-cov`.
 src/parquet_to_xl/
   __init__.py
   logging.py            configure_logging(json_output: bool) -> None   (structlog + stdlib bridge)
-  paths.py              ZPath(UPath)
+  paths.py              ZPath = UPath                                  (a binding, not a subclass)
+  py.typed                                                             (marker; the package is strict-typed)
   hashing/
     canonical.py        encode_value(value) -> bytes                   (type-tagged, null sentinel)
     __init__.py         HashedDataframe alias                          (see note below)
@@ -93,16 +123,22 @@ src/parquet_to_xl/
     none.py             DataframeConversionNone
     to_excel.py         DataframeConversionToExcel
   excel/
-    writer.py           ExcelWriterBase, registry, PolarsExcelWriter, ExcelWriteConfig
+    writer.py           ExcelWriterBase, registry, RustpyExcelWriter (default),
+                        PolarsExcelWriter, ExcelWriteConfig
     fast_reader.py      fast_excel_reader(path, *, sheet_names=None, max_workers=None) -> pl.DataFrame
+stubs/                  hand-written stubs for dependencies pyright strict cannot use
+  xlsxwriter/           Workbook construction; the package ships no types
+  rustpy_xlsxwriter/    write_worksheet; ships a .pyi but no py.typed marker
+  python_calamine/      narrows one declaration typed with a bare os.PathLike
 tests/
-  conftest.py
+  conftest.py           session-scoped ensure_fixtures() fixture
   fixtures/
     generate.py         deterministic parquet + excel builder
     data/               generated, gitignored
   unit/                  one module per unit above
   integration/
-    test_excel_hash_roundtrip.py
+    test_excel_roundtrip.py        built: the single-workbook half
+    test_excel_hash_roundtrip.py   pending: the split-workbook headline test
 ```
 
 `tests/fixtures/data/` is added to `.gitignore`. `main.py` is deleted.
@@ -412,15 +448,16 @@ session-scoped `conftest.py` fixture):
 | `unit/test_conversion_to_excel.py` | numerics/decimal/float32 → `Float64`; bool → `-1.0`/`0.0`; long string truncated + flag `True`; already-Excel-safe frame → flag `False`; duration → seconds; categorical → string; binary → hex |
 | `unit/test_metadata_builder.py` | dtype flags correct per dtype; stats (`min/max/value_count/unique_count/null_count`) match Polars; one `HashedDataframe` per hasher per column |
 | `unit/test_extract_metadata.py` | happy path fills every field; `modified_utc` tz-aware; per-tz dict keyed by input names; one wrapper per conversion; unreadable path / bad input → `None` + logged |
-| `unit/test_excel_writer.py` | registry resolves default; unknown identifier raises; `PolarsExcelWriter` output is calamine-readable; `ExcelWriteConfig` defaults |
+| `unit/test_excel_writer.py` | registry resolves the default and refuses a duplicate identifier; unknown identifier raises; the **default writer** round-trips the model exactly while `PolarsExcelWriter` is held only to shape; both refuse what they cannot represent; `ExcelWriteConfig` defaults to `rustpy-xlsxwriter` |
 | `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in order; `max_workers=1` == default |
-| `unit/test_fixtures.py` | regeneration byte-identical; `parquet_a` vs `parquet_b` differ in exactly one cell per column; all 8 files exist after `ensure_fixtures()` |
+| `unit/test_fixtures.py` | Parquet regeneration byte-identical; `parquet_a` vs `parquet_b` differ in exactly one cell per column; all **20** files exist after `ensure_fixtures()` and a second call reuses them; `_padded` truncation pinned, with an early warning before a column fills every edge slot |
 | `integration/test_excel_hash_roundtrip.py` | **headline:** for each Parquet file — build `DataframeMetadata` (hashers `[BinaryAggregateHash]`, conversions `[None, ToExcel]`); read `*_full.xlsx` with `fast_excel_reader`, run it through `ToExcel._convert`, hash; assert it equals the ToExcel wrapper's dataframe digest. Then read `*_part1`+`*_part2`, concat in reverse order, same path, assert equal to that digest. Assert `parquet_a` Excel digest ≠ `parquet_b` Excel digest. |
 
 ## Verification
 
 ```bash
-uv add polars pydantic universal-pathlib xxhash structlog python-calamine xlsxwriter
+uv add polars pydantic universal-pathlib xxhash structlog tzdata \
+       rustpy-xlsxwriter fastexcel python-calamine xlsxwriter duckdb
 uv lock
 
 # per-unit, test-first
@@ -440,6 +477,12 @@ The coverage threshold is **merge-only**. `[tool.coverage.run] source` scopes th
 report without failing while the package is still largely unimplemented stubs. CI adds
 `--cov-fail-under=90` on the pull-request job.
 
+**That 90 is now well below what the suite achieves.** Every module in `src/parquet_to_xl`
+is at 100% statement and 100% branch, and has been since phase 2, so the gate no longer
+catches a regression until nearly a tenth of the package stops being exercised. Raising it
+to 100 is a one-line CI change and is recommended, but it is a CI edit and so is left to a
+deliberate decision rather than folded into an implementation commit.
+
 That 90 is coverage.py's **combined** statement-and-branch figure when `branch = true` --
 `(executed statements + taken branches) / (total statements + total branches)` -- not two
 separate thresholds. A single `fail_under` cannot express "90% statement and 85% branch";
@@ -447,8 +490,9 @@ enforcing those independently would mean parsing `coverage json` in CI. This par
 replaces the earlier "≥ 90% stmt / 85% branch on changed code" note, which described a gate
 that could not be configured as written.
 
-End-to-end check: after `uv run pytest tests/integration -q`, confirm the 8 files exist
-under `tests/fixtures/data/` and a second run reuses them (no regeneration).
+End-to-end check: after `uv run pytest tests/integration -q`, confirm the 20 files exist
+under `tests/fixtures/data/` and a second run reuses them (no regeneration). Both are
+asserted by `unit/test_fixtures.py` rather than left to inspection.
 
 ## Out of scope
 
