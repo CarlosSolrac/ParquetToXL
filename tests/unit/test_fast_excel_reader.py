@@ -221,6 +221,7 @@ def test_a_cell_the_dtype_cannot_represent_is_refused(tmp_path: Path) -> None:
     sheet.write_row(2, 0, ["changed", "b"])
     book.close()
 
+    caught: pytest.ExceptionInfo[ValueError]
     with pytest.raises(ValueError, match="indistinguishable from an empty cell") as caught:
         fast_excel_reader(ZPath(str(target)), schema=SIMPLE_SCHEMA)
     assert "'num' row 1" in str(caught.value)
@@ -247,6 +248,7 @@ def test_many_dropped_cells_are_counted_in_full_but_listed_in_part(tmp_path: Pat
         sheet.write_row(index, 0, [f"bad{index}", "t"])
     book.close()
 
+    caught: pytest.ExceptionInfo[ValueError]
     with pytest.raises(ValueError, match="holds 8 cell") as caught:
         fast_excel_reader(ZPath(str(target)), schema=SIMPLE_SCHEMA)
     assert "and 3 more" in str(caught.value)
@@ -266,6 +268,7 @@ def test_a_value_in_a_null_column_is_refused(tmp_path: Path) -> None:
     book.close()
 
     schema: dict[str, pl.DataType] = {"keep": pl.Float64(), "empty": pl.Null()}
+    caught: pytest.ExceptionInfo[ValueError]
     with pytest.raises(ValueError, match="the schema says are empty") as caught:
         fast_excel_reader(ZPath(str(target)), schema=schema)
     assert "'empty' row 1" in str(caught.value)
