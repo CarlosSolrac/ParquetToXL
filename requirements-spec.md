@@ -1,9 +1,8 @@
 # ParquetToXL — Dataframe Metadata, Hashing & Fast Excel I/O
 
-**Status:** design approved 2026-09-06. Every phase implemented except the JSON sidecar,
-whose schema is still undesigned; see *Implementation status* below. Amended repeatedly
-against measurement -- every amendment records what was measured and why the original text
-did not survive contact with the libraries.
+**Status:** design approved 2026-09-06, fully implemented. Amended repeatedly against
+measurement -- every amendment records what was measured and why the original text did not
+survive contact with the libraries.
 
 ## Implementation status
 
@@ -17,12 +16,12 @@ did not survive contact with the libraries.
 | 5 · Excel | **done** | registry, `ExcelWriteConfig`, both writers, `fast_excel_reader` |
 | 6 · Fixtures | **done** | `generate.py`, 20 files across three writers, invariants under test |
 | 7 · Integration | **done** | `ZPath` landed early as a phase 4 prerequisite; `integration/test_excel_roundtrip.py` covers the single-workbook half, and `integration/test_excel_hash_roundtrip.py` is the headline test including the split-workbook half. Reader benchmark measured and recorded in the findings |
+| 8 · Sidecar | **done** | the unread statistics removed, `SidecarDocument`, the store registry and `JsonSidecarStore`, `integration/test_sidecar_roundtrip.py` |
 
-After the 2026-09-12 reader and conversion-identity work: 298 tests, 100% statement and
-100% branch coverage. Ruff, formatting, declarations, pyright and mypy pass.
+After the sidecar work: 326 tests, 100% statement and 100% branch coverage. Ruff,
+formatting, pyright and mypy pass, and the CI coverage gate is now `--cov-fail-under=100`.
 
-**What is left.** The JSON sidecar: its schema, filename convention, and read/write API,
-none of which have been agreed. Nothing else in this document is unbuilt.
+**Nothing in this document is unbuilt.**
 
 The reader's two inherited problems are both closed. A trailing all-null run leaves no trace
 in a sheet and is restored from `value_count` through the reader's `expected_rows`; measured,
@@ -57,7 +56,7 @@ in a different order.
 | Dtype coverage | **all scalar Polars dtypes**, no nested types |
 | `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets, **one handle per job**; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given the target dtypes it returns the model's dtypes directly instead of a column of mixed Python types. Amended again on measurement: called through `pl.read_excel` it cannot read selector-shaped column names at all, and a shared handle raises `Already borrowed` across threads |
 | Binary aggregate hash | **xxh3_128 v2**; aggregate cell hashes and hashes of each row's ordered cell hashes mod 2¹²⁸. Row order may change; column order and row relationships are bound. Column names are not hashed. |
-| Persistence | **one JSON sidecar per Parquet file**. JSON schema, filename convention, and read/write API remain to be defined; metadata is not embedded in Parquet. |
+| Persistence | **one JSON sidecar per Parquet file**, named by appending `.json` to the whole source filename, written through a store registry whose only member is `JsonSidecarStore`; metadata is not embedded in Parquet. Amended on measurement: the record could not be serialized at all until the column extremes were removed -- see *Column metadata* |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
 | `ZPath` | **a `zpath()` factory returning a real `UPath`**, not a subclass; construction is the only seam (future Azure/AWS credential wiring). Amended on measurement: UPath 0.3.10 picks one concrete class per protocol from a registry, so a bare `class ZPath(UPath)` cannot be constructed at all. UPath accepts `**storage_options` natively, so the seam survives as one factory in one place, with `ZPath` kept as a CapWords alias of it |
 | `HashedDataframe` | Pydantic **discriminated union on `identifier`**, per-hasher subclass + `version` |
@@ -127,7 +126,7 @@ src/parquet_to_xl/
     base.py             DataFrameHasherBaseClass, HashedDataframeBase
     binary_aggregate.py DataFrameHasherBinaryAggregateHash, BinaryAggregateHashedDataframe
   metadata/
-    scalars.py          ColumnScalar type alias, dtype flag helpers
+    scalars.py          dtype flag helpers, incl. is_nested (what is out of scope)
     column.py           DataframeColumnMetadata           (per column)
     columns.py          DataframeColumnsMetadata          (wrapper)
     builder.py          build_columns_metadata(df, hashers) -> DataframeColumnsMetadata
@@ -137,6 +136,9 @@ src/parquet_to_xl/
     base.py             DataframeConversionBaseClass, ConvertedDataframe (frozen dataclass)
     none.py             DataframeConversionNone
     to_excel.py         DataframeConversionToExcel
+  sidecar/
+    document.py         SIDECAR_SCHEMA_VERSION, SidecarDocument
+    store.py            sidecar_path, SidecarStoreBase, registry, JsonSidecarStore
   excel/
     writer.py           ExcelWriterBase, registry, RustpyExcelWriter (default),
                         PolarsExcelWriter, ExcelWriteConfig
@@ -327,11 +329,34 @@ flags `is_numeric, is_float, is_integer, is_decimal, is_text, is_boolean: bool`
 are derived — `is_text` is true for `String` **and** `Categorical`, which is
 dictionary-encoded text and converts to `String`; note also that Polars reports `Decimal`
 as numeric and `Boolean` as *not* numeric),
-`hashes: list[HashedDataframe]`,
-stats `min_value: ColumnScalar | None`, `max_value: ColumnScalar | None`,
-`value_count: int`, `unique_count: int`, `null_count: int`.
-(`min_value`/`max_value` not `min`/`max` — Ruff `A` forbids shadowing builtins.)
-`ColumnScalar = float | int | str | bool | bytes | datetime | date | time | timedelta | Decimal`.
+`hashes: list[HashedDataframe]`, `value_count: int`, `null_count: int`.
+
+**No extremes and no distinct count are recorded.** The original design carried
+`min_value`/`max_value` typed as
+`ColumnScalar = float | int | str | bool | bytes | datetime | date | time | timedelta | Decimal`,
+plus `unique_count`. All three are gone, and `ColumnScalar` and `as_column_scalar` with them.
+Two measured reasons, either sufficient on its own:
+
+- **They could not be persisted.** Measured against the live model: `bytes` that are not
+  valid UTF-8 **raise** `PydanticSerializationError` on dump; `bytes`, `datetime`, `date`,
+  `time`, `timedelta` and `Decimal` each serialize to a string and reload as `str`, because
+  the union contains `str` and Pydantic's smart union matches it exactly; and `NaN`/`±inf`
+  serialize to `null`, which is indistinguishable from "no extreme". A tagged encoding would
+  have fixed this -- an enum discriminant plus a text payload measured exact on 21 cases,
+  including `bytes(range(256))`, `UInt64`'s maximum and `Decimal("1.250")` -- but it was not
+  worth building for a field nothing reads.
+- **Nothing read them.** No hasher, conversion, reader or consumer touched any of the three.
+  `n_unique()` is also a full hash aggregation per column, the costliest of the five
+  statistics that used to be computed.
+
+With them gone, every remaining field survives a JSON round trip unchanged, which is what
+lets the sidecar be a wrapper rather than a projection. `value_count` stays and is
+load-bearing: `fast_excel_reader` takes `expected_rows` from it.
+
+One behaviour moved as a result. A nested column used to be refused because `Series.min()`
+raises on a `List`; with the statistics gone, `build_columns_metadata` refuses it outright
+via `scalars.is_nested`, which holds whether or not a hasher is supplied. The old refusal
+was a side effect of computing a statistic, and would have disappeared silently.
 
 `DataframeColumnsMetadata(BaseModel, frozen=True)` — the wrapper:
 `columns: list[DataframeColumnMetadata]` (dataframe order),
@@ -442,19 +467,55 @@ and returns `None`. On success returns `DataframeMetadata(frozen=True)`:
 `column_metadata_of_conversions: list[DataframeColumnsMetadata]`
 (one per supplied conversion, `conv.metadata_of_converted_dataframe(df, hashers).columns_metadata`).
 
-### JSON sidecar persistence — format pending
+### JSON sidecar persistence — `sidecar/document.py`, `sidecar/store.py`
 
-Persist one JSON file for each Parquet file. Do not embed the metadata in the Parquet file.
-The current extraction API returns an in-memory model only; no sidecar read/write API is
-implemented. Filename conventions and the JSON schema have not yet been agreed.
+One JSON file per Parquet file, beside it. Metadata is not embedded in the Parquet file.
 
-The schema design must settle a schema version, conversion identifiers and versions,
-source-file association, typed scalar statistics (including binary, Decimal and temporal
-values), non-finite statistics, and row counts needed to reconstruct blank Excel rows.
-Plain Pydantic JSON dumping is not yet a persistence contract: binary extrema can fail
-UTF-8 serialization and the scalar union can reload temporal and decimal values as strings.
-Acceptance tests must serialize to actual JSON bytes and reload them, rather than testing
-only `model_dump()` / `model_validate()` with Python objects.
+```python
+SIDECAR_SCHEMA_VERSION: Final = 1
+
+class SidecarDocument(BaseModel, frozen=True):
+    schema_version: int = SIDECAR_SCHEMA_VERSION
+    metadata: DataframeMetadata
+
+def sidecar_path(source_path: UPath) -> UPath: ...          # sales.parquet -> sales.parquet.json
+
+class SidecarStoreBase(ABC):
+    identifier: ClassVar[str]
+    @abstractmethod
+    def write(self, metadata: DataframeMetadata, source_path: UPath) -> UPath: ...
+    @abstractmethod
+    def read(self, source_path: UPath) -> SidecarDocument: ...
+
+SIDECAR_STORES: dict[str, type[SidecarStoreBase]] = {}
+def register_sidecar_store(cls): ...                        # decorator
+def get_sidecar_store(identifier: str) -> SidecarStoreBase: ...   # raises on unknown
+```
+
+**The document is a wrapper, not a projection.** Every field of `DataframeMetadata` survives
+a JSON round trip unchanged, so there is nothing to reshape and `read(...).metadata ==
+original` is assertable over a record built from 19 dtypes and 1000 rows. That is true only
+since the extremes were removed; see *Column metadata* above.
+
+**The suffix is appended, not replaced.** `sales.parquet` gains `sales.parquet.json`.
+Replacing it would make `sales.parquet` and `sales.csv` claim one sidecar, and would make a
+genuine `sales.json` in the directory indistinguishable from one of ours.
+
+**`schema_version` is its own version number**, independent of the hashers' `version` and the
+conversions'. Those are welded to digest and data contracts; this one describes the shape of
+a file, so folding it into either would force a digest-version bump -- invalidating every
+stored hash -- each time the layout moved. It is checked before the body is validated, so a
+future format reports a version error rather than whichever field happened to move first.
+
+**Serialization completes before the destination is opened**, so a failure to serialize
+cannot leave a truncated sidecar where a good one was.
+
+**This is the only component that accepts a remote path.** It reads and writes through
+`UPath`, which fsspec serves for `memory://` and `az://`; the Excel writers and the reader
+all hand `str(path)` to a library that opens it as a local filename.
+
+Acceptance tests serialize to actual JSON bytes and reload them, rather than testing only
+`model_dump()` / `model_validate()` with Python objects still in them.
 
 ### Excel writer registry — `excel/writer.py`
 
@@ -575,12 +636,14 @@ session-scoped `conftest.py` fixture):
 | `integration/test_wall_clock_roundtrip.py` | UTC, New York DST folds, and Kolkata preserve local clock readings as naive datetimes through the default writer and schema-driven reader; nulls, idempotency, and digest equality |
 | `unit/test_conversion_none.py` | frame unchanged; `schema_or_data_changed is False`; metadata columns mirror input |
 | `unit/test_conversion_to_excel.py` | numerics/decimal/float32 → `Float64`; bool → `-1.0`/`0.0`; long string truncated + flag `True`; already-Excel-safe frame → flag `False`; duration → seconds; categorical → string; binary → hex |
-| `unit/test_metadata_builder.py` | dtype flags correct per dtype; stats (`min/max/value_count/unique_count/null_count`) match Polars; one `HashedDataframe` per hasher per column |
+| `unit/test_metadata_builder.py` | dtype flags correct per dtype; `value_count`/`null_count` match Polars; one `HashedDataframe` per hasher per column; a nested dtype is refused outright |
 | `unit/test_extract_metadata.py` | happy path fills every field; `modified_utc` tz-aware; per-tz dict keyed by input names; one wrapper per conversion; unreadable path / bad input → `None` + logged |
 | `unit/test_excel_writer.py` | registry resolves the default and refuses a duplicate identifier; unknown identifier raises; the **default writer** round-trips the model exactly while `PolarsExcelWriter` is held only to shape; both refuse what they cannot represent; `ExcelWriteConfig` defaults to `rustpy-xlsxwriter` |
 | `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in workbook order; `sheet_names` selects and orders; an unknown sheet raises; `max_workers=1` == default; selector-shaped names (`*`, `^a$` beside `a`) survive; a trailing all-null row is restored from `expected_rows` and lost without it, while interior and leading ones need no restoring; more rows than expected raises; an unmappable dtype raises; a zero-row workbook keeps its columns; both converted fixture frames return all 19 columns matching in dtype and value |
 | `unit/test_fixtures.py` | Parquet regeneration byte-identical; `parquet_a` vs `parquet_b` differ in exactly one cell per column; all **20** files exist after `ensure_fixtures()` and a second call reuses them; `_padded` truncation pinned, with an early warning before a column fills every edge slot |
 | `unit/test_conversion_identity.py` | a source-frame record names no conversion; each conversion stamps its own `identifier`/`version`/`version_number`, taken from the class rather than repeated; an extracted record is findable by identifier rather than by position; the identity survives a real JSON round trip; it is frozen |
+| `unit/test_sidecar_store.py` | the suffix is appended for ordinary, multi-suffix and suffixless names; the registry resolves `json`, refuses a duplicate identifier, and names what is registered on an unknown one; a written record reloads equal; the file is readable JSON carrying the version and the digest; an unknown `schema_version` raises naming both versions; a corrupt file and a non-object document each raise; a missing sidecar raises `FileNotFoundError`; a `memory://` path round-trips |
+| `integration/test_sidecar_roundtrip.py` | for both fixture Parquets a real record reloads **exactly**; the ToExcel dataframe and per-column digests survive the file boundary and the record stays findable by identifier; the two fixtures produce different sidecars; `modified_utc` reloads aware and names the same instant (per-zone values reload carrying a fixed offset rather than `ZoneInfo`, so instants are compared, not `tzinfo` objects) |
 | `integration/test_excel_hash_roundtrip.py` | **headline:** for each Parquet file — build `DataframeMetadata` (hashers `[BinaryAggregateHash]`, conversions `[None, ToExcel]`); write the converted frame, read it back with `fast_excel_reader`, run it through the conversion again, hash; assert it equals the ToExcel wrapper's dataframe digest. Then write rows [0:500] and [500:1000] as two workbooks, read both back, concat in reverse order, same path, assert equal to that digest. Assert `parquet_a` Excel digest ≠ `parquet_b` Excel digest, and that the halves and the whole already agree before any file is written. Workbooks are written by the test, not taken from the fixtures, which hold the *source* frame. |
 
 ## Verification
