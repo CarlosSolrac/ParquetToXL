@@ -2,5 +2,8 @@
     "recommendations": [
         "charliermarsh.ruff",
         "ms-python.vscode-pylance"
+    ],
+    "unwantedRecommendations": [
+        "ms-python.pylint"
     ]
 }
