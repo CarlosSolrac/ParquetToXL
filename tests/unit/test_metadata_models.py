@@ -7,7 +7,6 @@ editing it: everything downstream assumes the test is the specification.
 from __future__ import annotations
 
 import datetime as dt
-from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
@@ -16,7 +15,6 @@ from parquet_to_xl.hashing.binary_aggregate import BinaryAggregateHashedDatafram
 from parquet_to_xl.metadata.column import DataframeColumnMetadata
 from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
 from parquet_to_xl.metadata.dataframe import DataframeMetadata
-from parquet_to_xl.metadata.scalars import ColumnScalar
 
 
 def _column(**overrides: object) -> DataframeColumnMetadata:
@@ -30,10 +28,7 @@ def _column(**overrides: object) -> DataframeColumnMetadata:
         "is_text": False,
         "is_boolean": False,
         "hashes": [BinaryAggregateHashedDataframe(scope="column", digest_hex="a" * 32)],
-        "min_value": 1,
-        "max_value": 3,
         "value_count": 4,
-        "unique_count": 4,
         "null_count": 1,
     }
     fields.update(overrides)
@@ -57,40 +52,6 @@ def test_column_metadata_is_frozen() -> None:
 def test_column_metadata_round_trips() -> None:
     column: DataframeColumnMetadata = _column()
     assert DataframeColumnMetadata.model_validate(column.model_dump()) == column
-
-
-@pytest.mark.parametrize(
-    "value",
-    [
-        1,
-        1.0,
-        True,
-        False,
-        "text",
-        b"\x01",
-        dt.date(2020, 1, 1),
-        dt.datetime(2020, 1, 1, 12, 0, tzinfo=dt.UTC),
-        dt.time(1, 2, 3),
-        dt.timedelta(seconds=5),
-        Decimal("1.25"),
-        None,
-    ],
-)
-def test_column_scalar_union_preserves_the_exact_type(value: ColumnScalar | None) -> None:
-    # bool subclasses int and datetime subclasses date, so a union that coerced would
-    # silently rewrite a column's extremes. Pydantic's smart union does not, and this pins
-    # that both on construction and across a dump/validate round trip.
-    column: DataframeColumnMetadata = _column(min_value=value, max_value=value)
-    assert type(column.min_value) is type(value)
-    restored: DataframeColumnMetadata = DataframeColumnMetadata.model_validate(column.model_dump())
-    assert type(restored.min_value) is type(value)
-    assert restored == column
-
-
-def test_min_and_max_accept_none_for_an_empty_or_all_null_column() -> None:
-    column: DataframeColumnMetadata = _column(min_value=None, max_value=None)
-    assert column.min_value is None
-    assert column.max_value is None
 
 
 def test_counts_must_be_integers() -> None:

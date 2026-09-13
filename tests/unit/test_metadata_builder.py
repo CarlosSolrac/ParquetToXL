@@ -58,10 +58,7 @@ def test_statistics_match_polars_exactly() -> None:
     record: DataframeColumnMetadata
     for record in result.columns:
         series: pl.Series = df[record.name]
-        assert record.min_value == series.min()
-        assert record.max_value == series.max()
         assert record.value_count == len(series)
-        assert record.unique_count == series.n_unique()
         assert record.null_count == series.null_count()
         assert record.polars_dtype == str(series.dtype)
 
@@ -75,20 +72,9 @@ def test_value_count_is_rows_including_nulls() -> None:
     assert len({record.value_count for record in result.columns}) == 1
 
 
-def test_unique_count_treats_null_as_one_distinct_value() -> None:
-    # Polars' n_unique counts null as a bucket: [1, 1, None, None] is 2, not 3.
-    df: pl.DataFrame = pl.DataFrame({"x": [1, 1, None, None]}, schema={"x": pl.Int64})
-    result: DataframeColumnsMetadata = build_columns_metadata(df, [])
-    assert result.columns[0].unique_count == 2
-    assert result.columns[0].null_count == 2
-    assert result.columns[0].value_count == 4
-
-
-def test_all_null_column_reports_none_extremes() -> None:
+def test_all_null_column_counts_every_row_as_null() -> None:
     df: pl.DataFrame = pl.DataFrame({"x": [None, None]}, schema={"x": pl.Int64})
     record: DataframeColumnMetadata = build_columns_metadata(df, []).columns[0]
-    assert record.min_value is None
-    assert record.max_value is None
     assert record.value_count == 2
     assert record.null_count == 2
 
@@ -159,13 +145,11 @@ def test_the_result_round_trips_through_pydantic() -> None:
     assert DataframeColumnsMetadata.model_validate(result.model_dump()) == result
 
 
-def test_a_nested_extreme_is_refused_rather_than_recorded() -> None:
-    # Tested against the helper directly because Polars blocks the public route first:
-    # Series.min() on a List column raises InvalidOperationError before the builder sees a
-    # value. The guard still earns its place -- it is the non-matching half of the narrowing
-    # pyright requires, and raising beats silently recording "no value" for a column that
-    # has one.
-    assert scalars.as_column_scalar(None) is None
-    assert scalars.as_column_scalar(3) == 3
-    with pytest.raises(TypeError):
-        scalars.as_column_scalar([1, 2])
+def test_a_nested_dtype_is_refused_rather_than_described() -> None:
+    # Nested dtypes are out of scope, and this is now the only thing that says so. The
+    # refusal used to come from as_column_scalar via Series.min(); with the statistics gone
+    # it comes from encode_value instead, which means it holds only while a hasher is
+    # supplied. Pinned here so an out-of-scope dtype cannot quietly become supported.
+    df: pl.DataFrame = pl.DataFrame({"nested": [[1, 2], [3]]})
+    with pytest.raises(TypeError, match="nested dtypes are out of scope"):
+        build_columns_metadata(df, [DataFrameHasherBinaryAggregateHash()])

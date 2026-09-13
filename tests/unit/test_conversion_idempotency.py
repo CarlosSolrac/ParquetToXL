@@ -201,11 +201,12 @@ def test_column_order_and_names_survive_repeated_conversion() -> None:
 
 def test_a_nested_column_fails_loudly_rather_than_being_recorded() -> None:
     # Nested dtypes are out of scope per the spec. _convert passes one through and reports
-    # no change, which is only safe because the public method then refuses: the stats raise
-    # before any metadata is built. Pinned so the failure stays loud rather than becoming a
-    # silently recorded row that no consumer could interpret.
+    # no change, which is only safe because the public method then refuses. That refusal
+    # used to be Polars raising from the extremes; it is now build_columns_metadata saying
+    # so outright, which holds whether or not a hasher is supplied. Pinned so the failure
+    # stays loud rather than becoming a silently recorded row no consumer could interpret.
     nested: pl.DataFrame = pl.DataFrame({"x": pl.Series("x", [[1, 2]], dtype=pl.List(pl.Int64))})
-    with pytest.raises(pl.exceptions.InvalidOperationError):
+    with pytest.raises(TypeError, match="nested dtypes are out of scope"):
         DataframeConversionToExcel().metadata_of_converted_dataframe(nested, [])
 
 

@@ -69,3 +69,20 @@ def test_categorical_counts_as_text() -> None:
     assert scalars.is_text(pl.Categorical()) is True
     assert scalars.is_text(pl.String()) is True
     assert scalars.is_text(pl.Binary()) is False
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [pl.List(pl.Int64()), pl.Array(pl.Int64(), 2), pl.Struct({"a": pl.Int64()}), pl.Object()],
+    ids=["list", "array", "struct", "object"],
+)
+def test_every_nested_dtype_is_recognised(dtype: pl.DataType) -> None:
+    # All four named individually: build_columns_metadata refuses whatever this returns True
+    # for, and the only nested dtype reached by any other test is List, so dropping one of
+    # the other three from the union would otherwise go unnoticed.
+    assert scalars.is_nested(dtype) is True
+
+
+@pytest.mark.parametrize("dtype", [row[0] for row in FLAG_TABLE], ids=lambda dtype: str(dtype))
+def test_no_scalar_dtype_is_nested(dtype: pl.DataType) -> None:
+    assert scalars.is_nested(dtype) is False

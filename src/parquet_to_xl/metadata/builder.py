@@ -26,12 +26,17 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
 
     For each column, in dataframe order, it records the name, ``str()`` of the dtype, the
     six dtype flags from ``metadata.scalars``, one ``hash_column`` result per hasher, and
-    Polars' own ``min``, ``max``, ``len``, ``n_unique`` and ``null_count``. Each hasher's
-    ``hash_all`` supplies both column and frame digests, reusing cell hashes when supported.
+    Polars' own ``len`` and ``null_count``. Each hasher's ``hash_all`` supplies both column
+    and frame digests, reusing cell hashes when supported.
 
-    Two counting details are inherited from Polars rather than invented here, and both are
-    pinned by tests: ``value_count`` is the row count including nulls, and ``unique_count``
-    treats null as a single distinct value, so ``[1, 1, None, None]`` counts 2.
+    ``value_count`` is the row count including nulls, so it is the same for every column of
+    a frame. No extremes or distinct count are computed: nothing read them, and they cost
+    three Polars aggregations per column, of which ``n_unique`` was a full hash aggregation.
+
+    A nested column is refused. That refusal used to be a side effect of computing the
+    extremes -- ``Series.min()`` on a ``List`` raises -- so removing the statistics would
+    have quietly made an out-of-scope dtype describable whenever no hasher was supplied to
+    catch it. It is stated outright here instead, which is where it should always have been.
 
     An empty frame produces an empty column list and still calls each hasher once for the
     frame digest, so the wrapper always carries one entry per hasher.
@@ -43,6 +48,9 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
 
     Returns:
         The wrapper holding the per-column records and the frame-level digests.
+
+    Raises:
+        TypeError: A column has a nested dtype, which the spec puts out of scope.
     """
     columns: list[DataframeColumnMetadata] = []
     hashed: list[tuple[tuple[HashedDataframe, ...], HashedDataframe]] = [hasher.hash_all(df) for hasher in hashers]
@@ -51,6 +59,9 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
     for index, name in enumerate(df.columns):
         series: pl.Series = df[name]
         dtype: pl.DataType = series.dtype
+        if scalars.is_nested(dtype):
+            message: str = f"column {name!r} has dtype {dtype}; nested dtypes are out of scope"
+            raise TypeError(message)
         columns.append(
             DataframeColumnMetadata(
                 name=name,
@@ -62,10 +73,7 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
                 is_text=scalars.is_text(dtype),
                 is_boolean=scalars.is_boolean(dtype),
                 hashes=[column_hashes[index] for column_hashes, _ in hashed],
-                min_value=scalars.as_column_scalar(series.min()),
-                max_value=scalars.as_column_scalar(series.max()),
                 value_count=len(series),
-                unique_count=series.n_unique(),
                 null_count=series.null_count(),
             )
         )

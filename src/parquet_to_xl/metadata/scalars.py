@@ -1,48 +1,20 @@
-"""The scalar value type and the dtype flag helpers that column metadata records."""
+"""The dtype flag helpers that column metadata records."""
 
 from __future__ import annotations
 
-import datetime as dt
-from decimal import Decimal
-
 import polars as pl
 
-type ColumnScalar = float | int | str | bool | bytes | dt.datetime | dt.date | dt.time | dt.timedelta | Decimal
-"""Every Python type a scalar Polars column yields when a value is read out of it.
 
-Deliberately excludes the nested dtypes (``List``, ``Struct``, ``Array``, ``Object``), which
-the spec puts out of scope. ``None`` is not a member: a missing value is modelled as
-``ColumnScalar | None`` at each use site, so that nullability stays visible in the signature.
-"""
-
-
-def as_column_scalar(value: object) -> ColumnScalar | None:
-    """Return a value as a ``ColumnScalar``, refusing anything outside that set.
-
-    Polars declares ``Series.min()`` as returning its ``PythonLiteral``, which also admits
-    an ndarray and a list -- the nested dtypes this project puts out of scope. Narrowing by
-    an explicit runtime check rather than a cast means such a value fails loudly here rather
-    than being recorded as something no consumer of the metadata could interpret.
-
-    In practice Polars usually refuses first: ``min()`` on a ``List`` column raises
-    ``InvalidOperationError`` before this is reached. The check is the non-matching half of
-    a narrowing the type checkers require, and raising is better than silently reporting
-    ``None``, which would claim a column has no extreme when it has one.
+def is_nested(dtype: pl.DataType) -> bool:
+    """Return whether the dtype is one of the nested dtypes this project puts out of scope.
 
     Args:
-        value: A value read out of a column, typically an extreme.
+        dtype: The column's Polars dtype.
 
     Returns:
-        The value unchanged, or ``None`` when there was no value to report.
-
-    Raises:
-        TypeError: The value is not one of the ``ColumnScalar`` types.
+        True for ``List``, ``Array``, ``Struct`` and ``Object``.
     """
-    if value is None:
-        return None
-    if isinstance(value, bool | int | float | str | bytes | dt.datetime | dt.date | dt.time | dt.timedelta | Decimal):
-        return value
-    raise TypeError(f"value of type {type(value).__name__} is not a ColumnScalar; nested dtypes are out of scope")
+    return isinstance(dtype, pl.List | pl.Array | pl.Struct | pl.Object)
 
 
 def is_numeric(dtype: pl.DataType) -> bool:
