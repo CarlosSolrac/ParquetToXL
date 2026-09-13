@@ -58,7 +58,7 @@ def test_metadata_mirrors_the_input_columns() -> None:
     df: pl.DataFrame = _frame()
     result: ConvertedDataframe = DataframeConversionNone().metadata_of_converted_dataframe(df, [])
     assert [column.name for column in result.columns_metadata.columns] == df.columns
-    assert [column.polars_dtype for column in result.columns_metadata.columns] == [str(dtype) for dtype in df.dtypes]
+    assert [column.dtype.to_polars() for column in result.columns_metadata.columns] == df.dtypes
 
 
 def test_metadata_is_built_from_the_converted_frame_not_the_input() -> None:
@@ -75,7 +75,7 @@ def test_metadata_is_built_from_the_converted_frame_not_the_input() -> None:
             return df.select(pl.col("i").cast(pl.Float64)), True
 
     result: ConvertedDataframe = _WidenToFloat().metadata_of_converted_dataframe(_frame(), [])
-    assert [column.polars_dtype for column in result.columns_metadata.columns] == ["Float64"]
+    assert [column.dtype.to_polars() for column in result.columns_metadata.columns] == [pl.Float64()]
     assert result.schema_or_data_changed is True
 
 

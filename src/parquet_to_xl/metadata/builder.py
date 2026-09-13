@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from parquet_to_xl.metadata import scalars
 from parquet_to_xl.metadata.column import DataframeColumnMetadata
 from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
+from parquet_to_xl.metadata.dtypes import dtype_from_polars
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -24,8 +25,9 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
     keeps their outputs comparable: the same statistics, computed the same way, over
     whatever frame is handed in.
 
-    For each column, in dataframe order, it records the name, ``str()`` of the dtype, the
-    six dtype flags from ``metadata.scalars``, one ``hash_column`` result per hasher, and
+    For each column, in dataframe order, it records the name, the dtype in the neutral
+    vocabulary of ``metadata.dtypes``, the six flags from ``metadata.scalars``, one
+    ``hash_column`` result per hasher, and
     Polars' own ``len`` and ``null_count``. Each hasher's ``hash_all`` supplies both column
     and frame digests, reusing cell hashes when supported.
 
@@ -65,7 +67,7 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
         columns.append(
             DataframeColumnMetadata(
                 name=name,
-                polars_dtype=str(dtype),
+                dtype=dtype_from_polars(dtype),
                 is_numeric=scalars.is_numeric(dtype),
                 is_float=scalars.is_float(dtype),
                 is_integer=scalars.is_integer(dtype),

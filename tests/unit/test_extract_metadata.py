@@ -102,15 +102,15 @@ def test_one_wrapper_per_conversion_in_the_order_given(tmp_path: Path) -> None:
     assert result is not None
     assert len(result.column_metadata_of_conversions) == 2
     # None leaves Int64 alone; ToExcel widens it. That is what identifies the order.
-    assert result.column_metadata_of_conversions[0].columns[0].polars_dtype == "Int64"
-    assert result.column_metadata_of_conversions[1].columns[0].polars_dtype == "Float64"
+    assert result.column_metadata_of_conversions[0].columns[0].dtype.to_polars() == pl.Int64()
+    assert result.column_metadata_of_conversions[1].columns[0].dtype.to_polars() == pl.Float64()
 
 
 def test_conversions_describe_the_converted_frame_not_the_source(tmp_path: Path) -> None:
     result: DataframeMetadata | None = extract_metadata_from_dataframe(_frame(), _written(tmp_path), [], [], [DataframeConversionToExcel()])
     assert result is not None
-    assert result.source_columns_metadata.columns[0].polars_dtype == "Int64"
-    assert result.column_metadata_of_conversions[0].columns[0].polars_dtype == "Float64"
+    assert result.source_columns_metadata.columns[0].dtype.to_polars() == pl.Int64()
+    assert result.column_metadata_of_conversions[0].columns[0].dtype.to_polars() == pl.Float64()
 
 
 def test_no_conversions_yields_an_empty_list(tmp_path: Path) -> None:

@@ -20,7 +20,7 @@ from parquet_to_xl.metadata.dataframe import DataframeMetadata
 def _column(**overrides: object) -> DataframeColumnMetadata:
     fields: dict[str, object] = {
         "name": "n",
-        "polars_dtype": "Int64",
+        "dtype": {"kind": "int64"},
         "is_numeric": True,
         "is_float": False,
         "is_integer": True,

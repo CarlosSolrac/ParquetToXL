@@ -8,8 +8,13 @@ from pydantic import BaseModel
 
 from parquet_to_xl.metadata.dataframe import DataframeMetadata
 
-SIDECAR_SCHEMA_VERSION: Final = 1
+SIDECAR_SCHEMA_VERSION: Final = 2
 """The schema this build writes, and the only one it reads.
+
+Version 2 replaced the column's ``polars_dtype`` string with the structured ``dtype`` of
+``metadata.dtypes``. A version 1 file is refused rather than read: its dtype field is a
+different shape under the same name, so reading it would need a parser for the display form
+this version exists to stop relying on.
 
 Separate from every other version number in the project, and deliberately so. The hashers'
 ``version`` is welded to the ``encode_value`` tag table, where a change invalidates stored

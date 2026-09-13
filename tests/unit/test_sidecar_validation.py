@@ -11,6 +11,11 @@ original frame at no point. Three things have to come out of the sidecar for tha
 the reader's schema, the row extent, and the expected digest -- and one test per item pins
 what happens when it is missing.
 
+The schema comes straight back as a Polars dtype through ``ColumnDtype.to_polars()``. An
+earlier revision of this module carried a lookup table here, because the dtype was stored as
+``str()`` of the Polars dtype and could not be reversed; the neutral vocabulary in
+``metadata.dtypes`` is what removed the need for it.
+
 Read-only for an implementer. If one of these looks wrong, stop and report it rather than
 editing it.
 """
@@ -21,7 +26,6 @@ import datetime as dt
 from typing import TYPE_CHECKING, NamedTuple
 
 import polars as pl
-import pytest
 
 from parquet_to_xl.conversion.none import DataframeConversionNone
 from parquet_to_xl.conversion.to_excel import DataframeConversionToExcel
@@ -41,35 +45,6 @@ if TYPE_CHECKING:
     from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
     from parquet_to_xl.metadata.dataframe import DataframeMetadata
     from parquet_to_xl.sidecar.document import SidecarDocument
-
-SIMPLE_DTYPES: dict[str, pl.DataType] = {
-    "Float64": pl.Float64(),
-    "String": pl.String(),
-    "Date": pl.Date(),
-    "Time": pl.Time(),
-    "Null": pl.Null(),
-}
-"""The parameterless dtypes ``DataframeConversionToExcel`` can produce, by stored name."""
-
-NAIVE_MICROSECOND_DATETIME: str = "Datetime(time_unit='us', time_zone=None)"
-"""The only parameterised dtype it produces, and the only one needing its own entry.
-
-``polars_dtype`` holds ``str()`` of the dtype, which is a display form rather than a
-serialization format: ``getattr(pl, "Float64")`` resolves but ``getattr(pl, this)`` does not.
-A validator therefore needs a table like this one. See
-``test_the_stored_dtype_is_a_display_form_not_a_round_trip_format``, which pins that, and the
-note in the module docstring above.
-"""
-
-
-def _dtype_from_sidecar(stored: str) -> pl.DataType:
-    """Rebuild a reader dtype from the string the sidecar recorded."""
-    if stored in SIMPLE_DTYPES:
-        return SIMPLE_DTYPES[stored]
-    if stored == NAIVE_MICROSECOND_DATETIME:
-        return pl.Datetime("us")
-    message: str = f"no reader dtype known for the stored form {stored!r}"
-    raise AssertionError(message)
 
 
 def _frame() -> pl.DataFrame:
@@ -149,7 +124,7 @@ def _excel_record(parquet: UPath) -> DataframeColumnsMetadata:
 def _read_as_the_sidecar_describes(subject: _Subject, *, use_row_extent: bool = True) -> pl.DataFrame:
     """Read the workbook using only what the sidecar says it should contain."""
     record: DataframeColumnsMetadata = _excel_record(subject.parquet)
-    schema: dict[str, pl.DataType] = {column.name: _dtype_from_sidecar(column.polars_dtype) for column in record.columns}
+    schema: dict[str, pl.DataType] = {column.name: column.dtype.to_polars() for column in record.columns}
     rows: int | None = record.columns[0].value_count if use_row_extent else None
     return fast_excel_reader(subject.workbook, schema=schema, expected_rows=rows)
 
@@ -177,7 +152,7 @@ def test_the_sidecar_supplies_the_reader_schema(tmp_path: Path) -> None:
     # conversion here, which is the thing a validator does not get to see.
     subject: _Subject = _publish(tmp_path, _frame())
     record: DataframeColumnsMetadata = _excel_record(subject.parquet)
-    rebuilt: dict[str, pl.DataType] = {column.name: _dtype_from_sidecar(column.polars_dtype) for column in record.columns}
+    rebuilt: dict[str, pl.DataType] = {column.name: column.dtype.to_polars() for column in record.columns}
     assert rebuilt == dict(_convert(_frame()).schema)
 
 
@@ -235,24 +210,3 @@ def test_the_sidecar_names_the_columns_the_workbook_must_hold(tmp_path: Path) ->
     record: DataframeColumnsMetadata = _excel_record(subject.parquet)
     assert [column.name for column in record.columns] == ["i", "s", "b", "when", "day"]
     assert _read_as_the_sidecar_describes(subject).columns == [column.name for column in record.columns]
-
-
-def test_the_stored_dtype_is_a_display_form_not_a_round_trip_format(tmp_path: Path) -> None:
-    # Pinned because it is a limitation rather than a decision, and it is the one thing that
-    # stops sidecar-driven validation from being writable without a lookup table. polars_dtype
-    # is str() of the dtype: the parameterless names happen to resolve as polars attributes,
-    # and the parameterised one cannot. Recorded so it is not rediscovered from scratch.
-    record: DataframeColumnsMetadata = _excel_record(_publish(tmp_path, _frame()).parquet)
-    stored: set[str] = {column.polars_dtype for column in record.columns}
-    assert NAIVE_MICROSECOND_DATETIME in stored
-    assert getattr(pl, "Float64", None) is not None
-    assert getattr(pl, NAIVE_MICROSECOND_DATETIME, None) is None
-
-
-@pytest.mark.parametrize("stored", ["Int64", "Decimal(precision=18, scale=4)", "nonsense"])
-def test_an_unknown_stored_dtype_is_refused_rather_than_guessed(stored: str) -> None:
-    # The table covers what ToExcel produces. A source-frame dtype reaching it means the
-    # caller took the wrong record out of the sidecar, which should say so rather than
-    # silently validate against the wrong schema.
-    with pytest.raises(AssertionError, match="no reader dtype known"):
-        _dtype_from_sidecar(stored)

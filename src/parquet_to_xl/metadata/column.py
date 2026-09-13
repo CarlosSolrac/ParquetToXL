@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from parquet_to_xl.hashing import HashedDataframe
+from parquet_to_xl.metadata.dtypes import ColumnDtype
 
 
 class DataframeColumnMetadata(BaseModel, frozen=True):
@@ -26,8 +27,13 @@ class DataframeColumnMetadata(BaseModel, frozen=True):
     """
 
     name: str
-    polars_dtype: str
-    """``str()`` of the Polars dtype, which carries parameters: ``Datetime(time_unit='us', time_zone='UTC')``."""
+
+    dtype: ColumnDtype
+    """The column's dtype in this library's own vocabulary, not Polars'.
+
+    ``str()`` of a Polars dtype was stored here until the neutral vocabulary existed. It is a
+    display form: a consumer could not turn it back into a dtype without a lookup table, and
+    a change to Polars' repr would have invalidated every file already written."""
 
     is_numeric: bool
     is_float: bool

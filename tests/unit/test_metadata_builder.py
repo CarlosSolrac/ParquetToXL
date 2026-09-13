@@ -60,7 +60,7 @@ def test_statistics_match_polars_exactly() -> None:
         series: pl.Series = df[record.name]
         assert record.value_count == len(series)
         assert record.null_count == series.null_count()
-        assert record.polars_dtype == str(series.dtype)
+        assert record.dtype.to_polars() == series.dtype
 
 
 def test_value_count_is_rows_including_nulls() -> None:

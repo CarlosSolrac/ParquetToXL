@@ -17,9 +17,10 @@ survive contact with the libraries.
 | 6 · Fixtures | **done** | `generate.py`, 20 files across three writers, invariants under test |
 | 7 · Integration | **done** | `ZPath` landed early as a phase 4 prerequisite; `integration/test_excel_roundtrip.py` covers the single-workbook half, and `integration/test_excel_hash_roundtrip.py` is the headline test including the split-workbook half. Reader benchmark measured and recorded in the findings |
 | 8 · Sidecar | **done** | the unread statistics removed, `SidecarDocument`, the store registry and `JsonSidecarStore`, `integration/test_sidecar_roundtrip.py` |
+| 9 · Neutral dtypes | **done** | `ColumnDtype`, the sidecar at `schema_version` 2, validation without a lookup table |
 
-After the sidecar work: 326 tests, 100% statement and 100% branch coverage. Ruff,
-formatting, pyright and mypy pass, and the CI coverage gate is now `--cov-fail-under=100`.
+After the dtype work: 428 tests, 100% statement and 100% branch coverage. Ruff, formatting,
+pyright and mypy pass, and the CI coverage gate is now `--cov-fail-under=100`.
 
 **Nothing in this document is unbuilt.**
 
@@ -56,6 +57,7 @@ in a different order.
 | Dtype coverage | **all scalar Polars dtypes**, no nested types |
 | `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets, **one handle per job**; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given the target dtypes it returns the model's dtypes directly instead of a column of mixed Python types. Amended again on measurement: called through `pl.read_excel` it cannot read selector-shaped column names at all, and a shared handle raises `Already borrowed` across threads |
 | Binary aggregate hash | **xxh3_128 v2**; aggregate cell hashes and hashes of each row's ordered cell hashes mod 2¹²⁸. Row order may change; column order and row relationships are bound. Column names are not hashed. |
+| Column dtype | **a vocabulary of this library's own**, `ColumnDtype`, a Pydantic discriminated union on `kind` with `to_polars()` / `dtype_from_polars()`. Amended on measurement: the original `polars_dtype: str` held `str()` of the dtype, which is a display form -- `getattr(pl, "Float64")` resolves, `getattr(pl, "Datetime(time_unit='us', time_zone=None)")` does not -- so a consumer needed a lookup table and a change to Polars' repr would have invalidated every file already written |
 | Persistence | **one JSON sidecar per Parquet file**, named by appending `.json` to the whole source filename, written through a store registry whose only member is `JsonSidecarStore`; metadata is not embedded in Parquet. Amended on measurement: the record could not be serialized at all until the column extremes were removed -- see *Column metadata* |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
 | `ZPath` | **a `zpath()` factory returning a real `UPath`**, not a subclass; construction is the only seam (future Azure/AWS credential wiring). Amended on measurement: UPath 0.3.10 picks one concrete class per protocol from a registry, so a bare `class ZPath(UPath)` cannot be constructed at all. UPath accepts `**storage_options` natively, so the seam survives as one factory in one place, with `ZPath` kept as a CapWords alias of it |
@@ -126,6 +128,7 @@ src/parquet_to_xl/
     base.py             DataFrameHasherBaseClass, HashedDataframeBase
     binary_aggregate.py DataFrameHasherBinaryAggregateHash, BinaryAggregateHashedDataframe
   metadata/
+    dtypes.py           ColumnDtype union, dtype_from_polars, to_polars
     scalars.py          dtype flag helpers, incl. is_nested (what is out of scope)
     column.py           DataframeColumnMetadata           (per column)
     columns.py          DataframeColumnsMetadata          (wrapper)
@@ -323,7 +326,7 @@ change detector, not a proof of equality or an adversarial integrity check.
 ### Column metadata — `metadata/column.py`, `columns.py`, `builder.py`
 
 `DataframeColumnMetadata(BaseModel, frozen=True)` — one per column:
-`name: str`, `polars_dtype: str` (str of the `pl.DataType`),
+`name: str`, `dtype: ColumnDtype` (see *Column dtypes* below),
 flags `is_numeric, is_float, is_integer, is_decimal, is_text, is_boolean: bool`
 (the first four delegate to Polars; `is_text` and `is_boolean` have no Polars predicate and
 are derived — `is_text` is true for `String` **and** `Categorical`, which is
@@ -467,12 +470,96 @@ and returns `None`. On success returns `DataframeMetadata(frozen=True)`:
 `column_metadata_of_conversions: list[DataframeColumnsMetadata]`
 (one per supplied conversion, `conv.metadata_of_converted_dataframe(df, hashers).columns_metadata`).
 
+### Column dtypes — `metadata/dtypes.py`
+
+```python
+class ColumnDtypeBase(BaseModel, ABC, frozen=True):
+    kind: str
+    @abstractmethod
+    def to_polars(self) -> pl.DataType: ...
+
+class SimpleDtype(ColumnDtypeBase):       kind: SimpleKind       # the 19 parameterless kinds
+class DatetimeDtype(ColumnDtypeBase):     time_unit; time_zone
+class DurationDtype(ColumnDtypeBase):     time_unit
+class DecimalDtype(ColumnDtypeBase):      precision; scale
+class CategoricalDtype(ColumnDtypeBase):  name; namespace; physical
+class EnumDtype(ColumnDtypeBase):         categories
+class ExtensionDtype(ColumnDtypeBase):    name; storage: ColumnDtype; metadata
+
+ColumnDtype = Annotated[SimpleDtype | DatetimeDtype | DurationDtype | DecimalDtype
+                        | CategoricalDtype | EnumDtype | ExtensionDtype,
+                        Field(discriminator="kind")]
+def dtype_from_polars(dtype: pl.DataType) -> ColumnDtype: ...
+```
+
+Twenty-five kinds across seven classes: nineteen carry no parameters and are named by
+`SimpleKind`, and six are parameterised. The same shape as `HashedDataframe`: discriminated
+on a string, extended by adding a member and touching nothing else.
+
+**The set is taken from Polars, not from the fixtures.** A first cut of this vocabulary was
+enumerated from the nineteen columns of the fixture frame, which silently dropped `Int128`,
+`UInt128`, `Float16`, `Enum` and `Extension`, and flattened every parameterised `Categorical`
+onto the default one -- a frame holding any of them would have made `extract_metadata_from_dataframe`
+return `None` where it previously succeeded. `unit/test_dtypes.py` now walks `pl.datatypes`
+itself and fails if a non-nested dtype is not covered. `Utf8` is excluded as an alias: a
+`Utf8` column reports `String`.
+
+**Why not store `str(dtype)`.** It is a display form, not a serialization format. Measured:
+`getattr(pl, "Float64")` resolves, `getattr(pl, "Datetime(time_unit='us', time_zone=None)")`
+does not, so a consumer needs a lookup table -- and Polars offers nothing to make parsing it
+safe, since `pl.DataType` exposes no serialization method at all. The failure mode is
+retroactive: a repr change in a minor release makes every sidecar already written either
+unparseable or, worse, parseable as the wrong dtype.
+
+**Why not Arrow.** Measured, `pl.Schema.to_arrow()` and back does round-trip the fixture's
+dtypes exactly, and it is a stable cross-language spec. It is rejected on two counts: it embeds
+Polars-private metadata for `Categorical` (`_PL_CATEGORICAL2`), so it is not the neutral
+format it appears to be; and reaching JSON means base64'd IPC bytes, which destroys the
+readability the sidecar is deliberately given. `DataFrame.serialize(format="json")` also
+round-trips, at 1001 bytes for two columns of Polars' internal IR.
+
+**What owning the vocabulary buys, concretely.** `Categorical` carries an `ordering`
+parameter that Polars deprecated in 1.32 -- it is always lexical now. A format mirroring
+Polars' dtype surface would have persisted a concept Polars has since dropped. It is simply
+not modelled.
+
+`Categorical` is nonetheless its own `kind` rather than folded into `string`: the source
+record describes the frame as read, where the two are different dtypes, and `is_text` already
+distinguishes them. `ToExcel` maps it to `String`, which is a fact about the conversion, not
+about the source column.
+
+What *is* modelled on a `Categorical` is its category set -- `name`, `namespace` and the
+index `physical` width. These look like internals but are not: a column built on
+`Categories("x", physical=UInt8)` survives a Parquet round trip and is a different dtype from
+a default `Categorical`, so flattening them made `to_polars()` return a dtype the source frame
+never held. `Enum` is a separate kind again, unrelated to `Categorical` in Polars, and carries
+its ordered category list, which is part of the dtype rather than data.
+
+**`Extension` describes its storage recursively**, and that is load-bearing rather than
+tidy. Polars permits `Extension("t", List(Int64))` and reports `is_nested()` as `False` for
+it, so an extension is the one way a nested dtype can present itself as scalar and slip past
+the `is_nested` guard. Describing `storage` as a `ColumnDtype` means such a column is refused
+by the same rule as a bare `List`. Extensions reach the library through the documented entry
+point: an unregistered one degrades to its storage dtype on a Parquet round trip today, but
+survives intact under `POLARS_UNKNOWN_EXTENSION_TYPE_BEHAVIOR=load_as_extension`, which
+Polars 2.0 makes the default.
+
+Dispatch is on `pl.BaseExtension`, not `pl.Extension`. A type registered with
+`pl.register_extension_type` comes back from Parquet as its own registered subclass, which is
+a `BaseExtension` but **not** a `pl.Extension`, so matching the concrete class refused exactly
+the extensions someone had cared enough to register. `to_polars()` returns a generic
+`pl.Extension` regardless, which Polars still considers equal: extensions compare by name and
+storage rather than by Python class.
+
+The vocabulary has no version number of its own; it rides on the sidecar's `schema_version`,
+because the shape of a stored dtype is part of the shape of the document.
+
 ### JSON sidecar persistence — `sidecar/document.py`, `sidecar/store.py`
 
 One JSON file per Parquet file, beside it. Metadata is not embedded in the Parquet file.
 
 ```python
-SIDECAR_SCHEMA_VERSION: Final = 1
+SIDECAR_SCHEMA_VERSION: Final = 2
 
 class SidecarDocument(BaseModel, frozen=True):
     schema_version: int = SIDECAR_SCHEMA_VERSION
@@ -491,6 +578,11 @@ SIDECAR_STORES: dict[str, type[SidecarStoreBase]] = {}
 def register_sidecar_store(cls): ...                        # decorator
 def get_sidecar_store(identifier: str) -> SidecarStoreBase: ...   # raises on unknown
 ```
+
+**Version 2 replaced `polars_dtype` with `dtype`.** A version 1 file is refused rather than
+read: the field is a different shape under a name that no longer exists, so reading one would
+need a parser for exactly the display form version 2 exists to stop relying on. Nothing had
+been persisted when the change was made, so no migration was owed.
 
 **The document is a wrapper, not a projection.** Every field of `DataframeMetadata` survives
 a JSON round trip unchanged, so there is nothing to reshape and `read(...).metadata ==
@@ -642,7 +734,9 @@ session-scoped `conftest.py` fixture):
 | `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in workbook order; `sheet_names` selects and orders; an unknown sheet raises; `max_workers=1` == default; selector-shaped names (`*`, `^a$` beside `a`) survive; a trailing all-null row is restored from `expected_rows` and lost without it, while interior and leading ones need no restoring; more rows than expected raises; an unmappable dtype raises; a zero-row workbook keeps its columns; both converted fixture frames return all 19 columns matching in dtype and value |
 | `unit/test_fixtures.py` | Parquet regeneration byte-identical; `parquet_a` vs `parquet_b` differ in exactly one cell per column; all **20** files exist after `ensure_fixtures()` and a second call reuses them; `_padded` truncation pinned, with an early warning before a column fills every edge slot |
 | `unit/test_conversion_identity.py` | a source-frame record names no conversion; each conversion stamps its own `identifier`/`version`/`version_number`, taken from the class rather than repeated; an extracted record is findable by identifier rather than by position; the identity survives a real JSON round trip; it is frozen |
+| `unit/test_dtypes.py` | every scalar dtype survives a real JSON round trip and returns the same Polars dtype, with `time_unit`, `time_zone`, `precision` and `scale` each varied independently; the union reloads as the right class; `categorical` is its own kind; `ordering` is not modelled; a nested dtype, an unknown `kind`, and a datetime missing its `time_unit` are each refused; the base class is abstract |
 | `unit/test_sidecar_store.py` | the suffix is appended for ordinary, multi-suffix and suffixless names; the registry resolves `json`, refuses a duplicate identifier, and names what is registered on an unknown one; a written record reloads equal; the file is readable JSON carrying the version and the digest; an unknown `schema_version` raises naming both versions; a corrupt file and a non-object document each raise; a missing sidecar raises `FileNotFoundError`; a `memory://` path round-trips |
+| `unit/test_sidecar_validation.py` | a workbook is validated against its sidecar from two paths, never opening the source frame: the reader schema comes from `dtype.to_polars()`, the row extent from `value_count` (without which a trailing all-null run is lost and a faithful workbook is rejected), and the digest from the ToExcel record; a changed cell and a value moved between rows each fail, reordered rows still pass, and the per-column digests name which column diverged |
 | `integration/test_sidecar_roundtrip.py` | for both fixture Parquets a real record reloads **exactly**; the ToExcel dataframe and per-column digests survive the file boundary and the record stays findable by identifier; the two fixtures produce different sidecars; `modified_utc` reloads aware and names the same instant (per-zone values reload carrying a fixed offset rather than `ZoneInfo`, so instants are compared, not `tzinfo` objects) |
 | `integration/test_excel_hash_roundtrip.py` | **headline:** for each Parquet file — build `DataframeMetadata` (hashers `[BinaryAggregateHash]`, conversions `[None, ToExcel]`); write the converted frame, read it back with `fast_excel_reader`, run it through the conversion again, hash; assert it equals the ToExcel wrapper's dataframe digest. Then write rows [0:500] and [500:1000] as two workbooks, read both back, concat in reverse order, same path, assert equal to that digest. Assert `parquet_a` Excel digest ≠ `parquet_b` Excel digest, and that the halves and the whole already agree before any file is written. Workbooks are written by the test, not taken from the fixtures, which hold the *source* frame. |
 

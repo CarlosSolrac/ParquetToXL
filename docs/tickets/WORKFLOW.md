@@ -114,6 +114,7 @@ Derived from the test-module table at `requirements-spec.md`, which is already c
 | 6 · Fixtures | per-dtype column builders; edge-case row table; `parquet_b` one-cell delta; `ensure_fixtures()`; Excel file generation | done |
 | 7 · Integration | `ZPath`; headline round-trip test; reader parallelization benchmark | done |
 | 8 · Sidecar | remove the unread statistics; `SidecarDocument`; store registry + `JsonSidecarStore`; round-trip integration test | done |
+| 9 · Neutral dtypes | `ColumnDtype` union + converters; wire into column/builder; sidecar schema v2; validation without a lookup table | done |
 
 ### What the phases actually cost, in hindsight
 
