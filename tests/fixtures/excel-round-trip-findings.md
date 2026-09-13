@@ -1,5 +1,10 @@
 # What an Excel round trip does to Polars data
 
+> **The numbers below were measured on the 19-column fixture frame.** It has since grown to
+> 23, gaining `Int128`, `UInt128`, `Float16` and `Enum`. Nothing here was re-measured against
+> the wider frame, so the per-dtype tables describe the dtypes they name and say nothing about
+> the four added later. `unit/test_dtypes.py` and the round-trip tests cover those.
+
 Everything here was measured by running `generate.py` and reading the workbooks back, not
 taken from documentation. Where a number appears, a script produced it. The fixture frame is
 1000 rows across all 19 scalar Polars dtypes, with 48 leading edge-case rows.

@@ -93,6 +93,9 @@ DELTA_ROW: int = EDGE_ROW_COUNT
 PART_ROW_COUNT: int = 500
 SEED: int = 0x51501234ABCD0001
 EXCEL_CELL_LIMIT: int = 32767
+
+ENUM_CATEGORIES: pl.Enum = pl.Enum(["red", "green", "blue", ""])
+"""The enum column's dtype. Its categories are part of the dtype, so they are fixed here."""
 """Excel's documented maximum characters per cell. Recorded because the writer ignores it."""
 
 LCG_MODULUS: int = 1 << 64
@@ -175,7 +178,7 @@ def padded[T](edges: list[T]) -> list[T]:
 
 
 def _integer_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
-    """Build the eight signed and unsigned integer columns.
+    """Build the ten signed and unsigned integer columns.
 
     Args:
         rng: The generator supplying the non-edge rows.
@@ -193,6 +196,10 @@ def _integer_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
         "uint16": (pl.UInt16(), 0, 65535),
         "uint32": (pl.UInt32(), 0, 4294967295),
         "uint64": (pl.UInt64(), 0, 18446744073709551615),
+        # The 128-bit widths were absent until a dtype vocabulary built from this frame
+        # silently dropped them. A fixture that does not carry a dtype cannot catch its loss.
+        "int128": (pl.Int128(), -170141183460469231731687303715884105728, 170141183460469231731687303715884105727),
+        "uint128": (pl.UInt128(), 0, 340282366920938463463374607431768211455),
     }
     built: dict[str, pl.Series] = {}
     name: str
@@ -212,7 +219,7 @@ def _integer_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
 
 
 def _float_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
-    """Build the two float columns, carrying the non-finite and signed-zero cases.
+    """Build the three float columns, carrying the non-finite and signed-zero cases.
 
     Args:
         rng: The generator supplying the non-edge rows.
@@ -223,9 +230,15 @@ def _float_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
     """
     built: dict[str, pl.Series] = {}
     name: str
-    for name in ("float32", "float64"):
-        dtype: pl.DataType = pl.Float32() if name == "float32" else pl.Float64()
-        largest: float = 3.4028234663852886e38 if name == "float32" else 1.7976931348623157e308
+    widths: dict[str, tuple[pl.DataType, float]] = {
+        "float16": (pl.Float16(), 65504.0),
+        "float32": (pl.Float32(), 3.4028234663852886e38),
+        "float64": (pl.Float64(), 1.7976931348623157e308),
+    }
+    for name in widths:
+        dtype: pl.DataType
+        largest: float
+        dtype, largest = widths[name]
         values: list[float | None] = padded([0.0, -0.0, float("nan"), float("inf"), float("-inf"), 1.5, None, largest, -largest])
         values.append(2.5 if delta else 1.25)
         while len(values) < ROW_COUNT:
@@ -280,7 +293,7 @@ def _temporal_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
 
 
 def _other_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
-    """Build the boolean, string, binary, decimal and categorical columns.
+    """Build the boolean, string, binary, decimal, categorical and enum columns.
 
     The string column carries a value longer than ``EXCEL_CELL_LIMIT`` so the round-trip can
     be measured against Excel's documented maximum rather than assumed to respect it.
@@ -360,18 +373,25 @@ def _other_columns(rng: _Lcg, *, delta: bool) -> dict[str, pl.Series]:
     numbers.append(Decimal("2.5000") if delta else Decimal("1.5000"))
     labels: list[str | None] = padded(["alpha", "beta", None, "gamma", ""])
     labels.append("delta" if delta else "epsilon")
+    # Enum's categories are part of its dtype, so the set is declared once and every value
+    # has to come from it -- unlike Categorical, which accepts anything. The empty label is
+    # here for the same reason it is in the categorical column: it becomes null in Excel.
+    choices: list[str | None] = padded(["red", "green", None, "blue", ""])
+    choices.append("green" if delta else "red")
     while len(flags) < ROW_COUNT:
         flags.append(rng.below(2) == 0)
         texts.append(f"row-{rng.below(1000000)}")
         blobs.append(bytes([rng.below(256), rng.below(256)]))
         numbers.append(Decimal(rng.below(10000000)) / Decimal(10000))
         labels.append(("alpha", "beta", "gamma")[rng.below(3)])
+        choices.append(("red", "green", "blue")[rng.below(3)])
     return {
         "boolean": pl.Series("boolean", flags, dtype=pl.Boolean()),
         "string": pl.Series("string", texts, dtype=pl.String()),
         "binary": pl.Series("binary", blobs, dtype=pl.Binary()),
         "decimal": pl.Series("decimal", numbers, dtype=pl.Decimal(18, 4)),
         "categorical": pl.Series("categorical", labels, dtype=pl.Categorical()),
+        "enum": pl.Series("enum", choices, dtype=ENUM_CATEGORIES),
     }
 
 

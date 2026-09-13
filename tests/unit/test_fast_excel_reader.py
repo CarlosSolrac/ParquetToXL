@@ -161,7 +161,7 @@ def test_a_zero_row_workbook_keeps_its_columns(tmp_path: Path) -> None:
 @pytest.mark.parametrize("stem", ["parquet_a", "parquet_b"])
 def test_every_converted_fixture_column_returns_with_its_dtype_and_values(stem: str, fixture_files: dict[str, Path], tmp_path: Path) -> None:
     # The claim the schema parameter exists to make: given the converted frame's dtypes, all
-    # 19 scalar columns come back matching the model in both dtype and value.
+    # Every scalar column comes back matching the model in both dtype and value.
     source: pl.DataFrame = pl.read_parquet(fixture_files[stem])
     converted: pl.DataFrame = DataframeConversionToExcel().metadata_of_converted_dataframe(source, []).converted_dataframe
     target: UPath = _write_default(converted, ZPath(str(tmp_path / f"{stem}.xlsx")))

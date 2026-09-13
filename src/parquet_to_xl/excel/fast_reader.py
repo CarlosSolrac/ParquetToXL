@@ -92,7 +92,7 @@ def _coerce(frame: pl.DataFrame, schema: Mapping[str, pl.DataType]) -> pl.DataFr
     """Bring a sheet's columns to the dtypes the caller asked for.
 
     ``fastexcel``'s vocabulary is coarser than Polars', so two columns arrive close but not
-    equal even when every dtype was requested. Measured over the 19-column fixture frame:
+    equal even when every dtype was requested. Measured over the fixture frame, then 19 columns wide:
     a ``Datetime`` comes back at millisecond precision where the model is microsecond, and a
     ``Time`` comes back as the text its writer stored. Everything else already matches.
 

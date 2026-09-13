@@ -12,10 +12,11 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_args
 
 import polars as pl
 
+from parquet_to_xl.metadata.dtypes import SimpleKind, dtype_from_polars
 from tests.fixtures.generate import (
     DELTA_ROW,
     EDGE_ROW_COUNT,
@@ -72,20 +73,26 @@ def test_the_widest_column_still_has_headroom_under_the_cap() -> None:
 def test_the_frame_has_one_column_per_scalar_dtype_in_sorted_order() -> None:
     frame: pl.DataFrame = build_frame(delta=False)
     assert frame.height == ROW_COUNT
-    assert frame.width == 19
+    assert frame.width == 23
     assert frame.columns == sorted(frame.columns)
 
 
-def test_every_scalar_dtype_is_represented_exactly_once() -> None:
+def test_the_frame_covers_the_dtype_vocabulary() -> None:
+    # Derived from the vocabulary rather than a hand-written list, which is the whole lesson
+    # of how this frame grew. A ColumnDtype vocabulary enumerated from these columns silently
+    # dropped Int128, UInt128, Float16 and Enum -- the frame did not carry them, so nothing
+    # noticed. A fixture that does not hold a dtype cannot catch its loss.
     frame: pl.DataFrame = build_frame(delta=False)
-    kinds: set[str] = {str(dtype) for dtype in frame.dtypes}
-    assert "Boolean" in kinds
-    assert "Binary" in kinds
-    assert "Categorical(ordering='physical')" in kinds or "Categorical" in kinds
-    assert any(kind.startswith("Datetime") for kind in kinds)
-    assert any(kind.startswith("Duration") for kind in kinds)
-    assert any(kind.startswith("Decimal") for kind in kinds)
-    assert {"Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64", "Float32", "Float64", "String", "Date", "Time"} <= kinds
+    present: set[str] = {dtype_from_polars(dtype).kind for dtype in frame.dtypes}
+    every_kind: set[str] = set(get_args(SimpleKind.__value__)) | {"datetime", "duration", "decimal", "categorical", "enum", "extension"}
+
+    # Two are deliberately absent, and both would cost more than they are worth here:
+    #   null      -- an all-null column emits no rows at all, so it would blur the trailing
+    #                row-extent behaviour the reader's own tests pin precisely.
+    #   extension -- degrades to its storage dtype through Parquet unless a type is
+    #                registered process-wide, which a fixture has no business imposing.
+    # unit/test_dtypes.py covers both directly.
+    assert every_kind - present == {"null", "extension"}
 
 
 def test_the_two_frames_differ_at_exactly_one_row_in_every_column() -> None:

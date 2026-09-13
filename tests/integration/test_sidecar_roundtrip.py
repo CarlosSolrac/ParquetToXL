@@ -61,7 +61,7 @@ def _to_excel_record(metadata: DataframeMetadata) -> DataframeColumnsMetadata:
 
 @pytest.mark.parametrize("stem", FIXTURE_STEMS)
 def test_a_real_record_reloads_exactly(stem: str, fixture_files: dict[str, Path], tmp_path: Path) -> None:
-    # Exact equality over a record built from 19 dtypes and 1000 rows, not a hand-made one.
+    # Exact equality over a record built from 23 dtypes and 1000 rows, not a hand-made one.
     # This is only assertable because the column extremes were removed: while min_value and
     # max_value were typed as a union containing str, binary and temporal values reloaded as
     # strings and non-UTF-8 bytes did not serialise at all.

@@ -52,7 +52,7 @@ in a different order.
 | --- | --- |
 | Logging | `structlog` (the original "Serilog" note reinterpreted for Python) |
 | `DataframeColumnMetadata` | one object **per column**; a wrapper `DataframeColumnsMetadata` holds the ordered list + whole-frame hashes |
-| Conversions | **explicit required parameter** to `extract_metadata_from_dataframe` |
+| Conversions | **explicit required parameter** to `extract_metadata_from_dataframe`. ToExcel is at version `4.0`; `3.0` differed in leaving `Enum` unconverted |
 | Hasher API | base class exposes **both** `hash_column()` and `hash_dataframe()` |
 | Dtype coverage | **all scalar Polars dtypes**, no nested types |
 | `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets, **one handle per job**; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given the target dtypes it returns the model's dtypes directly instead of a column of mixed Python types. Amended again on measurement: called through `pl.read_excel` it cannot read selector-shaped column names at all, and a shared handle raises `Already borrowed` across threads |
@@ -329,8 +329,8 @@ change detector, not a proof of equality or an adversarial integrity check.
 `name: str`, `dtype: ColumnDtype` (see *Column dtypes* below),
 flags `is_numeric, is_float, is_integer, is_decimal, is_text, is_boolean: bool`
 (the first four delegate to Polars; `is_text` and `is_boolean` have no Polars predicate and
-are derived — `is_text` is true for `String` **and** `Categorical`, which is
-dictionary-encoded text and converts to `String`; note also that Polars reports `Decimal`
+are derived — `is_text` is true for `String`, `Categorical` **and** `Enum`, the last two being
+dictionary-encoded text that converts to `String`; note also that Polars reports `Decimal`
 as numeric and `Boolean` as *not* numeric),
 `hashes: list[HashedDataframe]`, `value_count: int`, `null_count: int`.
 
@@ -422,7 +422,7 @@ class DataframeConversionBaseClass(ABC):
 - `Int*/UInt*/Decimal → Float64`
 - `Float32/Float64 → Float64`, and **`NaN`/`±inf` become null**
 - `Boolean → Float64` via `True→-1.0`, `False→0.0`, `null→null`
-- `String`/`Categorical` `→ String` cut at 32,767 chars, and **`""` becomes null**
+- `String`/`Categorical`/`Enum` `→ String` cut at 32,767 chars, and **`""` becomes null**
 - `Binary →` lowercase-hex `String`, then the same rule (so `b""` becomes null)
 - `Duration → Float64` seconds
 - **`Datetime → Datetime("us")`: remove timezone preserving local wall-clock time, then truncate to whole seconds**
@@ -439,11 +439,21 @@ digest taken before writing can match one taken after:
   without `nan_inf_to_errors`, and `rustpy-xlsxwriter` emits an empty cell.
 - **`Datetime` → whole seconds.** Measured, `23:47:16.854775` reads back as `23:47:16`.
 
-`Categorical` is also cut at the limit, though the original table listed truncation for
-`String` and `Binary` only: without it an oversized label survives the first pass and is cut
-by the second, which breaks idempotency.
+`Categorical` and `Enum` are also cut at the limit, though the original table listed
+truncation for `String` and `Binary` only: without it an oversized label survives the first
+pass and is cut by the second, which breaks idempotency.
 
-With these rules, all 19 fixture columns round-trip exactly — write the converted frame,
+**`Enum` was missing from this rule until the dtype work exposed it, and the omission was not
+cosmetic.** The conversion routes text on `scalars.is_text`, which named `String` and
+`Categorical` only, so an `Enum` column passed through unconverted -- and `fast_excel_reader`
+then refused the dtype, with an error saying it reads the output of this conversion. A
+sidecar describing an `Enum` column could not be validated at all: the attempt raised rather
+than returning a verdict, and `schema_or_data_changed` reported `False`, claiming the frame
+was already Excel-safe. Adding `Enum` to `is_text` fixes the flag and the conversion together,
+because the conversion routes on the predicate. The conversion's version moves to `4.0`
+accordingly: a record stamped `to-excel 3.0` was produced under different rules.
+
+With these rules, all 23 fixture columns round-trip exactly — write the converted frame,
 read it back with the converted schema, and dtype and value both match.
 
 The metadata and hashes for this conversion are computed on the **converted** values, so
@@ -586,7 +596,7 @@ been persisted when the change was made, so no migration was owed.
 
 **The document is a wrapper, not a projection.** Every field of `DataframeMetadata` survives
 a JSON round trip unchanged, so there is nothing to reshape and `read(...).metadata ==
-original` is assertable over a record built from 19 dtypes and 1000 rows. That is true only
+original` is assertable over a record built from 23 dtypes and 1000 rows. That is true only
 since the extremes were removed; see *Column metadata* above.
 
 **The suffix is appended, not replaced.** `sales.parquet` gains `sales.parquet.json`.
@@ -700,9 +710,13 @@ thread calling `load_sheet` on it raises `RuntimeError: Already borrowed`, so th
 Deterministic, seeded, build-on-demand. `ensure_fixtures() -> FixtureSet` (called by a
 session-scoped `conftest.py` fixture):
 
-1. **Two Parquet files**, 1000 rows, one column per scalar Polars dtype
-   (`Int8/16/32/64`, `UInt8/16/32/64`, `Float32/64`, `Boolean`, `String`, `Binary`,
-   `Date`, `Time`, `Datetime("us","UTC")`, `Duration`, `Decimal`, `Categorical`).
+1. **Two Parquet files**, 1000 rows, one column per scalar Polars dtype -- 23 of them
+   (`Int8/16/32/64/128`, `UInt8/16/32/64/128`, `Float16/32/64`, `Boolean`, `String`,
+   `Binary`, `Date`, `Time`, `Datetime("us","UTC")`, `Duration`, `Decimal`, `Categorical`,
+   `Enum`). The four 128-bit, half-precision and enum columns were added after a dtype
+   vocabulary built from this frame silently dropped exactly those dtypes: a fixture that
+   does not carry a dtype cannot catch its loss. `Null` and `Extension` are the two the
+   frame still omits, for the reasons `unit/test_fixtures.py` records.
    First rows carry edge cases per dtype (min, max, `0`, null, `""`, a `>32767`-char
    string, `NaN`/`±inf` for floats, epoch and far-future dates); remaining rows are
    seeded-random. `parquet_b` is `parquet_a` with **exactly one cell changed per column**.
@@ -731,7 +745,7 @@ session-scoped `conftest.py` fixture):
 | `unit/test_metadata_builder.py` | dtype flags correct per dtype; `value_count`/`null_count` match Polars; one `HashedDataframe` per hasher per column; a nested dtype is refused outright |
 | `unit/test_extract_metadata.py` | happy path fills every field; `modified_utc` tz-aware; per-tz dict keyed by input names; one wrapper per conversion; unreadable path / bad input → `None` + logged |
 | `unit/test_excel_writer.py` | registry resolves the default and refuses a duplicate identifier; unknown identifier raises; the **default writer** round-trips the model exactly while `PolarsExcelWriter` is held only to shape; both refuse what they cannot represent; `ExcelWriteConfig` defaults to `rustpy-xlsxwriter` |
-| `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in workbook order; `sheet_names` selects and orders; an unknown sheet raises; `max_workers=1` == default; selector-shaped names (`*`, `^a$` beside `a`) survive; a trailing all-null row is restored from `expected_rows` and lost without it, while interior and leading ones need no restoring; more rows than expected raises; an unmappable dtype raises; a zero-row workbook keeps its columns; both converted fixture frames return all 19 columns matching in dtype and value |
+| `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in workbook order; `sheet_names` selects and orders; an unknown sheet raises; `max_workers=1` == default; selector-shaped names (`*`, `^a$` beside `a`) survive; a trailing all-null row is restored from `expected_rows` and lost without it, while interior and leading ones need no restoring; more rows than expected raises; an unmappable dtype raises; a zero-row workbook keeps its columns; both converted fixture frames return all 23 columns matching in dtype and value |
 | `unit/test_fixtures.py` | Parquet regeneration byte-identical; `parquet_a` vs `parquet_b` differ in exactly one cell per column; all **20** files exist after `ensure_fixtures()` and a second call reuses them; `_padded` truncation pinned, with an early warning before a column fills every edge slot |
 | `unit/test_conversion_identity.py` | a source-frame record names no conversion; each conversion stamps its own `identifier`/`version`/`version_number`, taken from the class rather than repeated; an extracted record is findable by identifier rather than by position; the identity survives a real JSON round trip; it is frozen |
 | `unit/test_dtypes.py` | every scalar dtype survives a real JSON round trip and returns the same Polars dtype, with `time_unit`, `time_zone`, `precision` and `scale` each varied independently; the union reloads as the right class; `categorical` is its own kind; `ordering` is not modelled; a nested dtype, an unknown `kind`, and a datetime missing its `time_unit` are each refused; the base class is abstract |
