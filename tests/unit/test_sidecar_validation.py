@@ -35,6 +35,7 @@ from parquet_to_xl.hashing.binary_aggregate import DataFrameHasherBinaryAggregat
 from parquet_to_xl.metadata.extract import extract_metadata_from_dataframe
 from parquet_to_xl.paths import ZPath
 from parquet_to_xl.sidecar.store import get_sidecar_store
+from parquet_to_xl.sidecar.validation import validate_workbook
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -129,16 +130,20 @@ def _read_as_the_sidecar_describes(subject: _Subject, *, use_row_extent: bool = 
     return fast_excel_reader(subject.workbook, schema=schema, expected_rows=rows)
 
 
-def _validate(subject: _Subject, *, use_row_extent: bool = True) -> bool:
-    """Decide whether the workbook holds the data the sidecar describes.
+def _validate(subject: _Subject) -> bool:
+    """The shipped operation, from two paths.
 
-    The whole operation, from two paths. The original frame is never opened -- the Parquet
-    path is used to locate the sidecar and for nothing else.
+    Delegates rather than reimplementing. This module used to carry its own assembly of the
+    steps, which meant the tests proved a test-local copy worked; they now exercise what
+    callers get. ``test_validate_workbook.py`` covers the verdict's own surface.
     """
-    record: DataframeColumnsMetadata = _excel_record(subject.parquet)
+    return validate_workbook(subject.parquet, subject.workbook).valid
+
+
+def _digest_of(subject: _Subject, *, use_row_extent: bool) -> str:
+    """Recompute the digest by hand, to isolate one input of the decision at a time."""
     back: pl.DataFrame = _read_as_the_sidecar_describes(subject, use_row_extent=use_row_extent)
-    digest: str = DataFrameHasherBinaryAggregateHash().hash_dataframe(_convert(back)).digest_hex
-    return digest == record.dataframe_hashes[0].digest_hex
+    return DataFrameHasherBinaryAggregateHash().hash_dataframe(_convert(back)).digest_hex
 
 
 def test_a_faithful_workbook_validates_against_its_sidecar(tmp_path: Path) -> None:
@@ -176,10 +181,13 @@ def test_the_row_extent_comes_from_value_count(tmp_path: Path) -> None:
     # cannot say how many are missing; without the extent the digest is computed over the
     # wrong number of rows and validation fails on a workbook that is in fact faithful.
     subject: _Subject = _publish(tmp_path, _frame())
+    recorded: str = _excel_record(subject.parquet).dataframe_hashes[0].digest_hex
     assert _read_as_the_sidecar_describes(subject, use_row_extent=False).height == 2
     assert _read_as_the_sidecar_describes(subject, use_row_extent=True).height == 4
-    assert _validate(subject, use_row_extent=False) is False
-    assert _validate(subject, use_row_extent=True) is True
+    assert _digest_of(subject, use_row_extent=False) != recorded
+    assert _digest_of(subject, use_row_extent=True) == recorded
+    # And the shipped path, which always supplies the extent, agrees.
+    assert _validate(subject) is True
 
 
 def test_a_changed_cell_fails_validation(tmp_path: Path) -> None:

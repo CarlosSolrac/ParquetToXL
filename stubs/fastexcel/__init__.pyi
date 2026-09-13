@@ -31,6 +31,15 @@ import polars as pl
 type DType = Literal["null", "int", "float", "string", "boolean", "datetime", "date", "duration"]
 type DTypeMap = dict[str | int, DType]
 
+class FastExcelError(Exception):
+    """Base of every error the package raises, re-exported from its Rust extension.
+
+    Declared because ``sidecar.validation`` catches it: a workbook the reader cannot open at
+    all -- a corrupt archive, a missing sheet -- is a fact about the file under validation and
+    becomes a verdict rather than an exception. Catching ``Exception`` there would swallow
+    programming errors with it.
+    """
+
 class ColumnInfoNoDtype: ...
 
 class ArrowRecordBatch:

@@ -142,6 +142,7 @@ src/parquet_to_xl/
   sidecar/
     document.py         SIDECAR_SCHEMA_VERSION, SidecarDocument
     store.py            sidecar_path, SidecarStoreBase, registry, JsonSidecarStore
+    validation.py       validate_workbook(source, workbook) -> Verdict
   excel/
     writer.py           ExcelWriterBase, registry, RustpyExcelWriter (default),
                         PolarsExcelWriter, ExcelWriteConfig
@@ -619,6 +620,66 @@ all hand `str(path)` to a library that opens it as a local filename.
 Acceptance tests serialize to actual JSON bytes and reload them, rather than testing only
 `model_dump()` / `model_validate()` with Python objects still in them.
 
+### Validating a workbook — `sidecar/validation.py`
+
+```python
+type VerdictKind = Literal["valid", "digest-mismatch", "columns-differ", "workbook-unreadable",
+                           "unsupported-conversion", "unsupported-hasher", "no-excel-digest"]
+
+@dataclass(frozen=True)
+class Verdict:
+    kind: VerdictKind
+    detail: str
+    expected_digest: str | None = None
+    actual_digest: str | None = None
+    @property
+    def valid(self) -> bool: ...
+
+def validate_workbook(source_path: UPath, workbook_path: UPath, *, store: str = "json") -> Verdict:
+```
+
+The sidecar's payoff, as one call. Reads the workbook at the schema and row extent the
+sidecar records, applies the Excel conversion, and compares the digest against the one
+recorded before the file existed. **The source frame is never opened** -- `source_path` locates
+the sidecar and does nothing else, so validation works wherever the Parquet file has gone.
+
+**Two of the checks are the reason this ships rather than staying a recipe.** A sidecar
+written by a different conversion or hasher version records digests computed under different
+rules, so comparing them reports a difference in the *data* that is really a difference in the
+*algorithm* -- `to-excel 3.0` left `Enum` unconverted, and its digests are not comparable with
+`4.0`'s. A caller assembling the steps by hand has no reason to think of that. The function
+refuses instead, and says which version it found.
+
+**`columns-differ` exists because the digest cannot cover it.** Column *names* are
+deliberately not hashed -- renaming a column must not look like a change of data -- so a
+workbook whose headers were all replaced produces the identical digest. Caught in review:
+without a name check it validated, which is the worst kind of wrong answer, a confident yes
+about a file that does not hold what the sidecar describes. The sidecar records the names and
+their order, so the validator checks them itself, before comparing digests.
+
+**The check reads the header cells as written**, not the names the reader hands back. The
+reader normalizes on the way in -- duplicates are suffixed, blanks are named ``__UNNAMED__N``
+-- so comparing its output cannot see a header altered *into* a name it would have generated
+anyway: a sheet headed ``n, n`` deduplicates to ``n, n_1`` and matched a record of exactly
+those columns, values untouched, digest agreeing. One extra single-row read per sheet closes
+it, through the same ``fastexcel`` handle the reader uses.
+
+**The error boundary covers reading, converting and hashing, not reading alone.** A cell can
+be readable and still unusable: an Excel date serial of 2958466 parses to a Polars date in
+year 10000, and only the hasher fails, when it reads the value back out. Also caught in
+review -- with hashing outside the boundary, one damaged file aborted a whole batch instead
+of returning a verdict.
+
+**Judgements about the workbook are values; wiring mistakes are exceptions.** A digest
+mismatch and an unreadable workbook both come back as verdicts, so a batch job does not stop
+at the first bad file. A missing sidecar or missing workbook raises, because reporting a path
+that is not there as "invalid" would make it hard to find.
+
+`VerdictKind` is a `Literal` rather than an enum, matching `scope`, the hasher `identifier`
+and the dtype `kind`. It is also the only spelling `tools/check_declarations.py` permits:
+enum members are class-body assignments, and annotating one turns it into a plain attribute
+rather than a member.
+
 ### Excel writer registry — `excel/writer.py`
 
 ```python
@@ -750,6 +811,7 @@ session-scoped `conftest.py` fixture):
 | `unit/test_conversion_identity.py` | a source-frame record names no conversion; each conversion stamps its own `identifier`/`version`/`version_number`, taken from the class rather than repeated; an extracted record is findable by identifier rather than by position; the identity survives a real JSON round trip; it is frozen |
 | `unit/test_dtypes.py` | every scalar dtype survives a real JSON round trip and returns the same Polars dtype, with `time_unit`, `time_zone`, `precision` and `scale` each varied independently; the union reloads as the right class; `categorical` is its own kind; `ordering` is not modelled; a nested dtype, an unknown `kind`, and a datetime missing its `time_unit` are each refused; the base class is abstract |
 | `unit/test_sidecar_store.py` | the suffix is appended for ordinary, multi-suffix and suffixless names; the registry resolves `json`, refuses a duplicate identifier, and names what is registered on an unknown one; a written record reloads equal; the file is readable JSON carrying the version and the digest; an unknown `schema_version` raises naming both versions; a corrupt file and a non-object document each raise; a missing sidecar raises `FileNotFoundError`; a `memory://` path round-trips |
+| `unit/test_validate_workbook.py` | a faithful workbook is valid and a changed cell is a mismatch carrying both digests; reordered rows stay valid; renamed, missing and reordered columns are caught although the digest cannot see names; a cell that reads but cannot be hashed is a verdict rather than an exception; a sidecar from another conversion or hasher version is refused rather than compared, naming both versions; a sidecar recorded without the conversion or without hashers reports nothing to compare; an unreadable workbook is a verdict while a missing one raises; the supported-hasher constants are asserted against what the hasher actually produces |
 | `unit/test_sidecar_validation.py` | a workbook is validated against its sidecar from two paths, never opening the source frame: the reader schema comes from `dtype.to_polars()`, the row extent from `value_count` (without which a trailing all-null run is lost and a faithful workbook is rejected), and the digest from the ToExcel record; a changed cell and a value moved between rows each fail, reordered rows still pass, and the per-column digests name which column diverged |
 | `integration/test_sidecar_roundtrip.py` | for both fixture Parquets a real record reloads **exactly**; the ToExcel dataframe and per-column digests survive the file boundary and the record stays findable by identifier; the two fixtures produce different sidecars; `modified_utc` reloads aware and names the same instant (per-zone values reload carrying a fixed offset rather than `ZoneInfo`, so instants are compared, not `tzinfo` objects) |
 | `integration/test_excel_hash_roundtrip.py` | **headline:** for each Parquet file — build `DataframeMetadata` (hashers `[BinaryAggregateHash]`, conversions `[None, ToExcel]`); write the converted frame, read it back with `fast_excel_reader`, run it through the conversion again, hash; assert it equals the ToExcel wrapper's dataframe digest. Then write rows [0:500] and [500:1000] as two workbooks, read both back, concat in reverse order, same path, assert equal to that digest. Assert `parquet_a` Excel digest ≠ `parquet_b` Excel digest, and that the halves and the whole already agree before any file is written. Workbooks are written by the test, not taken from the fixtures, which hold the *source* frame. |
