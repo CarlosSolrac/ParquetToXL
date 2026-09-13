@@ -44,8 +44,8 @@ def encode_value(value: object) -> bytes:
     empty string, or a ``Date(1)`` and a ``Datetime(1)``, all of which would otherwise
     collide once ``hash_dataframe`` pools every value of every column into one sum.
 
-    The tag is a property of the value, not of the column, which is what keeps this
-    compatible with the "no column binding" decision.
+    The tag is a property of the value, not of the column. The dataframe hasher separately
+    binds column order by hashing each row's ordered cell hashes.
 
     ===== ============================ ================================================
     Tag    Value                        Payload
@@ -104,8 +104,8 @@ def encode_value(value: object) -> bytes:
     or a payload here **requires** incrementing that version: the digest of unchanged data
     moves, and without a version bump a stored hash and a freshly computed one carry
     identical algorithm labels while disagreeing, so unchanged data reads as modified.
-    Pre-release the encoding is still being settled and no digest has been written down, so
-    the version stays 1 and changes here are free.
+    Version 2 changed the dataframe aggregation to include row relationships without
+    changing this canonical encoding. Future encoding changes still require a version bump.
 
     Two dispatch orders are load-bearing, because Python's type hierarchy works against
     the table above: ``bool`` is a subclass of ``int``, so it must be tested first or every

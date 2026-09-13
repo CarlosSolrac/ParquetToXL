@@ -35,6 +35,20 @@ class DataFrameHasherBaseClass(ABC):
     implement the two independently.
     """
 
+    def hash_all(self, df: pl.DataFrame) -> tuple[tuple[HashedDataframe, ...], HashedDataframe]:
+        """Return column digests in dataframe order and the whole-frame digest.
+
+        Hashers may override this to reuse cell encodings across both aggregates.
+        The default preserves compatibility with implementations of the two original methods.
+
+        Args:
+            df: The frame to digest, without mutation.
+
+        Returns:
+            The ordered column records and the dataframe record.
+        """
+        return tuple(self.hash_column(df[name]) for name in df.columns), self.hash_dataframe(df)
+
     @abstractmethod
     def hash_column(self, column: pl.Series) -> HashedDataframe:
         """Return the digest of one column's values.

@@ -12,17 +12,17 @@ survive contact with the libraries.
 | 0 · Prereq | **done** | deps, `[build-system]`, src layout, `configure_logging`, golden style module |
 | 1 · Canonical + hashing | **done** | `encode_value` / `encode_series`, tags `0x00`-`0x0C`, additive xxh3-128 |
 | 2 · Metadata models | **done** | the three models and `build_columns_metadata` |
-| 3 · Conversions | **done** | base, `None`, `ToExcel` at version 2.0, idempotency pinned |
+| 3 · Conversions | **done** | base, `None`, `ToExcel` at version 3.0, local wall-clock preservation and idempotency pinned |
 | 4 · Extract | **done** | `extract_metadata_from_dataframe`, five failure modes pinned |
 | 5 · Excel | **writers done, reader pending** | registry, `ExcelWriteConfig`, both writers. `fast_excel_reader` is the one unbuilt unit |
 | 6 · Fixtures | **done** | `generate.py`, 20 files across three writers, invariants under test |
 | 7 · Integration | **partly done** | `ZPath` landed early as a phase 4 prerequisite; the single-workbook half of the headline test is in `integration/test_excel_roundtrip.py`. The split-workbook half and the reader benchmark wait on the reader |
 
-At the time of writing: 240 tests, 100% statement and 100% branch coverage, all five
-pre-commit hooks, no suppressions anywhere in `src/`, `tests/` or `stubs/`.
+After the 2026-09-12 wall-clock and row-hashing amendments: 264 tests, 100% statement and
+100% branch coverage. Ruff, formatting, declarations, pyright and mypy pass.
 
-**What is left.** `fast_excel_reader`, and the headline test's split-workbook half that
-depends on it. The reader also inherits two measured problems that are its to solve, not the
+**What is left.** `fast_excel_reader`, the headline test's split-workbook half that
+depends on it, and the JSON sidecar schema and persistence API. The reader also inherits two measured problems that are its to solve, not the
 writers': a trailing all-null row leaves no trace in a sheet and must be restored from
 `value_count`, and `pl.read_excel` raises `DuplicateError` on selector-shaped column names
 (`*`, `^...$`) that both writers store correctly.
@@ -38,8 +38,8 @@ The goal is a library that, given a Polars DataFrame loaded from a Parquet file,
 validated metadata record describing every column, computes **order-independent** content
 hashes, models what happens to that data when it is round-tripped through Excel, and can
 read Excel back fast. The headline acceptance test: hash a DataFrame read back from a
-generated `.xlsx` and confirm it equals the "Excel hash" recorded in the Parquet file's
-metadata — including when the rows were split across two 500-row workbooks and reassembled
+generated `.xlsx` and confirm it equals the "Excel hash" recorded in the JSON sidecar for
+the Parquet file — including when the rows were split across two 500-row workbooks and reassembled
 in a different order.
 
 ### Design decisions
@@ -52,7 +52,8 @@ in a different order.
 | Hasher API | base class exposes **both** `hash_column()` and `hash_dataframe()` |
 | Dtype coverage | **all scalar Polars dtypes**, no nested types |
 | `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given `schema_overrides` it returns the model's dtypes directly instead of a column of mixed Python types |
-| Binary aggregate hash | **xxh3_128**, per-value hash summed mod 2¹²⁸ (row-order independent); **no column binding** |
+| Binary aggregate hash | **xxh3_128 v2**; aggregate cell hashes and hashes of each row's ordered cell hashes mod 2¹²⁸. Row order may change; column order and row relationships are bound. Column names are not hashed. |
+| Persistence | **one JSON sidecar per Parquet file**. JSON schema, filename convention, and read/write API remain to be defined; metadata is not embedded in Parquet. |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
 | `ZPath` | **a `zpath()` factory returning a real `UPath`**, not a subclass; construction is the only seam (future Azure/AWS credential wiring). Amended on measurement: UPath 0.3.10 picks one concrete class per protocol from a registry, so a bare `class ZPath(UPath)` cannot be constructed at all. UPath accepts `**storage_options` natively, so the seam survives as one factory in one place, with `ZPath` kept as a CapWords alias of it |
 | `HashedDataframe` | Pydantic **discriminated union on `identifier`**, per-hasher subclass + `version` |
@@ -69,6 +70,9 @@ in a different order.
 - ToExcel `Duration → Float64` seconds; `Binary →` lowercase-hex `String`; `Categorical → String`.
 - ToExcel also models three losses a real round trip inflicts: `""` → null, `NaN`/`±inf` → null,
   and `Datetime` truncated to whole seconds. See the conversion section.
+- Zoned datetimes preserve **local wall-clock time**: remove the timezone without converting
+  to UTC, then truncate. Output is naive `Datetime("us")`; even removing UTC changes schema.
+  DST-fold instants with the same local clock reading intentionally become equal.
 - The two 500-row Excel files are rows `[0:500]` and `[500:1000]` of the 1000-row frame.
 - Fixture RNG is a small linear congruential generator written out in `generate.py`, not
   stdlib `random`. Amended: `random` trips Ruff `S311`, which this project does not
@@ -224,11 +228,10 @@ nanosecond variants get tags `0x0B` and `0x0C` rather than being folded into `0x
 | `Datetime("ns")` column | `b"\x0b" + struct.pack("<q", nanos_since_epoch)` |
 | `Duration("ns")` column | `b"\x0c" + struct.pack("<q", nanoseconds)` |
 
-The type tag is a property of the value, not the column, so it is kept under the
-"no column binding" decision. It is constant within a single-column digest, but
-`hash_dataframe` pools every value of every column into one additive sum, and `Float64`,
-`Date`, `Datetime`, and `Time` all serialize to 8 bytes via `struct.pack` — the tag stops
-e.g. `Date(1)` and `Datetime(1)` contributing an identical term to that sum.
+The type tag is a property of the value, not the column name. `Float64`, `Date`,
+`Datetime`, and `Time` all serialize to 8 bytes via `struct.pack`; tags keep them distinct.
+Source-frame datetime hashes still describe instants. The ToExcel conversion removes the
+timezone first, so converted datetime hashes describe local wall-clock readings.
 
 **Round-trip canonicalization.** `calamine` returns Excel datetimes as naive and may infer
 `Int64` for whole-number columns, so the reader's output is not dtype-identical to
@@ -248,16 +251,19 @@ class DataFrameHasherBaseClass(ABC):
 
 `HashedDataframeBase(BaseModel, frozen=True)`: `identifier: str`, `version: int`.
 `BinaryAggregateHashedDataframe(HashedDataframeBase)`:
-`identifier: Literal["binary-aggregate-xxh3-128"]`, `version: int = 1`,
+`identifier: Literal["binary-aggregate-xxh3-128"]`, `version: int = 2`,
 `scope: Literal["column", "dataframe"]`, `bit_width: Literal[128] = 128`,
-`digest_hex: str` (`Field(pattern=r"^[0-9a-f]{32}$")`).
+`digest_hex: str` (`Field(pattern=r"^[0-9a-f]{32}$")`),
+`row_digest_hex: str | None = None` (same hex pattern; the aggregate of the logical row-hash
+column for a v2 dataframe, absent for column hashes and legacy v1 records).
 
 `version` and the `encode_value` tag table are one contract. Once any digest has been
 persisted, changing a tag or a payload requires incrementing `version` in the same change:
 otherwise a stored digest and a freshly computed one carry identical algorithm labels while
-disagreeing, and unchanged data reads as modified. Pre-release nothing has been written
-down — fixtures are generated on first run and gitignored, and no test hardcodes a digest —
-so the encoding is still being settled and `version` stays 1.
+disagreeing, and unchanged data reads as modified. Version 2 changes dataframe aggregation
+to include row relationships; column digest payloads and canonical value encodings remain
+unchanged. Compare algorithm versions before comparing digests; recompute old dataframe
+digests from data because v1 aggregate sums cannot recover row relationships.
 `HashedDataframe = Annotated[BinaryAggregateHashedDataframe, Field(discriminator="identifier")]`
 — a one-member discriminated union, extensible without touching consumers. It is defined in
 `hashing/__init__.py`, not `base.py`: `base.py` would need the concrete subclass to build the
@@ -269,11 +275,34 @@ through `model_validate` / `model_dump` selecting the subclass by `identifier`.
 
 `DataFrameHasherBinaryAggregateHash`:
 - `hash_column(column)`: `total = 0`; for each value `total = (total + xxh3_128(encode_value(v)).intdigest()) % (1 << 128)`; return with `scope="column"`, `digest_hex = f"{total:032x}"`.
-- `hash_dataframe(df)`: accumulate over every value of every column (equivalently the mod-2¹²⁸ sum of the column digests); `scope="dataframe"`.
+- `hash_all(df)`: compute cell hashes column by column in bounded batches, preserving row
+  positions. Use the canonical **16-byte big-endian** xxh3 digest, never hex text, as the
+  working cell value. Accumulate each original column's integer hashes mod 2¹²⁸.
+- For each row, concatenate those fixed-width cell hashes in dataframe column order and
+  hash the result with xxh3-128. This is a logical extra column, not a mutation of the
+  caller's dataframe. Sum its values mod 2¹²⁸ into `row_digest_hex`.
+- `hash_dataframe(df)`: return `(sum(original column totals) + row total) mod 2¹²⁸` as
+  `digest_hex`, with `scope="dataframe"`. `hash_all` also returns the ordered column records,
+  so metadata building does not encode and hash each cell twice.
+
+This costs O(rows × columns), hashes each canonical cell once plus one hash per row, and
+uses at most 4096 rows per batch, reduced for wide frames toward a 4 MiB cell-hash payload.
+The payload target excludes Python buffer overhead and permits one exceptionally wide row.
+No sorting, Python hash randomization, or runtime-dependent dataframe hashing is used.
+
+Local timing on 2026-09-12 (Python 3.13.14, Polars 1.44.1, median of three runs, ten Int64
+columns) measured the shared hashing pass at 0.0406 s / 0.2007 s / 0.3958 s for 10k / 50k /
+100k rows. The previous metadata hashing path, which encoded all cells once for column
+totals and again for the dataframe total, took 0.0738 s / 0.3839 s / 0.7692 s respectively.
+These timings exclude metadata statistics and file I/O; they are local observations, not
+a performance guarantee for other dtypes, machines, or a native/vectorized implementation.
 
 Properties this buys (all asserted by tests): shuffling rows leaves the digest unchanged;
-concatenating the two 500-row halves reproduces the 1000-row digest; one changed cell
-changes the digest.
+concatenating the two 500-row halves reproduces the 1000-row digest; swapping values between
+different rows changes the dataframe digest even when column totals do not. Column reorder
+changes the digest; renaming columns does not. Duplicate and null rows contribute normally.
+Empty frames and empty columns have zero aggregates. As before, this is a non-cryptographic
+change detector, not a proof of equality or an adversarial integrity check.
 
 ### Column metadata — `metadata/column.py`, `columns.py`, `builder.py`
 
@@ -301,8 +330,9 @@ be invented at every call site.
 
 `build_columns_metadata(df, hashers)` is the shared constructor used by both the
 source-frame path and every conversion: per column it derives the dtype flags, computes
-stats with Polars, and calls each hasher's `hash_column`; then calls each hasher's
-`hash_dataframe` for the wrapper.
+stats with Polars, and calls each hasher's `hash_all` for both levels of digests. The base
+implementation delegates to `hash_column` and `hash_dataframe` for compatibility; the
+binary aggregate implementation reuses the working cell hashes.
 
 ### Conversions — `conversion/base.py`, `none.py`, `to_excel.py`
 
@@ -343,8 +373,8 @@ class DataframeConversionBaseClass(ABC):
 - `String`/`Categorical` `→ String` cut at 32,767 chars, and **`""` becomes null**
 - `Binary →` lowercase-hex `String`, then the same rule (so `b""` becomes null)
 - `Duration → Float64` seconds
-- **`Datetime` truncated to whole seconds**
-- `Date` / `Time` unchanged; `Null` unchanged
+- **`Datetime → Datetime("us")`: remove timezone preserving local wall-clock time, then truncate to whole seconds**
+- `Time` truncated to microseconds; `Date` and `Null` unchanged
 
 Three of those rules destroy information, and each was added after measuring that a real
 round trip destroys it first. The conversion has to lose exactly what the file loses, or no
@@ -387,6 +417,20 @@ and returns `None`. On success returns `DataframeMetadata(frozen=True)`:
 `source_columns_metadata: DataframeColumnsMetadata` (`build_columns_metadata(df, hashers)`),
 `column_metadata_of_conversions: list[DataframeColumnsMetadata]`
 (one per supplied conversion, `conv.metadata_of_converted_dataframe(df, hashers).columns_metadata`).
+
+### JSON sidecar persistence — format pending
+
+Persist one JSON file for each Parquet file. Do not embed the metadata in the Parquet file.
+The current extraction API returns an in-memory model only; no sidecar read/write API is
+implemented. Filename conventions and the JSON schema have not yet been agreed.
+
+The schema design must settle a schema version, conversion identifiers and versions,
+source-file association, typed scalar statistics (including binary, Decimal and temporal
+values), non-finite statistics, and row counts needed to reconstruct blank Excel rows.
+Plain Pydantic JSON dumping is not yet a persistence contract: binary extrema can fail
+UTF-8 serialization and the scalar union can reload temporal and decimal values as strings.
+Acceptance tests must serialize to actual JSON bytes and reload them, rather than testing
+only `model_dump()` / `model_validate()` with Python objects.
 
 ### Excel writer registry — `excel/writer.py`
 
@@ -453,7 +497,8 @@ session-scoped `conftest.py` fixture):
 | --- | --- |
 | `unit/test_paths.py` | `zpath()` returns the registered implementation; local paths satisfy `os.fspath()`; string round-trip; `storage_options` accepted via mapping and kwargs and inherited by derived paths; pickle round-trip; live credential objects rejected; a direct `UPath` subclass raises |
 | `unit/test_canonical.py` | type tags; null sentinel distinct; `NaN` / `-0.0` normalized; float `0.0` ≠ `""`; date/datetime/time stable |
-| `unit/test_binary_aggregate.py` | row-shuffle → same digest; one cell changed → different digest; dataframe digest == mod-2¹²⁸ sum of column digests; concat of halves == whole; `digest_hex` is 32 lowercase hex; discriminated-union `model_validate`/`model_dump` round-trip |
+| `unit/test_binary_aggregate.py`, `unit/test_row_hashing.py` | row-shuffle → same digest; moved cells / reordered columns → different dataframe digest; dataframe digest == mod-2¹²⁸ sum of original column totals plus row total; concat and aggregate sums of halves == whole; batch independence; `digest_hex` is 32 lowercase hex; model round-trip |
+| `integration/test_wall_clock_roundtrip.py` | UTC, New York DST folds, and Kolkata preserve local clock readings as naive datetimes through the default writer and schema-driven reader; nulls, idempotency, and digest equality |
 | `unit/test_conversion_none.py` | frame unchanged; `schema_or_data_changed is False`; metadata columns mirror input |
 | `unit/test_conversion_to_excel.py` | numerics/decimal/float32 → `Float64`; bool → `-1.0`/`0.0`; long string truncated + flag `True`; already-Excel-safe frame → flag `False`; duration → seconds; categorical → string; binary → hex |
 | `unit/test_metadata_builder.py` | dtype flags correct per dtype; stats (`min/max/value_count/unique_count/null_count`) match Polars; one `HashedDataframe` per hasher per column |

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     import polars as pl
 
+    from parquet_to_xl.hashing import HashedDataframe
     from parquet_to_xl.hashing.base import DataFrameHasherBaseClass
 
 
@@ -25,8 +26,8 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
 
     For each column, in dataframe order, it records the name, ``str()`` of the dtype, the
     six dtype flags from ``metadata.scalars``, one ``hash_column`` result per hasher, and
-    Polars' own ``min``, ``max``, ``len``, ``n_unique`` and ``null_count``. It then calls
-    each hasher's ``hash_dataframe`` once for the wrapper.
+    Polars' own ``min``, ``max``, ``len``, ``n_unique`` and ``null_count``. Each hasher's
+    ``hash_all`` supplies both column and frame digests, reusing cell hashes when supported.
 
     Two counting details are inherited from Polars rather than invented here, and both are
     pinned by tests: ``value_count`` is the row count including nulls, and ``unique_count``
@@ -44,8 +45,10 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
         The wrapper holding the per-column records and the frame-level digests.
     """
     columns: list[DataframeColumnMetadata] = []
+    hashed: list[tuple[tuple[HashedDataframe, ...], HashedDataframe]] = [hasher.hash_all(df) for hasher in hashers]
+    index: int
     name: str
-    for name in df.columns:
+    for index, name in enumerate(df.columns):
         series: pl.Series = df[name]
         dtype: pl.DataType = series.dtype
         columns.append(
@@ -58,7 +61,7 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
                 is_decimal=scalars.is_decimal(dtype),
                 is_text=scalars.is_text(dtype),
                 is_boolean=scalars.is_boolean(dtype),
-                hashes=[hasher.hash_column(series) for hasher in hashers],
+                hashes=[column_hashes[index] for column_hashes, _ in hashed],
                 min_value=scalars.as_column_scalar(series.min()),
                 max_value=scalars.as_column_scalar(series.max()),
                 value_count=len(series),
@@ -66,4 +69,4 @@ def build_columns_metadata(df: pl.DataFrame, hashers: Sequence[DataFrameHasherBa
                 null_count=series.null_count(),
             )
         )
-    return DataframeColumnsMetadata(columns=columns, dataframe_hashes=[hasher.hash_dataframe(df) for hasher in hashers])
+    return DataframeColumnsMetadata(columns=columns, dataframe_hashes=[whole for _, whole in hashed])

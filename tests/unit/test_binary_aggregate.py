@@ -37,7 +37,7 @@ def test_digest_hex_must_be_32_lowercase_hex_characters() -> None:
 def test_record_defaults_and_immutability() -> None:
     record: BinaryAggregateHashedDataframe = BinaryAggregateHashedDataframe(scope="dataframe", digest_hex="a" * 32)
     assert record.identifier == "binary-aggregate-xxh3-128"
-    assert record.version == 1
+    assert record.version == 2
     assert record.bit_width == 128
     assert BinaryAggregateHashedDataframe.model_config.get("frozen") is True
     # The attribute name is held in a variable deliberately. Now that frozen is declared on
@@ -109,9 +109,9 @@ def test_nulls_contribute_a_term_rather_than_being_skipped() -> None:
     assert with_null != without
 
 
-def test_dataframe_digest_is_the_modular_sum_of_the_column_digests() -> None:
-    # The identity every later phase leans on. Asserted directly rather than left to fall
-    # out of the per-column tests by accident.
+def test_dataframe_digest_includes_the_extra_row_hash_column() -> None:
+    # Contract amended by the user: include the ordered row hashes so reassignment of
+    # values between rows is detectable even when every original column sum is unchanged.
     hasher: DataFrameHasherBinaryAggregateHash = DataFrameHasherBinaryAggregateHash()
     df: pl.DataFrame = _frame()
     total: int = 0
@@ -120,7 +120,8 @@ def test_dataframe_digest_is_the_modular_sum_of_the_column_digests() -> None:
         total = (total + int(hasher.hash_column(df[name]).digest_hex, 16)) % MODULUS
     whole: BinaryAggregateHashedDataframe = hasher.hash_dataframe(df)
     assert whole.scope == "dataframe"
-    assert int(whole.digest_hex, 16) == total
+    assert whole.row_digest_hex is not None
+    assert int(whole.digest_hex, 16) == (total + int(whole.row_digest_hex, 16)) % MODULUS
 
 
 def test_concatenating_two_halves_reproduces_the_whole_frame_digest() -> None:

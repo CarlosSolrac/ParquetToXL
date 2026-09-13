@@ -16,30 +16,40 @@ if TYPE_CHECKING:
 MODULUS: int = 1 << 128
 """The additive group the per-value digests are summed in."""
 
+HASH_BATCH_ROWS: int = 4096
+"""Maximum rows of working cell hashes held at once; never changes the digest."""
+
+HASH_BATCH_BYTES: int = 4 * 1024 * 1024
+HASH_BYTES: int = 16
+"""Target cell-hash payload per batch, and the fixed width of an xxh3-128 digest."""
+
 
 class BinaryAggregateHashedDataframe(HashedDataframeBase, frozen=True):
-    """A digest produced by summing per-value xxh3-128 hashes modulo 2**128."""
+    """Version 2 sums cell hashes plus hashes of each row's ordered cell hashes."""
 
     identifier: Literal["binary-aggregate-xxh3-128"] = "binary-aggregate-xxh3-128"
-    version: int = 1
+    version: int = 2
     scope: Literal["column", "dataframe"]
     bit_width: Literal[128] = 128
     digest_hex: str = Field(pattern=r"^[0-9a-f]{32}$")
+    row_digest_hex: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
+    """Sum of the logical row-hash column; absent for column and legacy version 1 records."""
 
 
 class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
-    """Hashes by summing the xxh3-128 of each encoded value, modulo 2**128.
+    """Aggregate cell and row hashes while preserving column order and row relationships.
 
-    Addition is commutative, which is the whole point: the digest does not depend on the
-    order rows arrive in. That is what lets the headline test split a frame across two
-    workbooks, read them back in the wrong order, concatenate, and still match. It also
-    makes the whole-frame digest the modular sum of the column digests, since both are
-    sums over the same multiset of encoded values.
+    Each canonical cell becomes a 16-byte xxh3-128 digest. A row's digest hashes the
+    concatenation of those bytes in column order. Column totals and the extra row-hash
+    total are summed modulo 2**128 for the dataframe digest. Whole rows can be reordered
+    or split across workbooks; moving a cell between rows now changes the row-hash total.
 
-    The tradeoff is deliberate and worth stating: an additive digest is not
-    collision-resistant against an adversary, who can trivially construct two multisets
-    with the same sum. It detects accidental corruption and round-trip damage, which is
-    what this library is for. It is not a security primitive.
+    ``hash_all`` calculates every aggregate in one pass over cells, using bounded batches
+    instead of materialising an entire hash dataframe. Column names are not hashed and
+    the source dataframe is never mutated. Column digest payloads are unchanged from v1;
+    dataframe digests have a new meaning, so all new records carry version 2.
+
+    This detects accidental changes; xxh3 and additive aggregation are not security primitives.
     """
 
     identifier: ClassVar[str] = "binary-aggregate-xxh3-128"
@@ -65,10 +75,7 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
         return BinaryAggregateHashedDataframe(scope="column", digest_hex=f"{total:032x}")
 
     def hash_dataframe(self, df: pl.DataFrame) -> BinaryAggregateHashedDataframe:
-        """Return the modular sum of the per-value digests of every column.
-
-        Equivalently, and asserted by a test, the modular sum of this frame's column
-        digests: both sum the same values in the same group.
+        """Return the modular sum of the original columns and the extra row-hash column.
 
         Args:
             df: The frame to digest.
@@ -76,10 +83,41 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
         Returns:
             The record, with ``scope="dataframe"``.
         """
-        total: int = 0
-        name: str
-        for name in df.columns:
-            encoded: bytes
-            for encoded in encode_series(df[name]):
-                total = (total + xxhash.xxh3_128(encoded).intdigest()) % MODULUS
-        return BinaryAggregateHashedDataframe(scope="dataframe", digest_hex=f"{total:032x}")
+        return self.hash_all(df)[1]
+
+    def hash_all(self, df: pl.DataFrame) -> tuple[tuple[BinaryAggregateHashedDataframe, ...], BinaryAggregateHashedDataframe]:
+        """Hash each cell once and return all column and dataframe aggregates.
+
+        Fixed-width digest bytes make row concatenation unambiguous without separators.
+        Row buffers are filled a column at a time, in their original positions. Summation
+        is deferred to each batch boundary to reduce modulo operations. Memory is bounded
+        by the batch payload target (or one exceptionally wide row) plus buffer overhead.
+
+        Args:
+            df: The frame to hash. Row order may vary; column order must be stable.
+
+        Returns:
+            Ordered column totals and the dataframe total, which also records the
+            aggregate of the logical extra row-hash column in ``row_digest_hex``.
+        """
+        totals: list[int] = [0] * df.width
+        row_total: int = 0
+        batch_rows: int = max(1, min(HASH_BATCH_ROWS, HASH_BATCH_BYTES // max(1, df.width * HASH_BYTES)))
+        offset: int
+        for offset in range(0, df.height, batch_rows):
+            batch: pl.DataFrame = df.slice(offset, batch_rows)
+            rows: list[bytearray] = [bytearray() for _ in range(batch.height)]
+            index: int
+            name: str
+            for index, name in enumerate(batch.columns):
+                row: bytearray
+                encoded: bytes
+                for row, encoded in zip(rows, encode_series(batch[name]), strict=True):
+                    cell: bytes = xxhash.xxh3_128_digest(encoded)
+                    row.extend(cell)
+                    totals[index] += int.from_bytes(cell, "big")
+                totals[index] %= MODULUS
+            row_total = (row_total + sum(xxhash.xxh3_128_intdigest(row) for row in rows)) % MODULUS
+        columns: tuple[BinaryAggregateHashedDataframe, ...] = tuple(BinaryAggregateHashedDataframe(scope="column", digest_hex=f"{total:032x}") for total in totals)
+        combined: int = (sum(totals) + row_total) % MODULUS
+        return columns, BinaryAggregateHashedDataframe(scope="dataframe", digest_hex=f"{combined:032x}", row_digest_hex=f"{row_total:032x}")

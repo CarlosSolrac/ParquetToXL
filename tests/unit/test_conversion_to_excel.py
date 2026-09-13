@@ -198,18 +198,18 @@ def test_datetimes_lose_their_sub_second_component() -> None:
     converted: pl.DataFrame
     changed: bool
     converted, changed = _convert(df)
-    assert converted.schema == df.schema
-    assert converted["t"].to_list() == [dt.datetime(2262, 4, 11, 23, 47, 16, tzinfo=dt.UTC), None]
+    assert converted.schema == {"t": pl.Datetime("us")}
+    assert converted["t"].to_list() == [dt.datetime(2262, 4, 11, 23, 47, 16, tzinfo=dt.UTC).replace(tzinfo=None), None]
     assert changed is True
 
 
-def test_a_whole_second_datetime_reports_no_change() -> None:
+def test_a_whole_second_zoned_datetime_reports_a_schema_change() -> None:
     df: pl.DataFrame = pl.DataFrame({"t": pl.Series([dt.datetime(2020, 1, 1, 12, 30, 5, tzinfo=dt.UTC), None], dtype=pl.Datetime("us", "UTC"))})
     converted: pl.DataFrame
     changed: bool
     converted, changed = _convert(df)
-    assert converted["t"].to_list() == [dt.datetime(2020, 1, 1, 12, 30, 5, tzinfo=dt.UTC), None]
-    assert changed is False
+    assert converted["t"].to_list() == [dt.datetime(2020, 1, 1, 12, 30, 5, tzinfo=dt.UTC).replace(tzinfo=None), None]
+    assert changed is True
 
 
 def test_a_naive_datetime_is_truncated_and_stays_naive() -> None:
@@ -232,7 +232,7 @@ def test_a_nanosecond_datetime_at_its_range_floor_does_not_wrap() -> None:
     first_changed: bool
     once, first_changed = _convert(df)
     assert first_changed is True
-    assert once["t"].to_list() == [dt.datetime(1677, 9, 21, 0, 12, 43, tzinfo=dt.UTC)]
+    assert once["t"].to_list() == [dt.datetime(1677, 9, 21, 0, 12, 43, tzinfo=dt.UTC).replace(tzinfo=None)]
     twice: pl.DataFrame
     second_changed: bool
     twice, second_changed = _convert(once)
@@ -246,8 +246,8 @@ def test_every_datetime_unit_normalises_to_microseconds(unit: Literal["ms", "us"
     # unit is what makes the truncated value expressible for every input unit.
     df: pl.DataFrame = pl.DataFrame({"t": pl.Series([dt.datetime(2020, 1, 1, 12, 0, 0, 500000, tzinfo=dt.UTC)], dtype=pl.Datetime(unit, "UTC"))})
     converted: pl.DataFrame = _convert(df)[0]
-    assert converted.dtypes == [pl.Datetime("us", "UTC")]
-    assert converted["t"].to_list() == [dt.datetime(2020, 1, 1, 12, 0, 0, tzinfo=dt.UTC)]
+    assert converted.dtypes == [pl.Datetime("us")]
+    assert converted["t"].to_list() == [dt.datetime(2020, 1, 1, 12, 0, 0, tzinfo=dt.UTC).replace(tzinfo=None)]
 
 
 def test_times_are_truncated_to_microseconds() -> None:
@@ -286,12 +286,12 @@ def test_a_microsecond_time_and_a_date_are_untouched() -> None:
     assert changed is False
 
 
-def test_date_time_datetime_and_null_are_untouched() -> None:
+def test_date_time_naive_datetime_and_null_are_untouched() -> None:
     df: pl.DataFrame = pl.DataFrame(
         {
             "d": pl.Series([dt.date(2020, 1, 1)], dtype=pl.Date),
             "t": pl.Series([dt.time(1, 2, 3)], dtype=pl.Time),
-            "s": pl.Series([dt.datetime(2020, 1, 1, tzinfo=dt.UTC)], dtype=pl.Datetime("us", "UTC")),
+            "s": pl.Series([dt.datetime(2020, 1, 1, tzinfo=dt.UTC).replace(tzinfo=None)], dtype=pl.Datetime("us")),
             "n": pl.Series([None], dtype=pl.Null),
         },
     )

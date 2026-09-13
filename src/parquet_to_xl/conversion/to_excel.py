@@ -56,7 +56,7 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
     ``String``, ``Categorical``           ``String`` cut to ``EXCEL_CELL_LIMIT``; ``""`` becomes null
     ``Binary``                            lowercase hex ``String``, then the same rule
     ``Duration``                          ``Float64`` seconds
-    ``Datetime``                          microseconds, truncated to whole seconds
+    ``Datetime``                          local wall clock, timezone removed, whole seconds
     ``Time``                              truncated to microseconds
     ``Date``, ``Null``                    unchanged
     ===================================== ==============================================
@@ -80,6 +80,11 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
     - **Times lose precision below a microsecond.** Polars stores nanoseconds, but every
       Python boundary the value crosses is a ``datetime.time``, which does not.
 
+    Version 3 additionally removes timezone information while preserving local wall-clock
+    readings, as requested by the user. A zoned 12:00 becomes naive 12:00, never a UTC
+    conversion. This intentionally merges the two instants in a DST fold if their local
+    clock readings match. Removing any zone, including UTC, reports a schema change.
+
     One departure from the spec's cast table is not about loss: ``Categorical`` is truncated
     as well as cast, though the table lists truncation for ``String`` and ``Binary`` only.
     Leaving it out breaks idempotency, because an oversized label survives the first pass and
@@ -90,8 +95,8 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
     """
 
     identifier: ClassVar[str] = "to-excel"
-    version: ClassVar[str] = "2.0"
-    version_number: ClassVar[int] = 2
+    version: ClassVar[str] = "3.0"
+    version_number: ClassVar[int] = 3
     description: ClassVar[str] = "Models the dtype and value damage of a round trip through an Excel worksheet."
 
     def _convert(self, df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
@@ -153,8 +158,11 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
                 # cannot hold: 1677-09-21 00:12:43.145225 wrapped forward to 2262-04-11 and
                 # a second pass moved it again, so idempotency broke as well as the value.
                 # Excel stores whole seconds, so no nanosecond column is representable anyway.
-                whole: pl.Expr = column.dt.cast_time_unit(EXCEL_TIME_UNIT).dt.truncate(WHOLE_SECOND)
-                values_moved = values_moved or _any_true(df, whole != column)
+                # Remove the zone without converting the local clock to UTC. Do this
+                # before truncation so both occurrences of a DST fold remain valid.
+                local: pl.Expr = column.dt.cast_time_unit(EXCEL_TIME_UNIT).dt.replace_time_zone(None)
+                whole: pl.Expr = local.dt.truncate(WHOLE_SECOND)
+                values_moved = values_moved or _any_true(df, whole != local)
                 expressions.append(whole.alias(name))
             elif isinstance(dtype, pl.Time):
                 # Polars holds Time as nanoseconds, but every Python boundary it crosses --
