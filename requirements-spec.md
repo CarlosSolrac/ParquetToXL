@@ -35,7 +35,7 @@ through the Polars wrapper.
 `ParquetToXL` is a Python 3.13 project (uv, Ruff strict rule set, pyright + mypy strict,
 pytest with a merge-only coverage gate, `tools/check_declarations.py`). At the time this
 spec was written there was no runtime code and no runtime dependencies; the package now
-sits at 100% statement and 100% branch coverage while CI still only enforces 90.
+sits at 100% statement and 100% branch coverage, which is what CI enforces.
 
 The goal is a library that, given a Polars DataFrame loaded from a Parquet file, produces a
 validated metadata record describing every column, computes **order-independent** content
@@ -656,6 +656,7 @@ uv lock
 # per-unit, test-first
 uv run pytest tests/unit -q
 uv run pytest tests/integration/test_excel_hash_roundtrip.py -q
+uv run pytest tests/integration/test_sidecar_roundtrip.py -q
 
 # full gate -- reports locally; the threshold is applied by CI on merge (see below)
 uv run pytest tests --cov --cov-report=term-missing --cov-branch
@@ -666,22 +667,24 @@ uv run mypy src tests
 ```
 
 The coverage threshold is **merge-only**. `[tool.coverage.run] source` scopes the figure to
-`src/parquet_to_xl`, and `pyproject.toml` carries no `fail_under`, so local and per-phase runs
-report without failing while the package is still largely unimplemented stubs. CI adds
-`--cov-fail-under=90` on the pull-request job.
+`src/parquet_to_xl`, and `pyproject.toml` carries no `fail_under`, so a local or per-unit run
+reports without failing while work is in progress. CI adds `--cov-fail-under=100` on the
+pull-request job.
 
-**That 90 is now well below what the suite achieves.** Every module in `src/parquet_to_xl`
-is at 100% statement and 100% branch, and has been since phase 2, so the gate no longer
-catches a regression until nearly a tenth of the package stops being exercised. Raising it
-to 100 is a one-line CI change and is recommended, but it is a CI edit and so is left to a
-deliberate decision rather than folded into an implementation commit.
+**It was 90 until phase 8.** Every module in `src/parquet_to_xl` has been at 100% statement
+and 100% branch since phase 2, so at 90 the gate did not catch a regression until nearly a
+tenth of the package stopped being exercised. Earlier revisions of this document recommended
+raising it while deliberately leaving it out of the implementation commits, a CI edit being a
+decision in its own right; phase 8 took that decision.
 
-That 90 is coverage.py's **combined** statement-and-branch figure when `branch = true` --
+That figure is coverage.py's **combined** statement-and-branch number when `branch = true` --
 `(executed statements + taken branches) / (total statements + total branches)` -- not two
 separate thresholds. A single `fail_under` cannot express "90% statement and 85% branch";
-enforcing those independently would mean parsing `coverage json` in CI. This paragraph
-replaces the earlier "≥ 90% stmt / 85% branch on changed code" note, which described a gate
-that could not be configured as written.
+enforcing those independently would mean parsing `coverage json` in CI. At 100 the
+distinction stops having consequences, since nothing can be missed on either axis, but it is
+why the gate was ever a single number. This paragraph replaces the earlier
+"≥ 90% stmt / 85% branch on changed code" note, which described a gate that could not be
+configured as written.
 
 End-to-end check: after `uv run pytest tests/integration -q`, confirm the 20 files exist
 under `tests/fixtures/data/` and a second run reuses them (no regeneration). Both are
@@ -689,9 +692,11 @@ asserted by `unit/test_fixtures.py` rather than left to inspection.
 
 ## Out of scope
 
-Nested dtypes (`List`, `Struct`, `Array`, `Object`); Excel formatting/styling; additional
-hashers or converters beyond the two named; real Azure/AWS credential wiring in `zpath()`
-(hook only); reading `.xls`; streaming/lazy frames; a CLI (`main.py` is removed).
+Nested dtypes (`List`, `Struct`, `Array`, `Object`); per-column statistics of any kind,
+extremes included, in the model or the sidecar -- see *Column metadata* for why they were
+removed rather than encoded; Excel formatting/styling; additional hashers or converters
+beyond the two named; real Azure/AWS credential wiring in `zpath()` (hook only); reading
+`.xls`; streaming/lazy frames; a CLI (`main.py` is removed).
 
 ## Execution notes
 
