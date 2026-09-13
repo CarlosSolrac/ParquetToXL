@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
 from parquet_to_xl.metadata.builder import build_columns_metadata
+from parquet_to_xl.metadata.columns import ConversionIdentity, DataframeColumnsMetadata
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -14,7 +15,6 @@ if TYPE_CHECKING:
     import polars as pl
 
     from parquet_to_xl.hashing.base import DataFrameHasherBaseClass
-    from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
 
 
 @dataclass(frozen=True)
@@ -68,7 +68,13 @@ class DataframeConversionBaseClass(ABC):
         converted: pl.DataFrame
         changed: bool
         converted, changed = self._convert(df)
-        return ConvertedDataframe(build_columns_metadata(converted, hashers), converted, changed)
+        built: DataframeColumnsMetadata = build_columns_metadata(converted, hashers)
+        # Stamped here rather than inside the builder, which also serves the source frame
+        # and has no conversion to name. Copied rather than rebuilt field by field: a field
+        # added to DataframeColumnsMetadata later would be silently dropped by a rebuild.
+        identity: ConversionIdentity = ConversionIdentity(identifier=type(self).identifier, version=type(self).version, version_number=type(self).version_number)
+        described: DataframeColumnsMetadata = built.model_copy(update={"conversion": identity})
+        return ConvertedDataframe(described, converted, changed)
 
     @abstractmethod
     def _convert(self, df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:

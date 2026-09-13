@@ -11,7 +11,7 @@ dependencies = [
     "adlfs>=2026.4",            # Azure fsspec backend. 2026.4 is where `anon` began defaulting to false; before it,
                                 # an account_name-only path takes anonymous access instead of DefaultAzureCredential.
     "duckdb>=1.5.5",
-    "fastexcel>=0.21.0",
+    "fastexcel[pyarrow]>=0.21.0",
     "polars>=1.44.1",
     "pydantic>=2.13.5",
     "python-calamine>=0.8.2",

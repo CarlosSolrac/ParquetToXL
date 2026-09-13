@@ -17,11 +17,22 @@ is the only route to them.
 ``filename`` is narrowed to ``str | PathLike[str]`` from the runtime's wider union: the
 file-object and ``None`` forms are real but unused here, and a stub that admits arguments
 no call site passes is a stub that cannot catch a mistake at those call sites.
+
+``add_worksheet`` and ``Worksheet.write_row`` were added for
+``tests/unit/test_fast_excel_reader.py``, which needs multi-sheet workbooks to read back.
+Neither registered writer produces one -- both write a single sheet per file by design -- so
+the test builds them here instead. ``write_row`` takes ``object`` cells rather than a
+narrower union because a test row is deliberately mixed.
 """
 
+from collections.abc import Sequence
 from os import PathLike
 from typing import Any
 
+class Worksheet:
+    def write_row(self, row: int, col: int, data: Sequence[object]) -> int: ...
+
 class Workbook:
     def __init__(self, filename: str | PathLike[str], options: dict[str, Any] | None = None) -> None: ...
+    def add_worksheet(self, name: str | None = None) -> Worksheet: ...
     def close(self) -> None: ...

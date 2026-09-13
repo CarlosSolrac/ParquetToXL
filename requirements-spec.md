@@ -1,9 +1,9 @@
 # ParquetToXL — Dataframe Metadata, Hashing & Fast Excel I/O
 
-**Status:** design approved 2026-09-06. Implemented through phase 5 except
-`fast_excel_reader`; see *Implementation status* below. Amended repeatedly against
-measurement -- every amendment records what was measured and why the original text did not
-survive contact with the libraries.
+**Status:** design approved 2026-09-06. Every phase implemented except the JSON sidecar,
+whose schema is still undesigned; see *Implementation status* below. Amended repeatedly
+against measurement -- every amendment records what was measured and why the original text
+did not survive contact with the libraries.
 
 ## Implementation status
 
@@ -14,18 +14,22 @@ survive contact with the libraries.
 | 2 · Metadata models | **done** | the three models and `build_columns_metadata` |
 | 3 · Conversions | **done** | base, `None`, `ToExcel` at version 3.0, local wall-clock preservation and idempotency pinned |
 | 4 · Extract | **done** | `extract_metadata_from_dataframe`, five failure modes pinned |
-| 5 · Excel | **writers done, reader pending** | registry, `ExcelWriteConfig`, both writers. `fast_excel_reader` is the one unbuilt unit |
+| 5 · Excel | **done** | registry, `ExcelWriteConfig`, both writers, `fast_excel_reader` |
 | 6 · Fixtures | **done** | `generate.py`, 20 files across three writers, invariants under test |
-| 7 · Integration | **partly done** | `ZPath` landed early as a phase 4 prerequisite; the single-workbook half of the headline test is in `integration/test_excel_roundtrip.py`. The split-workbook half and the reader benchmark wait on the reader |
+| 7 · Integration | **done** | `ZPath` landed early as a phase 4 prerequisite; `integration/test_excel_roundtrip.py` covers the single-workbook half, and `integration/test_excel_hash_roundtrip.py` is the headline test including the split-workbook half. Reader benchmark measured and recorded in the findings |
 
-After the 2026-09-12 wall-clock and row-hashing amendments: 264 tests, 100% statement and
+After the 2026-09-12 reader and conversion-identity work: 298 tests, 100% statement and
 100% branch coverage. Ruff, formatting, declarations, pyright and mypy pass.
 
-**What is left.** `fast_excel_reader`, the headline test's split-workbook half that
-depends on it, and the JSON sidecar schema and persistence API. The reader also inherits two measured problems that are its to solve, not the
-writers': a trailing all-null row leaves no trace in a sheet and must be restored from
-`value_count`, and `pl.read_excel` raises `DuplicateError` on selector-shaped column names
-(`*`, `^...$`) that both writers store correctly.
+**What is left.** The JSON sidecar: its schema, filename convention, and read/write API,
+none of which have been agreed. Nothing else in this document is unbuilt.
+
+The reader's two inherited problems are both closed. A trailing all-null run leaves no trace
+in a sheet and is restored from `value_count` through the reader's `expected_rows`; measured,
+only *trailing* rows are affected, so padding restores exactly what went missing. And
+`pl.read_excel` raises `DuplicateError` on selector-shaped column names (`*`, `^...$`) that
+both writers store correctly, which is why the reader calls `fastexcel` directly rather than
+through the Polars wrapper.
 
 ## Context
 
@@ -51,7 +55,7 @@ in a different order.
 | Conversions | **explicit required parameter** to `extract_metadata_from_dataframe` |
 | Hasher API | base class exposes **both** `hash_column()` and `hash_dataframe()` |
 | Dtype coverage | **all scalar Polars dtypes**, no nested types |
-| `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given `schema_overrides` it returns the model's dtypes directly instead of a column of mixed Python types |
+| `fast_excel_reader` | **`fastexcel`** + `ThreadPoolExecutor` across sheets, **one handle per job**; one path in, one frame out. Amended from `python-calamine` on measurement: the two are bindings to the same Rust calamine crate, but `fastexcel` recovers pre-1900 dates that `python-calamine` degrades to a bare time-of-day, and given the target dtypes it returns the model's dtypes directly instead of a column of mixed Python types. Amended again on measurement: called through `pl.read_excel` it cannot read selector-shaped column names at all, and a shared handle raises `Already borrowed` across threads |
 | Binary aggregate hash | **xxh3_128 v2**; aggregate cell hashes and hashes of each row's ordered cell hashes mod 2¹²⁸. Row order may change; column order and row relationships are bound. Column names are not hashed. |
 | Persistence | **one JSON sidecar per Parquet file**. JSON schema, filename convention, and read/write API remain to be defined; metadata is not embedded in Parquet. |
 | Fixture files | generated on first run into `tests/fixtures/data/`, **gitignored** |
@@ -83,8 +87,15 @@ in a different order.
 ## New dependencies
 
 Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `adlfs`,
-`xxhash`, `structlog`, `fastexcel`, `python-calamine`, `rustpy-xlsxwriter`, `xlsxwriter`,
-`duckdb`, `tzdata`.
+`xxhash`, `structlog`, `fastexcel[pyarrow]`, `python-calamine`, `rustpy-xlsxwriter`,
+`xlsxwriter`, `duckdb`, `tzdata`.
+
+`fastexcel` carries the `pyarrow` extra because `ExcelSheet.to_arrow_with_errors` is the only
+way to see a cell the requested dtype could not hold. Without it such a cell is silently
+null, indistinguishable from an empty one, so an edit to a previously empty cell would not
+move the digest. The extra costs one large wheel and, measured, no runtime: the error list
+falls out of the parse already being done (0.98x against `to_polars`), where detecting the
+same thing by reading every column a second time as text cost 2.66x.
 
 `rustpy-xlsxwriter` is the default Excel writer and `fastexcel` the reader. `xlsxwriter` and
 `python-calamine` are kept as the second writer and as a cross-check reader; `duckdb` writes
@@ -129,8 +140,11 @@ src/parquet_to_xl/
   excel/
     writer.py           ExcelWriterBase, registry, RustpyExcelWriter (default),
                         PolarsExcelWriter, ExcelWriteConfig
-    fast_reader.py      fast_excel_reader(path, *, sheet_names=None, max_workers=None) -> pl.DataFrame
+    fast_reader.py      fast_excel_reader(path, *, sheet_names=None, schema=None,
+                                          expected_rows=None, max_workers=None) -> pl.DataFrame
 stubs/                  hand-written stubs for dependencies pyright strict cannot use
+  fastexcel/            narrows load_sheet to its non-eager overload; the eager one returns
+                        pyarrow, which is not a dependency, so the whole member reads unknown
   xlsxwriter/           Workbook construction; the package ships no types
   rustpy_xlsxwriter/    write_worksheet; ships a .pyi but no py.typed marker
   python_calamine/      narrows one declaration typed with a bare os.PathLike
@@ -141,8 +155,8 @@ tests/
     data/               generated, gitignored
   unit/                  one module per unit above
   integration/
-    test_excel_roundtrip.py        built: the single-workbook half
-    test_excel_hash_roundtrip.py   pending: the split-workbook headline test
+    test_excel_roundtrip.py        the single-workbook half, through pl.read_excel
+    test_excel_hash_roundtrip.py   the headline test, including the split-workbook half
 ```
 
 `tests/fixtures/data/` is added to `.gitignore`. `main.py` is deleted.
@@ -321,7 +335,17 @@ stats `min_value: ColumnScalar | None`, `max_value: ColumnScalar | None`,
 
 `DataframeColumnsMetadata(BaseModel, frozen=True)` — the wrapper:
 `columns: list[DataframeColumnMetadata]` (dataframe order),
-`dataframe_hashes: list[HashedDataframe]` (one per hasher, from `hash_dataframe`).
+`dataframe_hashes: list[HashedDataframe]` (one per hasher, from `hash_dataframe`),
+`conversion: ConversionIdentity | None = None`.
+
+`ConversionIdentity(BaseModel, frozen=True)` carries `identifier: str`, `version: str` and
+`version_number: int`, filled from the conversion's `ClassVar`s by
+`metadata_of_converted_dataframe`. It is `None` on a source-frame record, which is an answer
+rather than a gap: the frame as it was read is the output of no conversion. Added because
+`DataframeMetadata` holds one wrapper per conversion in a plain list, so without it the only
+way to find the ToExcel record is its position in the sequence the caller passed -- fragile
+in memory and unusable once persisted, and the sidecar is required to record conversion
+identifiers and versions.
 
 Both models originally carried a `description: str`. It is dropped: `build_columns_metadata`
 receives a `pl.DataFrame`, which carries no column documentation, so nothing could populate
@@ -457,22 +481,66 @@ creation speed. The fixture builder selects its writer through `ExcelWriteConfig
 
 ```python
 def fast_excel_reader(
-    path: UPath, *, sheet_names: Sequence[str] | None = None, max_workers: int | None = None
+    path: UPath,
+    *,
+    sheet_names: Sequence[str] | None = None,
+    schema: Mapping[str, pl.DataType] | None = None,
+    expected_rows: int | None = None,
+    max_workers: int | None = None,
 ) -> pl.DataFrame:
 ```
 
-Reads through `fastexcel` (`pl.read_excel`), resolves target sheets
-(all, or `sheet_names`), submits one `_read_sheet` job per sheet to a `ThreadPoolExecutor`
-(the Rust parser releases the GIL), builds a `pl.DataFrame` per sheet, and returns `pl.concat(frames, how="vertical_relaxed")`
-in sheet order. `max_workers=1` and the default must return identical data — asserted.
+Resolves target sheets (all, or `sheet_names`), submits one `_read_sheet` job per sheet to a
+`ThreadPoolExecutor` (the Rust parser releases the GIL), builds a `pl.DataFrame` per sheet,
+and returns `pl.concat(frames, how="vertical_relaxed")` in sheet order. `max_workers=1` and
+the default must return identical data -- asserted.
+
+`schema` and `expected_rows` were **added to the original signature**, which had neither and
+so could not do two of the things this section requires of the reader. Amended on the same
+principle as everything else here: the contract has to be able to express what the unit must
+do.
 
 **The reader is given the target schema; it never infers.** Callers pass the dtypes of the
-ToExcel-converted frame as `schema_overrides`. This is not an optimization: `pl.read_excel`
-with no schema **fails outright** on real data, because it downcasts integral-looking floats
-and overflows on `Int64`'s maximum. With the schema supplied, all 19 fixture columns come
-back matching the model in both dtype and value.
-Implementation note to validate with the benchmark test: if per-sheet extraction on one
-workbook handle does not actually parallelize, open one handle per worker thread.
+ToExcel-converted frame as `schema`. This is not an optimization: reading with no schema
+**fails outright** on real data, because it downcasts integral-looking floats and overflows
+on `Int64`'s maximum. With the schema supplied all 19 fixture columns come back matching the
+model in both dtype and value -- 17 directly and two after correction, because `fastexcel`
+has one `datetime` dtype with no unit, and both writers store `Time` as text.
+
+**The reader restores the row extent.** `expected_rows`, from
+`DataframeColumnMetadata.value_count`, pads back a trailing run of all-null rows, which emits
+no `<row>` element and so leaves no trace in the sheet. Measured, only trailing rows are
+affected: interior and leading ones are held in place by the row indices around them.
+
+**A cell it cannot represent is refused, not nulled.** `fastexcel` coerces an unparseable
+cell to null, which is what an empty cell also returns, so a value that does not fit its
+column vanishes without trace and the digest does not move. `dtype_coercion="strict"` does
+not change that — measured, it returns the same null. The reader therefore reads through
+`to_arrow_with_errors`, which reports every dropped cell's position and reason, and raises.
+
+One dtype needs more than that. Asking for `fastexcel`'s `null` dtype on a `Null` column
+discards the cell's content *and reports no error*, so a value written into a column the
+model says is empty left the digest unmoved. `Null` columns are therefore read as text,
+checked, and collapsed afterwards. The error report covers cells that failed to parse as
+their type, not a type that accepts anything by throwing it away.
+
+**Neither this reader nor the writers accept a remote path.** All three hand `str(path)` to a
+library that opens it as a local filename, so a `memory://` or `az://` `UPath` fails before
+anything is read or written. This is not a missing fsspec install — fsspec is present and the
+`UPath` itself works — and it is not new to the reader. See the findings document; closing it
+means passing bytes rather than paths, and belongs with the credential work.
+
+**It calls `fastexcel` directly, not `pl.read_excel`.** The Polars wrapper builds a
+projection out of the header text, so a column named `*` or `^...$` makes it raise
+`DuplicateError`. Both are legal Parquet names that both writers store correctly, so the
+limitation is the wrapper's, not the file's.
+
+The original text left one question to the benchmark, and measurement answered it the
+opposite way from the guess: per-sheet extraction on a single workbook handle does not merely
+fail to parallelize, it raises. The reader is a Rust object behind a `RefCell`, and a second
+thread calling `load_sheet` on it raises `RuntimeError: Already borrowed`, so the reader opens
+**one handle per sheet job**. Four sheets of 20k rows then read 2.83x faster at
+`max_workers=4` than serially.
 
 ## Test fixture — `tests/fixtures/generate.py`
 
@@ -486,9 +554,15 @@ session-scoped `conftest.py` fixture):
    string, `NaN`/`±inf` for floats, epoch and far-future dates); remaining rows are
    seeded-random. `parquet_b` is `parquet_a` with **exactly one cell changed per column**.
    Regeneration is byte-identical (fixed seed, sorted schema).
-2. **Three Excel files per Parquet** (6 total), written with `PolarsExcelWriter` from the
-   ToExcel-converted frame: `*_full.xlsx` (1000 rows), `*_part1.xlsx` (rows 0–499),
-   `*_part2.xlsx` (rows 500–999).
+2. **Nine Excel files per Parquet** (18 total), written from the **source** frame -- not
+   a converted one -- by all three writers, because the set is a cross-writer sanity check:
+   `*_{full,part1,part2}_{duckdb,polars,rustpy}.xlsx`, where `full` is 1000 rows, `part1`
+   rows 0–499 and `part2` rows 500–999. Each writer takes only the adjustments it forces
+   (hex `Binary` for polars, truncation for rustpy); the per-writer differences are the
+   point, and are catalogued in `excel-round-trip-findings.md`.
+
+   Because these hold the *source* frame, they are not what the digest contract is about.
+   A test that asserts a digest writes its own workbook from the ToExcel-converted frame.
 3. Any file already present on disk is reused; only missing files are built.
 
 ## Tests (TDD — write first, watch fail, implement)
@@ -504,9 +578,10 @@ session-scoped `conftest.py` fixture):
 | `unit/test_metadata_builder.py` | dtype flags correct per dtype; stats (`min/max/value_count/unique_count/null_count`) match Polars; one `HashedDataframe` per hasher per column |
 | `unit/test_extract_metadata.py` | happy path fills every field; `modified_utc` tz-aware; per-tz dict keyed by input names; one wrapper per conversion; unreadable path / bad input → `None` + logged |
 | `unit/test_excel_writer.py` | registry resolves the default and refuses a duplicate identifier; unknown identifier raises; the **default writer** round-trips the model exactly while `PolarsExcelWriter` is held only to shape; both refuse what they cannot represent; `ExcelWriteConfig` defaults to `rustpy-xlsxwriter` |
-| `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in order; `max_workers=1` == default |
+| `unit/test_fast_excel_reader.py` | known workbook → expected frame; multi-sheet concatenation in workbook order; `sheet_names` selects and orders; an unknown sheet raises; `max_workers=1` == default; selector-shaped names (`*`, `^a$` beside `a`) survive; a trailing all-null row is restored from `expected_rows` and lost without it, while interior and leading ones need no restoring; more rows than expected raises; an unmappable dtype raises; a zero-row workbook keeps its columns; both converted fixture frames return all 19 columns matching in dtype and value |
 | `unit/test_fixtures.py` | Parquet regeneration byte-identical; `parquet_a` vs `parquet_b` differ in exactly one cell per column; all **20** files exist after `ensure_fixtures()` and a second call reuses them; `_padded` truncation pinned, with an early warning before a column fills every edge slot |
-| `integration/test_excel_hash_roundtrip.py` | **headline:** for each Parquet file — build `DataframeMetadata` (hashers `[BinaryAggregateHash]`, conversions `[None, ToExcel]`); read `*_full.xlsx` with `fast_excel_reader`, run it through `ToExcel._convert`, hash; assert it equals the ToExcel wrapper's dataframe digest. Then read `*_part1`+`*_part2`, concat in reverse order, same path, assert equal to that digest. Assert `parquet_a` Excel digest ≠ `parquet_b` Excel digest. |
+| `unit/test_conversion_identity.py` | a source-frame record names no conversion; each conversion stamps its own `identifier`/`version`/`version_number`, taken from the class rather than repeated; an extracted record is findable by identifier rather than by position; the identity survives a real JSON round trip; it is frozen |
+| `integration/test_excel_hash_roundtrip.py` | **headline:** for each Parquet file — build `DataframeMetadata` (hashers `[BinaryAggregateHash]`, conversions `[None, ToExcel]`); write the converted frame, read it back with `fast_excel_reader`, run it through the conversion again, hash; assert it equals the ToExcel wrapper's dataframe digest. Then write rows [0:500] and [500:1000] as two workbooks, read both back, concat in reverse order, same path, assert equal to that digest. Assert `parquet_a` Excel digest ≠ `parquet_b` Excel digest, and that the halves and the whole already agree before any file is written. Workbooks are written by the test, not taken from the fixtures, which hold the *source* frame. |
 
 ## Verification
 

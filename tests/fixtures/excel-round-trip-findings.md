@@ -4,9 +4,10 @@ Everything here was measured by running `generate.py` and reading the workbooks 
 taken from documentation. Where a number appears, a script produced it. The fixture frame is
 1000 rows across all 19 scalar Polars dtypes, with 48 leading edge-case rows.
 
-The reader throughout is `python-calamine`, which is what `fast_excel_reader` will use.
-`pl.read_excel` is not used anywhere: it requires `fastexcel`, which is not a dependency of
-this project.
+The reader for the per-writer tables below was `python-calamine`, which is what those
+measurements were taken with. It is no longer the project's reader: `fastexcel` is, for the
+reasons in [Choosing the reader](#choosing-the-reader-fastexcel-over-python-calamine), and
+both are runtime dependencies. `python-calamine` is kept as the independent cross-check.
 
 ## Summary for the impatient
 
@@ -282,18 +283,150 @@ future release fixing them shows up as a failure.
 
 The 1900-01-01 shift is Excel's inherited Lotus 1-2-3 leap-year bug, which DuckDB also has.
 
-## What `fast_excel_reader` still has to solve
+## What `fast_excel_reader` had to solve, and how
 
-Two problems are the reader's, not the writer's, and neither is fixed yet:
+Two problems belonged to the reader rather than to the writers. Both are now closed.
 
 1. **Trailing all-null rows vanish.** A row whose cells are all empty produces no `<row>`
    element, so the row extent is not stored. Measured on `[1.0, None, None]`: both writers
-   produce a workbook that reads back with one row. The metadata already carries the fix --
-   `DataframeColumnMetadata.value_count` is the row count -- so the reader can restore the
-   extent rather than trusting the sheet.
+   produce a workbook that reads back with one row. Resolved with the `expected_rows`
+   parameter, fed from `DataframeColumnMetadata.value_count`, which the reader pads back to.
+
+   Measured further, and it narrows the problem usefully: **only a trailing run is lost.**
+   Interior and leading all-null rows survive, because the row indices of the rows around
+   them record where they were. So padding at the end is not an approximation -- it restores
+   exactly the rows that went missing, in their original positions.
+
 2. **Selector-shaped headers break `pl.read_excel`.** `*` and `^...$` are legal Parquet
    column names, both writers store them correctly, and the read raises
-   `DuplicateError: projections contained duplicate output name`. The reader must not let
-   Polars interpret header text as a selector -- the same trap the conversion hit with
-   `pl.col(name)`, solved there by selecting on position.
+   `DuplicateError: projections contained duplicate output name`. Measured again while
+   building the reader, and with `schema_overrides` supplied it fails differently but no
+   better: `ComputeError: the name 'b' passed to LazyFrame.with_columns is duplicate`.
 
+   Resolved by not going through `pl.read_excel` at all. It is a wrapper over `fastexcel`
+   that builds a Polars projection from the header text; `fastexcel` called directly never
+   treats a header as an expression, and returns `*`, `^a$` and `a` side by side correctly.
+   Coercion inside the reader then selects by position, the same fix the conversion uses.
+
+### What the reader has to correct after `fastexcel`
+
+Given the converted frame's dtypes as `dtypes`, 17 of the 19 fixture columns arrive exactly
+right. Two do not, and neither is a defect:
+
+| column | arrives as | why | correction |
+| --- | --- | --- | --- |
+| `datetime` | `Datetime("ms")` | `fastexcel`'s vocabulary has one `datetime`, with no unit | cast to the target unit |
+| `time` | `String` | both writers store `Time` as text, by their own design | parse with `%H:%M:%S%.f` |
+
+`%.f` is what makes one format cover both renderings: `str(time)` omits the fraction when it
+is zero and `MICROSECOND_TIME_FORMAT` always writes six digits.
+
+With those two corrections, **all 19 columns match the model in dtype and value**, for both
+fixture frames.
+
+## Reading sheets in parallel
+
+The spec left one question to measurement: whether per-sheet extraction on a single workbook
+handle actually parallelizes. It does not -- it does not even run.
+
+**A shared handle cannot be used from two threads.** `fastexcel`'s reader is a Rust object
+behind a `RefCell`, and a second thread calling `load_sheet` on it raises
+`RuntimeError: Already borrowed`. So the reader opens one handle per sheet job. Re-reading
+the zip directory per sheet is cheap next to parsing the sheet, and it is what makes the
+pool work at all.
+
+With a handle per job the parsing genuinely overlaps -- the Rust parser releases the GIL.
+Four sheets of 20,000 rows x 3 columns, median of five runs, Python 3.13.14, Polars 1.44.1,
+fastexcel 0.21.0, 32 logical cores:
+
+| | time | vs serial |
+| --- | --- | --- |
+| serial | 0.071s | 1.00x |
+| `max_workers=1` | 0.075s | 0.95x |
+| `max_workers=2` | 0.041s | 1.75x |
+| `max_workers=4` | 0.025s | 2.83x |
+
+`max_workers=1` costs about 5% over reading serially, which is the pool's own overhead.
+These are local observations on one machine and one shape of workbook, not a performance
+guarantee; the speedup is bounded by the sheet count, and a single-sheet workbook gains
+nothing. The only automated assertion is that `max_workers=1` and the default return
+identical data -- a wall-clock threshold in CI would be flaky and would defend a promise
+this project does not make.
+
+
+## Three limits found by review, and what became of each
+
+All three were reproduced before anything was changed.
+
+**Restoring a row extent works for one sheet, not several.** Padding the *concatenated*
+frame is wrong the moment a non-final sheet is the one that lost rows: measured, a sheet
+holding `[1.0, null]` followed by a sheet holding `[2.0]` came back as `[1.0, 2.0, null]`
+with `expected_rows=3`, silently reordering the data. Nothing in the file records which
+sheet lost a row, so the reader now refuses a multi-sheet shortfall and names the remedy —
+read the sheets separately, each with its own extent. Appending to the whole is only sound
+when there is one sheet to append to.
+
+**A cell the dtype cannot hold used to read back as null. Now it is refused.** Type text
+into a `Float64` cell of a written workbook and `fastexcel` coerces it to `None`, which is
+what an originally-null cell also returns — so that edit did not move the digest. Worth
+recording because it is the obvious fix and it does not work: `dtype_coercion="strict"` does
+**not** change this. It returned the same `None`.
+
+What does see it is `ExcelSheet.to_arrow_with_errors`, which reports the position and reason
+of every value the parse dropped. The reader uses it in place of `to_polars`, so a dropped
+cell is now a `ValueError` naming the column, the row and the reason, instead of a silent
+null.
+
+Two things made this the cheap fix rather than the expensive one:
+
+| | second text read and compare | `to_arrow_with_errors` |
+| --- | --- | --- |
+| cost on the 19-column fixture | 5.9 → 15.7 ms, **2.66x** | 5.64 → 5.52 ms, **0.98x** |
+| new dependency | none | `pyarrow`, via `fastexcel[pyarrow]` |
+
+The error list falls out of the parse `fastexcel` already does, so it is free to within
+measurement noise. The cost is a dependency: `to_arrow_with_errors` returns a
+`pyarrow.RecordBatch`, so `pyarrow` is now a runtime requirement, expressed as the
+`fastexcel[pyarrow]` extra rather than a bare pin. It ships no `py.typed`, which is why the
+local `fastexcel` stub declares a minimal stand-in carrying only `__arrow_c_array__` — that
+one method satisfies polars' `ArrowArrayExportable` protocol, so `pl.DataFrame(batch)`
+type-checks without dragging an untyped package into the annotations.
+
+**One column type needed a second pass.** Requesting `fastexcel`'s `"null"` dtype for a
+`pl.Null` column is the obvious mapping and is a trap: it discards whatever the cell held
+**and reports no cell error**, so `to_arrow_with_errors` sees nothing and the value is gone
+before there is anything to report. Measured, an edited cell produced a digest byte-identical
+to the untouched original. `Null` columns are therefore requested as **text**, checked for
+content, and only then collapsed to `Null`. The same read as text returns the value intact,
+which is what makes the check possible.
+
+Worth stating because it generalises: the error report covers cells that *failed* to parse
+as their type, not cells whose type accepts anything by discarding it.
+
+This is a stronger guarantee than the hashing section claims, which scopes the digest as a
+change detector rather than an adversarial integrity check. That scope has not changed: this
+closes an accident, not an attack. A determined editor can still write a *valid* number into
+a numeric cell, and no reader can tell that from the number that was there before.
+
+**Neither the reader nor the writers can use a remote path.** Every path in this library is
+a `UPath` built by `zpath`, and for a cloud or in-memory protocol that object works — fsspec
+is installed, `memory` and `az` are registered, and `ZPath("memory://book.xlsx")` reads and
+writes correctly through its own API. What does not work is handing `str(path)` to a
+library. That yields the URI, and calamine and both writers open it as a *local filename*:
+measured on `memory://book.xlsx`, the reader raises `CalamineError: ... The filename,
+directory name, or volume label syntax is incorrect (os error 123)`, the default writer
+raises `OSError` with the same message, and `polars-xlsxwriter` raises
+`FileCreateError: [Errno 22] Invalid argument`.
+
+So this is **not a missing fsspec install**, and it is not the reader's alone — all three
+units share it, and it predates the reader. The dividing line is `os.fspath`: `zpath`
+returns a real `pathlib.Path` subclass for a local path, which these libraries accept, and
+for any other protocol `os.fspath` raises `TypeError`. Nothing in the tree routes around it.
+
+Closing it means moving bytes rather than paths: `fastexcel.read_excel` already accepts
+`bytes`, so the reader could read `path.read_bytes()` and hand that to each handle. The
+writers are harder, since `rustpy-xlsxwriter` writes to a filename and would need a local
+temporary file copied back through the `UPath`. Left open deliberately — fixing the reader
+alone would make it the only unit in the library that accepts a remote path, which is a
+worse state than the consistent one. It belongs with the credential work the `zpath` seam
+was built for.
