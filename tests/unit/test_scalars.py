@@ -26,6 +26,7 @@ FLAG_TABLE: list[tuple[pl.DataType, bool, bool, bool, bool, bool, bool]] = [
     (pl.Boolean(), False, False, False, False, False, True),
     (pl.String(), False, False, False, False, True, False),
     (pl.Categorical(), False, False, False, False, True, False),
+    (pl.Enum(["a", "b"]), False, False, False, False, True, False),
     (pl.Binary(), False, False, False, False, False, False),
     (pl.Date(), False, False, False, False, False, False),
     (pl.Time(), False, False, False, False, False, False),
@@ -61,6 +62,14 @@ def test_boolean_is_not_numeric_and_not_an_integer() -> None:
     assert scalars.is_boolean(dtype) is True
     assert scalars.is_numeric(dtype) is False
     assert scalars.is_integer(dtype) is False
+
+
+def test_enum_counts_as_text() -> None:
+    # Added after an Enum column was found to break the Excel path end to end: ToExcel routes
+    # on is_text, so leaving Enum out meant the conversion passed it through unchanged and
+    # fast_excel_reader then refused the dtype its own writer had produced.
+    assert scalars.is_text(pl.Enum(["a", "b"])) is True
+    assert scalars.is_text(pl.Enum([])) is True
 
 
 def test_categorical_counts_as_text() -> None:

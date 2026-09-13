@@ -72,17 +72,22 @@ def is_decimal(dtype: pl.DataType) -> bool:
 def is_text(dtype: pl.DataType) -> bool:
     """Return whether the dtype holds text.
 
-    Polars offers no predicate for this, so it is derived. ``Categorical`` counts as text:
-    it is dictionary-encoded text, its values read back as ``str``, and the ToExcel
-    conversion maps it to ``String`` precisely because it is text.
+    Polars offers no predicate for this, so it is derived. ``Categorical`` and ``Enum`` both
+    count: each is dictionary-encoded text, their values read back as ``str``, and the ToExcel
+    conversion maps them to ``String`` precisely because they are text.
+
+    This predicate is load-bearing rather than descriptive. ``DataframeConversionToExcel``
+    routes on it, so a text dtype missing here is passed through unconverted and then refused
+    by ``fast_excel_reader``, which is what an omitted ``Enum`` did: it produced a sidecar
+    describing a column that could not be validated at all.
 
     Args:
         dtype: The column's Polars dtype.
 
     Returns:
-        True for ``String`` and ``Categorical``.
+        True for ``String``, ``Categorical`` and ``Enum``.
     """
-    return isinstance(dtype, pl.String | pl.Categorical)
+    return isinstance(dtype, pl.String | pl.Categorical | pl.Enum)
 
 
 def is_boolean(dtype: pl.DataType) -> bool:

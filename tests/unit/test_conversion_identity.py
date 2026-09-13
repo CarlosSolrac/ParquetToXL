@@ -43,7 +43,7 @@ def test_a_source_frame_record_names_no_conversion() -> None:
     ("conversion", "identifier", "version", "version_number"),
     [
         (DataframeConversionNone(), "none", "1.0", 1),
-        (DataframeConversionToExcel(), "to-excel", "3.0", 3),
+        (DataframeConversionToExcel(), "to-excel", "4.0", 4),
     ],
     ids=["none", "to-excel"],
 )

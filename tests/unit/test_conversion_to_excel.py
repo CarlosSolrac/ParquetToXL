@@ -155,6 +155,41 @@ def test_categorical_becomes_its_string_labels() -> None:
     assert changed is True
 
 
+def test_enum_becomes_its_string_labels() -> None:
+    # Enum is dictionary-encoded text like Categorical and converges on the same rule. Before
+    # this, ToExcel left the column an Enum, which fast_excel_reader refuses outright -- so a
+    # sidecar describing an Enum column could not be validated at all.
+    df: pl.DataFrame = pl.DataFrame({"e": pl.Series(["alpha", None, "beta"], dtype=pl.Enum(["alpha", "beta"]))})
+    converted: pl.DataFrame
+    changed: bool
+    converted, changed = _convert(df)
+    assert converted.dtypes == [pl.String]
+    assert converted["e"].to_list() == ["alpha", None, "beta"]
+    assert changed is True
+
+
+def test_an_empty_enum_label_becomes_null() -> None:
+    df: pl.DataFrame = pl.DataFrame({"e": pl.Series(["alpha", "", None], dtype=pl.Enum(["alpha", ""]))})
+    assert _convert(df)[0]["e"].to_list() == ["alpha", None, None]
+
+
+def test_an_oversized_enum_label_is_truncated_on_the_first_pass() -> None:
+    # Same idempotency trap Categorical had: an uncut label would pass through the first call
+    # and be cut by the second, making the frame depend on how many times the conversion ran.
+    label: str = "z" * (EXCEL_CELL_LIMIT + 1)
+    df: pl.DataFrame = pl.DataFrame({"e": pl.Series([label], dtype=pl.Enum([label]))})
+    once: pl.DataFrame
+    first_changed: bool
+    once, first_changed = _convert(df)
+    twice: pl.DataFrame
+    second_changed: bool
+    twice, second_changed = _convert(once)
+    assert first_changed is True
+    assert len(once["e"][0]) == EXCEL_CELL_LIMIT
+    assert once.equals(twice)
+    assert second_changed is False
+
+
 def test_an_oversized_categorical_label_is_truncated_on_the_first_pass() -> None:
     # Regression, from a Codex review. Casting Categorical to String without truncating left
     # an oversized label for the *second* pass to cut, so the frame and the flag depended on

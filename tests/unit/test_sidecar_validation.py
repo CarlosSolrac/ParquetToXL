@@ -146,6 +146,20 @@ def test_a_faithful_workbook_validates_against_its_sidecar(tmp_path: Path) -> No
     assert _validate(_publish(tmp_path, _frame())) is True
 
 
+def test_a_dictionary_encoded_column_validates(tmp_path: Path) -> None:
+    # Regression. ToExcel routes text on scalars.is_text, which omitted Enum, so an Enum
+    # column was passed through unconverted and fast_excel_reader then refused the dtype its
+    # own writer had produced -- validation raised rather than returning a verdict. Categorical
+    # sits alongside it here because it always worked, so a failure points at the right one.
+    frame: pl.DataFrame = pl.DataFrame(
+        {
+            "e": pl.Series("e", ["a", "b", None], dtype=pl.Enum(["a", "b"])),
+            "c": pl.Series("c", ["x", "y", None], dtype=pl.Categorical()),
+        }
+    )
+    assert _validate(_publish(tmp_path, frame)) is True
+
+
 def test_the_sidecar_supplies_the_reader_schema(tmp_path: Path) -> None:
     # The reader never infers, and a validator has no converted frame to copy dtypes from,
     # so the schema has to be reconstructible from what was stored. Compared against the live

@@ -53,7 +53,7 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
     ``Int*``, ``UInt*``, ``Decimal``      ``Float64``
     ``Float32``, ``Float64``              ``Float64``; ``NaN`` and ``+/-inf`` become null
     ``Boolean``                           ``Float64``, -1.0 / 0.0, null preserved
-    ``String``, ``Categorical``           ``String`` cut to ``EXCEL_CELL_LIMIT``; ``""`` becomes null
+    ``String``, ``Categorical``, ``Enum``  ``String`` cut to ``EXCEL_CELL_LIMIT``; ``""`` becomes null
     ``Binary``                            lowercase hex ``String``, then the same rule
     ``Duration``                          ``Float64`` seconds
     ``Datetime``                          local wall clock, timezone removed, whole seconds
@@ -95,8 +95,8 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
     """
 
     identifier: ClassVar[str] = "to-excel"
-    version: ClassVar[str] = "3.0"
-    version_number: ClassVar[int] = 3
+    version: ClassVar[str] = "4.0"
+    version_number: ClassVar[int] = 4
     description: ClassVar[str] = "Models the dtype and value damage of a round trip through an Excel worksheet."
 
     def _convert(self, df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
@@ -141,11 +141,12 @@ class DataframeConversionToExcel(DataframeConversionBaseClass):
             elif scalars.is_numeric(dtype):
                 expressions.append(column.cast(pl.Float64).alias(name))
             elif isinstance(dtype, pl.Binary) or scalars.is_text(dtype):
-                # Binary, String and Categorical converge on the same rule: become text, cut
-                # to the cell limit, then blank an empty result. Categorical is truncated
-                # even though the spec lists truncation for String and Binary only -- leaving
-                # it out breaks idempotency, because an oversized label would pass through on
-                # the first call and be cut on the second.
+                # Binary, String, Categorical and Enum converge on the same rule: become
+                # text, cut to the cell limit, then blank an empty result. The two
+                # dictionary-encoded dtypes are truncated as well, though the spec lists
+                # truncation for String and Binary only -- leaving it out breaks idempotency,
+                # because an oversized label would pass through on the first call and be cut
+                # on the second.
                 text: pl.Expr = column.bin.encode("hex") if isinstance(dtype, pl.Binary) else column.cast(pl.String)
                 cut: pl.Expr = text.str.slice(0, EXCEL_CELL_LIMIT)
                 values_moved = values_moved or _any_true(df, text.str.len_chars() > EXCEL_CELL_LIMIT) or _any_true(df, cut.str.len_chars() == 0)
