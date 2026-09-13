@@ -322,7 +322,9 @@ concatenating the two 500-row halves reproduces the 1000-row digest; swapping va
 different rows changes the dataframe digest even when column totals do not. Column reorder
 changes the digest; renaming columns does not. Duplicate and null rows contribute normally.
 Empty frames and empty columns have zero aggregates. As before, this is a non-cryptographic
-change detector, not a proof of equality or an adversarial integrity check.
+change detector, not a proof of equality or an adversarial integrity check -- a scope the
+*Validating a workbook* section adopts wholesale, so the two are one decision rather than two
+statements pulling against each other.
 
 ### Column metadata — `metadata/column.py`, `columns.py`, `builder.py`
 
@@ -643,6 +645,22 @@ sidecar records, applies the Excel conversion, and compares the digest against t
 recorded before the file existed. **The source frame is never opened** -- `source_path` locates
 the sidecar and does nothing else, so validation works wherever the Parquet file has gone.
 
+**What this proves, and what it does not.** Settled deliberately rather than left to
+inference. The question answered is *round-trip stability of the converted frame*: data
+written to Excel comes back unchanged. Two things are explicitly out of scope.
+
+It is **not an integrity check against tampering**. There is no attacker in the threat model,
+which matches what the hashing section already says of the digest itself -- every check below
+closes an accident, not an attack. The realistic causes are a workbook produced by a different
+export path, the wrong workbook validated against a sidecar, or a file damaged in transit.
+
+It does **not measure equivalence to the Parquet**. The digest is computed on the *converted*
+frame on both sides, so everything `DataframeConversionToExcel` removes -- non-finite floats,
+empty strings, sub-second time, the DST-fold distinction -- is gone before the comparison and
+invisible to it. That is by construction, not a gap: modelling Excel's limits is the
+conversion's whole purpose, and the loss is accepted. A check that compared against the source
+frame would be a different feature, and is not wanted.
+
 **Two of the checks are the reason this ships rather than staying a recipe.** A sidecar
 written by a different conversion or hasher version records digests computed under different
 rules, so comparing them reports a difference in the *data* that is really a difference in the
@@ -657,12 +675,18 @@ without a name check it validated, which is the worst kind of wrong answer, a co
 about a file that does not hold what the sidecar describes. The sidecar records the names and
 their order, so the validator checks them itself, before comparing digests.
 
+The accident this catches is an ordinary one -- the wrong workbook handed to the wrong
+sidecar, or an export that renamed columns on the way out -- which is why it earns its place
+even though tampering is out of scope.
+
 **The check reads the header cells as written**, not the names the reader hands back. The
 reader normalizes on the way in -- duplicates are suffixed, blanks are named ``__UNNAMED__N``
--- so comparing its output cannot see a header altered *into* a name it would have generated
-anyway: a sheet headed ``n, n`` deduplicates to ``n, n_1`` and matched a record of exactly
-those columns, values untouched, digest agreeing. One extra single-row read per sheet closes
-it, through the same ``fastexcel`` handle the reader uses.
+-- so comparing its output cannot see a header that happens to normalize *into* a name it
+would have generated anyway: a sheet headed ``n, n`` deduplicates to ``n, n_1`` and matched a
+record of exactly those columns, values untouched, digest agreeing. Reachable without anyone
+meaning harm, by an exporter that writes duplicate or blank headers into a frame whose columns
+already collide under those rules. One extra single-row read per sheet closes it, through the
+same ``fastexcel`` handle the reader uses.
 
 **The error boundary covers reading, converting and hashing, not reading alone.** A cell can
 be readable and still unusable: an Excel date serial of 2958466 parses to a Polars date in

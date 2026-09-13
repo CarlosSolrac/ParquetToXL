@@ -89,8 +89,10 @@ def _publish(tmp_path: Path, source: pl.DataFrame, *, written: pl.DataFrame | No
         tmp_path: Where both files go.
         source: The frame the sidecar describes.
         written: The frame the workbook is built from, when it should differ from ``source``.
-            This is how a tampered workbook is produced: the sidecar still describes the
-            original, which is exactly the situation validation exists to detect.
+            This is how a workbook that disagrees with its sidecar is produced -- the record
+            still describes the original -- which is the situation validation exists to
+            detect. No attacker is implied: the realistic cause is a different export path or
+            the wrong file.
 
     Returns:
         The Parquet path and the workbook path.
@@ -191,8 +193,8 @@ def test_the_row_extent_comes_from_value_count(tmp_path: Path) -> None:
 
 
 def test_a_changed_cell_fails_validation(tmp_path: Path) -> None:
-    tampered: pl.DataFrame = _frame().with_columns(pl.Series("i", [1, 99, None, None], dtype=pl.Int64))
-    assert _validate(_publish(tmp_path, _frame(), written=tampered)) is False
+    altered: pl.DataFrame = _frame().with_columns(pl.Series("i", [1, 99, None, None], dtype=pl.Int64))
+    assert _validate(_publish(tmp_path, _frame(), written=altered)) is False
 
 
 def test_a_value_moved_between_rows_fails_validation(tmp_path: Path) -> None:
@@ -212,8 +214,8 @@ def test_a_reordered_workbook_still_validates(tmp_path: Path) -> None:
 def test_the_per_column_digests_name_which_column_changed(tmp_path: Path) -> None:
     # The sidecar stores a digest per column as well as per frame, so a validator can report
     # where a workbook diverged rather than only that it did.
-    tampered: pl.DataFrame = _frame().with_columns(pl.Series("i", [1, 99, None, None], dtype=pl.Int64))
-    subject: _Subject = _publish(tmp_path, _frame(), written=tampered)
+    altered: pl.DataFrame = _frame().with_columns(pl.Series("i", [1, 99, None, None], dtype=pl.Int64))
+    subject: _Subject = _publish(tmp_path, _frame(), written=altered)
 
     record: DataframeColumnsMetadata = _excel_record(subject.parquet)
     back: pl.DataFrame = _convert(_read_as_the_sidecar_describes(subject))

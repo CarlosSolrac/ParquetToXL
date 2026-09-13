@@ -7,6 +7,11 @@ Skipping those does not fail loudly -- it compares a digest computed under diffe
 against one computed under these, and reports a difference in the data that is really a
 difference in the algorithm.
 
+The scope is round-trip stability of the converted frame: data written to Excel comes back
+unchanged. Not tampering -- there is no attacker here, and every case below is an accident an
+ordinary pipeline can produce. Not equivalence to the Parquet either, since both sides pass
+through the same lossy conversion before hashing. ``sidecar/validation.py`` records why.
+
 Read-only for an implementer. If one of these looks wrong, stop and report it rather than
 editing it.
 """
@@ -119,10 +124,10 @@ def test_a_faithful_workbook_is_valid(tmp_path: Path) -> None:
 
 def test_a_changed_cell_is_a_digest_mismatch_and_both_digests_are_reported(tmp_path: Path) -> None:
     # The digests are on the verdict because "they differ" is rarely the end of the question.
-    tampered: pl.DataFrame = _frame().with_columns(pl.Series("n", [1, 99, 3, None], dtype=pl.Int64))
+    altered: pl.DataFrame = _frame().with_columns(pl.Series("n", [1, 99, 3, None], dtype=pl.Int64))
     parquet: UPath
     workbook: UPath
-    parquet, workbook = _publish(tmp_path, written=tampered)
+    parquet, workbook = _publish(tmp_path, written=altered)
     verdict: Verdict = validate_workbook(parquet, workbook)
     assert verdict.kind == DIGEST_MISMATCH
     assert verdict.valid is False
@@ -159,8 +164,9 @@ def test_renamed_headers_are_caught_although_the_digest_cannot_see_them(tmp_path
 def test_a_header_altered_into_a_name_the_reader_would_generate_is_caught(tmp_path: Path) -> None:
     # The check has to read the header cells as written, not the names the reader hands back.
     # A sheet headed ``n, n`` is deduplicated to ``n, n_1`` on the way in, so a record of
-    # exactly those columns matched, the values were untouched, and the digest agreed: a
-    # tampered workbook validated. Blank headers do the same through ``__UNNAMED__N``.
+    # exactly those columns matched, the values were untouched, and the digest agreed -- the
+    # workbook validated. Blank headers do the same through ``__UNNAMED__N``. Reachable by an
+    # exporter writing duplicate or blank headers, not only by someone meaning harm.
     source: pl.DataFrame = pl.DataFrame({"n": [1.0, 2.0], "n_1": [10.0, 20.0]})
     parquet: UPath = ZPath(str(tmp_path / "collide.parquet"))
     source.write_parquet(str(parquet))

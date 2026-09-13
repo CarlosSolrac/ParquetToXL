@@ -9,6 +9,22 @@ really a difference in the *algorithm*. This function refuses rather than compar
 
 The source frame is never opened. ``source_path`` is used to find the sidecar beside it and
 for nothing else, so validation works wherever the Parquet file itself has gone.
+
+Scope
+-----
+The question answered is **round-trip stability of the converted frame**: data written to
+Excel comes back unchanged. Two things are deliberately outside it.
+
+This is not an integrity check against tampering. There is no attacker in the threat model,
+matching what ``hashing.binary_aggregate`` already says of the digest -- every check here
+closes an accident, not an attack. The causes worth catching are ordinary: a workbook from a
+different export path, the wrong workbook paired with a sidecar, a file damaged in transit.
+
+It also does not measure equivalence to the Parquet. The digest covers the *converted* frame
+on both sides, so everything ``DataframeConversionToExcel`` removes -- non-finite floats,
+empty strings, sub-second time, the DST-fold distinction -- is gone before the comparison and
+invisible to it. That is by construction rather than an oversight: modelling Excel's limits is
+the conversion's purpose, and the resulting loss is accepted.
 """
 
 from __future__ import annotations
@@ -94,9 +110,11 @@ def _written_headers(workbook_path: UPath) -> list[list[str | None]]:
 
     Read separately, and before the reader is asked for data, because the reader normalizes
     headers on the way in: duplicates are suffixed and blanks are named. Comparing the names
-    it hands back therefore cannot see a header that was altered *into* a name the reader
-    would have generated anyway -- a sheet headed ``n, n`` is deduplicated to ``n, n_1`` and
-    matches a record of exactly those columns.
+    it hands back therefore cannot see a header that happens to normalize *into* a name the
+    reader would have generated anyway -- a sheet headed ``n, n`` is deduplicated to ``n, n_1``
+    and matches a record of exactly those columns. An exporter that writes duplicate or blank
+    headers reaches this without anyone meaning harm, which is why it is checked even though
+    tampering is out of scope.
 
     Args:
         workbook_path: The workbook to inspect.
