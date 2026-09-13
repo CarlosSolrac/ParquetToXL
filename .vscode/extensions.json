@@ -4,6 +4,7 @@
         "ms-python.vscode-pylance"
     ],
     "unwantedRecommendations": [
-        "ms-python.pylint"
+        "ms-python.pylint",
+        "ms-python.flake8"
     ]
 }

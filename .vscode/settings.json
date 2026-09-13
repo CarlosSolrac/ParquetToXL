@@ -7,6 +7,7 @@
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
     "files.eol": "\n",
     "pylint.enabled": false,
+    "flake8.enabled": false,
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
