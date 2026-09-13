@@ -27,3 +27,11 @@ repos:
         language: system
         types: [python]
         pass_filenames: true
+        # One invocation over every file, never a partition per core. Two reasons, and the
+        # second holds even without the first. pre-commit otherwise splits the file list
+        # across concurrent processes that share one .mypy_cache, which crashed CI with
+        # "INTERNAL ERROR" on a 4-core runner while every serial run passed on both Linux and
+        # Windows. And mypy is a whole-program analyser: three green partitions of fifteen
+        # files assert less than one green pass over sixty, because each partition sees only
+        # its own slice as the program. upstream mirrors-mypy sets this for the same reasons.
+        require_serial: true
