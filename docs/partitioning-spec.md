@@ -162,6 +162,17 @@ balanced-workbook cost formula, which contradicted itself.
 
 ## Date interpretation
 
+**A source may register several date columns; a sheet selects exactly one.** `date_columns`
+declares what is *interpretable* as a date in that file — several columns often are — and
+`partition_column` names the single one this sheet partitions on. Nothing combines them.
+
+A composite grouping such as `(invoice year, payment month)` is **out of scope for v1**, and must
+be refused rather than approximated. It needs an ordered list of keys and a separate rule for
+subdividing each group, neither of which exists here. In particular it must never be silently
+reinterpreted as several independent exports, or as a fallback where one column is consulted when
+another is null: both would produce a plausible-looking export that answers a different question
+than the one asked.
+
 `date_columns` is keyed by exact source column name, within one source. Declared types must match
 Parquet types: `date`, `datetime`, or any signed or unsigned integer width for `int`; reject
 floats, booleans, strings and implicit coercions.
@@ -369,7 +380,9 @@ in an output name.
 | One day | `2025-01-31` | `2025-01-31` |
 | Day range | `2025-01-31~2025-02-02` | `2025-01-31~2025-02-02` |
 
-Month abbreviations are fixed English `Jan` through `Dec`, independent of the computer's locale.
+Month abbreviations are the fixed English `Jan`, `Feb`, `Mar`, `Apr`, `May`, `Jun`, `Jul`, `Aug`,
+`Sep`, `Oct`, `Nov`, `Dec`, independent of the computer's locale — spelled out because `Sep`
+against `Sept` is exactly the kind of difference that changes a filename.
 Numeric months always use two digits. Ranges show the earlier endpoint first, even when sheets
 are ordered descending. A single period has no redundant range endpoint. Semester and other
 subdivisions use their calendar month boundaries as shown, even if some months have no rows. The
