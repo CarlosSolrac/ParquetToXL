@@ -1,0 +1,102 @@
+{
+  "$schema": "./export-config.schema.json",
+  "config_version": 1,
+  "config_id": "0f7c1a94-3b52-4c8e-9a1d-6e2f0b5d7c33",
+  "config_modified_utc": "2026-09-13T16:04:11Z",
+  "output_directory": "../exports",
+  "sidecar_location": { "kind": "beside_source" },
+  "scratch_root": null,
+  "excel": { "writer": "rustpy-xlsxwriter", "options": {} },
+  "sources": {
+    "sales": {
+      "path": "../data/parquet_a.parquet",
+      "date_columns": {
+        "transaction_date": { "type": "date" },
+        "posted_at": { "type": "datetime", "calendar_timezone": { "mode": "source_wall_clock" } },
+        "accounting_month": { "type": "int", "format": "YYYYMM" },
+        "legacy_month": { "type": "int", "format": "YYMM", "two_digit_year_window_start": 1970 }
+      }
+    },
+    "returns": {
+      "path": "../data/parquet_b.parquet",
+      "date_columns": {
+        "returned_on": { "type": "int", "format": "YYYYMMDD" },
+        "legacy_day": { "type": "int", "format": "YYMMDD", "two_digit_year_window_start": 1970 }
+      }
+    }
+  },
+  "profiles": [
+    {
+      "name": "annual_review",
+      "output_subdirectory": "annual_review",
+      "limits": {
+        "max_data_rows_per_worksheet": 1048575,
+        "max_cells_per_workbook": 10000000
+      },
+      "partitioning": {
+        "algorithm": "calendar_greedy",
+        "base_period": "year",
+        "period_order": "ascending",
+        "year_split_months": [6, 4, 3, 2, 1],
+        "oversized_period": "balanced_rows",
+        "null_dates": "separate"
+      },
+      "naming": {
+        "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+        "single_worksheet": "{source} Data",
+        "worksheet": "{source} {period_label}",
+        "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+        "month_format": "numeric",
+        "worksheet_prefix": "",
+        "sheet_collision": "error"
+      },
+      "sheets": [
+        {
+          "source": "sales",
+          "partition_column": "transaction_date",
+          "sort": [
+            { "column": "transaction_date", "direction": "ascending", "nulls": "last" },
+            { "column": "customer_id", "direction": "ascending", "nulls": "last" }
+          ]
+        },
+        {
+          "source": "returns",
+          "partition_column": "returned_on",
+          "sort": [
+            { "column": "returned_on", "direction": "ascending", "nulls": "last" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "balanced_delivery",
+      "output_subdirectory": "balanced_delivery",
+      "limits": {
+        "max_data_rows_per_worksheet": 500000,
+        "max_cells_per_workbook": 10000000
+      },
+      "partitioning": {
+        "algorithm": "balanced",
+        "balance_across": "workbooks"
+      },
+      "naming": {
+        "workbook": "{profile}_{workbook_index:03d}.xlsx",
+        "single_worksheet": "debits Data",
+        "worksheet": "debits Data_{sheet_index:03d}",
+        "overflow_worksheet": "debits Data_{sheet_index:03d}_p{part_index:02d}",
+        "month_format": "numeric",
+        "worksheet_prefix": "",
+        "sheet_collision": "error"
+      },
+      "sheets": [
+        {
+          "source": "sales",
+          "partition_column": null,
+          "sort": [
+            { "column": "customer_id", "direction": "ascending", "nulls": "last" }
+          ]
+        }
+      ]
+    }
+  ]
+}

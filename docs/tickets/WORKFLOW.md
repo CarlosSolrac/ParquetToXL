@@ -1,13 +1,13 @@
 # Implementation workflow
 
-How `requirements-spec.md` gets built: Claude Code implements one unit at a time against a
+How `library-spec.md` gets built: Claude Code implements one unit at a time against a
 frozen test, Codex reviews the diff. TDD throughout, as the spec mandates.
 
 Ticket front-matter is in `SCHEMA.md`. This file is the plan those tickets execute.
 
 ## Roles
 
-**Claude Code.** Owns `requirements-spec.md`, decomposition, stubs, frozen tests,
+**Claude Code.** Owns `library-spec.md`, decomposition, stubs, frozen tests,
 implementation, integration, git, and the full gate run (`pre-commit run --all-files` plus
 coverage).
 
@@ -100,7 +100,7 @@ data, not failure.
 
 ## Backlog
 
-Derived from the test-module table at `requirements-spec.md`, which is already close to a
+Derived from the test-module table at `library-spec.md`, which is already close to a
 1:1 ticket list — rows are split where one row carries several independent assertion groups.
 
 | Phase | Tickets | Status |

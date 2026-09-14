@@ -1,5 +1,28 @@
 # ParquetToXL — Dataframe Metadata, Hashing & Fast Excel I/O
 
+> **This document describes the library that exists, and every decision in it is still in
+> force.** It was `requirements-spec.md` at the repository root until it moved here alongside
+> the export specs.
+>
+> What is *historical* is only the shape of the document: the implementation-status table, the
+> phase numbering, and the TDD execution notes. Those record how the code got written, and
+> that work is finished.
+>
+> Everything else is a live contract, and the export specs depend on it directly:
+>
+> - the canonical encoding and its tag bytes, and the **additive mod 2¹²⁸** property of the
+>   binary-aggregate hash — `docs/export-pipeline-spec.md` verifies a partitioned export by
+>   summing fragment digests, which is sound only because of that property;
+> - the `DataframeConversionToExcel` rules and its `version`, which is now a staleness
+>   condition: changing either invalidates every sidecar already written;
+> - `fast_excel_reader`'s limits — one schema per call, restoration of a trailing all-null run
+>   well defined only for a single sheet;
+> - why `fastexcel` rather than `python-calamine`, why `rustpy-xlsxwriter` rather than
+>   `polars.write_excel`, and why `tzdata` is an unconditional dependency.
+>
+> Change any of those and the export pipeline is affected. Read this before editing the
+> conversion, the hashers, the canonical encoding or the reader.
+
 **Status:** design approved 2026-09-06, fully implemented. Amended repeatedly against
 measurement -- every amendment records what was measured and why the original text did not
 survive contact with the libraries.

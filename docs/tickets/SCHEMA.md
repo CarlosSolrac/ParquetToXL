@@ -52,7 +52,7 @@ failure then gets attributed to the wrong cause.
 - Frozen test committed and demonstrated red.
 - The frozen test demonstrated **satisfiable** — an implementation exists that passes it.
   A test that cannot be made green poisons everything built on top of it.
-- The contract is pasted text in the ticket, not a pointer to `requirements-spec.md`.
+- The contract is pasted text in the ticket, not a pointer to `library-spec.md`.
 
 ## Definition of done
 

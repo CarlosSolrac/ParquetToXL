@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ParquetToXL export configuration (proposal)",
+  "description": "Versioned export intent, separate from measured metadata and generated manifests. See partitioning-spec.md for the planning rules and export-pipeline-spec.md for selection, staging and publication.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["config_version", "config_id", "config_modified_utc", "output_directory", "sidecar_location", "scratch_root", "excel", "sources", "profiles"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "config_version": { "const": 1 },
+    "config_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identity for output-directory ownership. Not the file path, so renaming or moving this file does not read as a different configuration. The web editor allocates it and guarantees uniqueness across configurations."
+    },
+    "config_modified_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "T3. When this configuration was last changed. Maintained by the author or the web editor; a forgotten bump is caught by the resolved-config hash recorded in the run receipt."
+    },
+    "output_directory": {
+      "type": "string",
+      "minLength": 1,
+      "description": "May be remote. Writers only ever see local scratch; remote access is confined to stage-in and publish."
+    },
+    "sidecar_location": { "$ref": "#/$defs/sidecarLocation" },
+    "scratch_root": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "null means tempfile.gettempdir(). Overridable on the CLI. On many Spark images /tmp is RAM-backed, so staged Parquet and written workbooks come out of the same memory the export competes for."
+    },
+    "excel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["writer", "options"],
+      "properties": {
+        "writer": {
+          "const": "rustpy-xlsxwriter",
+          "description": "polars-xlsxwriter is refused: it is not round-trip safe (Float64 loses precision, 1900-01-01 shifts back a day), so selecting it would make every verification fail for reasons unrelated to the data."
+        },
+        "options": { "type": "object" }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+        "description": "Source alias. Same pattern as a profile name, because both are interpolated into output names."
+      },
+      "additionalProperties": { "$ref": "#/$defs/source" }
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/profile" }
+    }
+  },
+  "$defs": {
+    "sidecarLocation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "beside_source" } },
+          "description": "Needs write access to the source location, which a read-only container will not give."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "path"],
+          "properties": {
+            "kind": { "const": "directory" },
+            "path": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "date_columns"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "date_columns": {
+          "type": "object",
+          "propertyNames": { "minLength": 1 },
+          "additionalProperties": { "$ref": "#/$defs/dateColumn" },
+          "description": "Keyed by exact column name within THIS source. Names collide across sources, and the same name may be a date in one file and a YYYYMM integer in another."
+        }
+      }
+    },
+    "calendarTimezone": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode"],
+          "properties": { "mode": { "const": "source_wall_clock" } },
+          "description": "Use the source's local calendar date, consistent with the ToExcel policy. Required for naive input in v1."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "zone"],
+          "properties": {
+            "mode": { "const": "zone" },
+            "zone": { "type": "string", "minLength": 1 }
+          },
+          "description": "Convert timezone-aware input to this IANA zone before deriving partition keys."
+        }
+      ]
+    },
+    "dateColumn": {
+      "description": "Selected on `type`, the same discriminator the Pydantic union uses, so both sides have one shape per kind. Branch-specific fields live inside the `then` blocks rather than in the outer `properties`, which is what lets `unevaluatedProperties` reject a field belonging to another kind. Written with if/then rather than oneOf so a failure names the offending field instead of reporting that nothing matched.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["date", "datetime", "int"] }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["type"],
+            "properties": { "type": { "const": "datetime" } }
+          },
+          "then": {
+            "required": ["calendar_timezone"],
+            "properties": {
+              "calendar_timezone": { "$ref": "#/$defs/calendarTimezone" }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["type"],
+            "properties": { "type": { "const": "int" } }
+          },
+          "then": {
+            "required": ["format"],
+            "properties": {
+              "format": { "enum": ["YYMM", "YYYYMM", "YYMMDD", "YYYYMMDD"] },
+              "two_digit_year_window_start": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9900,
+                "description": "YY selects the unique year ending in YY in this fixed, inclusive 100-year window. Stays optional here and is made conditional below, matching IntDateColumn."
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "required": ["format"],
+                  "properties": { "format": { "enum": ["YYMM", "YYMMDD"] } }
+                },
+                "then": { "required": ["two_digit_year_window_start"] },
+                "else": { "not": { "required": ["two_digit_year_window_start"] } }
+              }
+            ]
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "sortKey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column", "direction", "nulls"],
+      "properties": {
+        "column": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["ascending", "descending"] },
+        "nulls": { "enum": ["first", "last"] }
+      }
+    },
+    "sheet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "partition_column", "sort"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "An alias declared in the top-level sources object."
+        },
+        "partition_column": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "A column registered in THIS source's date_columns. null only when the profile's algorithm is balanced."
+        },
+        "sort": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sortKey" },
+          "description": "Lexicographic precedence over this source's columns. Calendar exports sort within each final sheet; balanced exports sort globally before slicing. Empty means source order."
+        }
+      }
+    },
+    "partitioning": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "balance_across"],
+          "properties": {
+            "algorithm": { "const": "balanced" },
+            "balance_across": { "enum": ["worksheets", "workbooks"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "base_period", "period_order", "year_split_months", "oversized_period", "null_dates"],
+          "properties": {
+            "algorithm": { "enum": ["calendar_greedy", "calendar_periods"] },
+            "base_period": { "enum": ["year", "year-month", "year-month-day"] },
+            "period_order": { "enum": ["ascending", "descending"] },
+            "year_split_months": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": [6, 4, 3, 2, 1] },
+              "description": "Candidate calendar grids in preference order; the semantic validator requires strictly descending order ending in 1. Used only for an oversized base year."
+            },
+            "oversized_period": { "enum": ["balanced_rows", "error"] },
+            "null_dates": { "enum": ["separate", "error"] }
+          },
+          "description": "The partition column is per sheet, not here: each source has its own date column. These settings define the one shared grid every sheet is bucketed against."
+        }
+      ]
+    },
+    "naming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workbook", "single_worksheet", "worksheet", "overflow_worksheet", "month_format", "worksheet_prefix", "sheet_collision"],
+      "properties": {
+        "workbook": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Filename template including .xlsx; supports profile, period_label and workbook_index. Validated against the union of Windows, Azure and POSIX name rules regardless of host OS."
+        },
+        "single_worksheet": { "type": "string", "minLength": 1 },
+        "worksheet": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Must contain {source} when the profile has more than one sheet, or every source renders the same name in a shared workbook."
+        },
+        "overflow_worksheet": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Used when a calendar bucket must be split by rows; supports period_label and part_index, and {source} under the same rule as worksheet."
+        },
+        "month_format": {
+          "enum": ["numeric", "abbreviated"],
+          "description": "Formats month period labels and ranges: numeric gives 2025-01~06; abbreviated gives 2025-Jan~Jun. All ranges use ~; cross-year ranges repeat the year."
+        },
+        "worksheet_prefix": {
+          "type": "string",
+          "description": "Literal prefix prepended with one space to every rendered worksheet name, including single-sheet and overflow names. Empty means no prefix. Counts toward the 31-character limit. Does not affect workbook filenames."
+        },
+        "sheet_collision": { "enum": ["suffix", "error"] }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "output_subdirectory", "sheets", "limits", "partitioning", "naming"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$" },
+        "output_subdirectory": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resolved under output_directory. Owned exclusively by this profile: two profiles resolving to one directory is a validation error, and a foreign receipt there refuses the run."
+        },
+        "sheets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/sheet" },
+          "description": "One worksheet per entry per partition bucket. Several entries make a fan-in workbook drawing from several Parquet files."
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_data_rows_per_worksheet", "max_cells_per_workbook"],
+          "properties": {
+            "max_data_rows_per_worksheet": { "type": "integer", "minimum": 1, "maximum": 1048575 },
+            "max_cells_per_workbook": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Enforced planning ceiling: all exported cells, including null positions and one header row per worksheet, summed across every sheet in the workbook. A capacity policy, not an Excel RAM guarantee."
+            }
+          }
+        },
+        "partitioning": { "$ref": "#/$defs/partitioning" },
+        "naming": { "$ref": "#/$defs/naming" }
+      }
+    }
+  }
+}
