@@ -7341,6 +7341,190 @@
       }
     },
     {
+      "id": "template_reaching_an_attribute",
+      "reason": "str.format_map bounds which names a template reaches, not what it reaches through them",
+      "structurally_valid": true,
+      "semantic_only": true,
+      "expected_findings": 1,
+      "dialect_divergence": false,
+      "document": {
+        "config_version": 1,
+        "config_id": "0f7c1a94-3b52-4c8e-9a1d-6e2f0b5d7c33",
+        "config_modified_utc": "2026-09-13T16:04:11Z",
+        "output_directory": "az://exports/monthly",
+        "sidecar_location": {
+          "kind": "beside_source"
+        },
+        "scratch_root": null,
+        "excel": {
+          "writer": "rustpy-xlsxwriter",
+          "options": {}
+        },
+        "sources": {
+          "sales": {
+            "path": "../data/sales.parquet",
+            "date_columns": {
+              "transaction_date": {
+                "type": "date"
+              }
+            }
+          },
+          "returns": {
+            "path": "../data/returns.parquet",
+            "date_columns": {
+              "returned_on": {
+                "type": "int",
+                "format": "YYYYMMDD"
+              }
+            }
+          }
+        },
+        "profiles": [
+          {
+            "name": "annual_review",
+            "output_subdirectory": "annual_review",
+            "limits": {
+              "max_data_rows_per_worksheet": 1048575,
+              "max_cells_per_workbook": 10000000
+            },
+            "partitioning": {
+              "algorithm": "calendar_greedy",
+              "base_period": "year",
+              "period_order": "ascending",
+              "year_split_months": [
+                6,
+                4,
+                3,
+                2,
+                1
+              ],
+              "oversized_period": "balanced_rows",
+              "null_dates": "separate"
+            },
+            "naming": {
+              "workbook": "{profile.__class__}.xlsx",
+              "worksheet": "{source} {period_label}",
+              "single_worksheet": "{source} Data",
+              "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+              "month_format": "numeric",
+              "worksheet_prefix": "",
+              "sheet_collision": "error"
+            },
+            "sheets": [
+              {
+                "source": "sales",
+                "partition_column": "transaction_date",
+                "sort": [
+                  {
+                    "column": "customer_id",
+                    "direction": "ascending",
+                    "nulls": "last"
+                  }
+                ]
+              },
+              {
+                "source": "returns",
+                "partition_column": "returned_on",
+                "sort": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "template_indexing_a_value",
+      "reason": "the same hole, by subscript",
+      "structurally_valid": true,
+      "semantic_only": true,
+      "expected_findings": 1,
+      "dialect_divergence": false,
+      "document": {
+        "config_version": 1,
+        "config_id": "0f7c1a94-3b52-4c8e-9a1d-6e2f0b5d7c33",
+        "config_modified_utc": "2026-09-13T16:04:11Z",
+        "output_directory": "az://exports/monthly",
+        "sidecar_location": {
+          "kind": "beside_source"
+        },
+        "scratch_root": null,
+        "excel": {
+          "writer": "rustpy-xlsxwriter",
+          "options": {}
+        },
+        "sources": {
+          "sales": {
+            "path": "../data/sales.parquet",
+            "date_columns": {
+              "transaction_date": {
+                "type": "date"
+              }
+            }
+          },
+          "returns": {
+            "path": "../data/returns.parquet",
+            "date_columns": {
+              "returned_on": {
+                "type": "int",
+                "format": "YYYYMMDD"
+              }
+            }
+          }
+        },
+        "profiles": [
+          {
+            "name": "annual_review",
+            "output_subdirectory": "annual_review",
+            "limits": {
+              "max_data_rows_per_worksheet": 1048575,
+              "max_cells_per_workbook": 10000000
+            },
+            "partitioning": {
+              "algorithm": "calendar_greedy",
+              "base_period": "year",
+              "period_order": "ascending",
+              "year_split_months": [
+                6,
+                4,
+                3,
+                2,
+                1
+              ],
+              "oversized_period": "balanced_rows",
+              "null_dates": "separate"
+            },
+            "naming": {
+              "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+              "worksheet": "{source} {period_label[0]}",
+              "single_worksheet": "{source} Data",
+              "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+              "month_format": "numeric",
+              "worksheet_prefix": "",
+              "sheet_collision": "error"
+            },
+            "sheets": [
+              {
+                "source": "sales",
+                "partition_column": "transaction_date",
+                "sort": [
+                  {
+                    "column": "customer_id",
+                    "direction": "ascending",
+                    "nulls": "last"
+                  }
+                ]
+              },
+              {
+                "source": "returns",
+                "partition_column": "returned_on",
+                "sort": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": "worksheet_token_in_a_workbook_template",
       "reason": "part_index has no meaning in a filename",
       "structurally_valid": true,

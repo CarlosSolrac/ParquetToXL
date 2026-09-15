@@ -356,6 +356,8 @@ SEMANTIC: list[Case] = [
     Case("worksheet_template_without_source", "two sheets rendering one name", True, _naming(worksheet="{period_label}"), semantic=True, findings=1),
     Case("overflow_template_without_source", "the same rule on the overflow template", True, _naming(overflow_worksheet="{period_label}_p{part_index:02d}"), semantic=True, findings=1),
     Case("unknown_template_token", "a token nothing will substitute", True, _naming(workbook="{profile}_{quarter}.xlsx"), semantic=True, findings=1),
+    Case("template_reaching_an_attribute", "str.format_map bounds which names a template reaches, not what it reaches through them", True, _naming(workbook="{profile.__class__}.xlsx"), semantic=True, findings=1),
+    Case("template_indexing_a_value", "the same hole, by subscript", True, _naming(worksheet="{source} {period_label[0]}"), semantic=True, findings=1),
     Case("worksheet_token_in_a_workbook_template", "part_index has no meaning in a filename", True, _naming(workbook="{profile}_p{part_index}.xlsx"), semantic=True, findings=1),
     Case("year_split_not_descending", "the grids are tried in order, so the order is the rule", True, _partitioning(year_split_months=[1, 6]), semantic=True, findings=1),
     Case("year_split_not_ending_in_one", "stopping at 3 escalates a large quarter straight to a row split", True, _partitioning(year_split_months=[6, 3]), semantic=True, findings=1),

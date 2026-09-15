@@ -532,9 +532,28 @@ division, the single-sheet shortcut and the minimum balanced workbook count — 
 `SourceShape` that keeps the package free of Polars. `pqx_plan.fingerprint` holds
 `resolved_config_hash`, stable across key reordering, reformatting and an equivalent timestamp in
 another zone. `pqx_plan.partition` holds both calendar algorithms, the year-split escalation, the
-overflow rule and the undated bucket. Still to build: workbook allocation, naming and collisions,
-and replacing `manifest.ResolvedConfiguration` — still a `dict[str, JsonValue]` stand-in — with
-`ExportConfig`.
+overflow rule and the undated bucket. `pqx_plan.allocate` orders a profile's sheets across its
+sources and packs them into workbooks; `pqx_plan.naming` renders and validates every name.
+Still to build: replacing `manifest.ResolvedConfiguration` — still a `dict[str, JsonValue]`
+stand-in — with `ExportConfig`, and building the manifest itself from a plan.
+
+**Two things the specs left implicit, now explicit.** Sheets are ordered **period first, then
+source**. The spec does not say so outright, but it states the consequence only that ordering
+produces: that a bucket too expensive for one workbook makes *the period* span workbooks, and that
+a workbook may hold only some of the profile's sources for a period. Grouping by source instead
+would make each source span workbooks. And a workbook whose sheets cover calendar at **mixed
+grains** — one source's 2025 subdivided into quarters while another's fits a single year sheet,
+which fan-in makes ordinary — is summarised at the coarsest grain present, because that is the only
+one every span can honestly be stated at.
+
+**A security fix on the naming templates.** `str.format_map` over a restricted mapping is *not*
+sufficient, which is easy to assume and wrong: it bounds which *names* a template can reach and
+does nothing about what it reaches *through* them. `{profile.__class__}` renders `<class 'str'>`
+and `{profile.__class__.__mro__}` walks further, which is the first step of the usual format-string
+route into `__globals__` — from a configuration file. Attribute and index access are now refused
+outright, by both the renderer and the semantic validator, with two corpus cases pinning it. Format
+*specifications* such as `{workbook_index:03d}` stay, because those are applied to a value and
+cannot traverse it.
 
 **One contract the specs left implicit, now explicit.** `plan_calendar_sheets` takes counts keyed
 at `required_count_precision(partitioning)`, which is **not** the base period: a `year` base asks

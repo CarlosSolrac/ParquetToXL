@@ -80,13 +80,22 @@ def template_tokens(template: str) -> frozenset[str]:
 
 
 def _check_template(label: str, template: str, allowed: frozenset[str]) -> Iterator[str]:
-    """Yield a finding for each unknown token in one template, and for a malformed template."""
+    """Yield a finding for each unknown token in one template, and for a malformed template.
+
+    Traversal is reported on its own rather than as an unknown token, because
+    ``{profile.__class__}`` is not a typo: it is the first step of the format-string route into
+    ``__globals__``, and a message about an unrecognised token would send its author looking for
+    the right spelling.
+    """
     try:
         used: frozenset[str] = template_tokens(template)
     except ValueError as exc:
         yield f"{label} template {template!r} is not a valid format string: {exc}"
         return
-    unknown: frozenset[str] = used - allowed
+    traversing: frozenset[str] = frozenset(token for token in used if "." in token or "[" in token)
+    if traversing:
+        yield f"{label} template {template!r} reaches into a value with {sorted(traversing)}; a template may name a token and format it, never traverse it"
+    unknown: frozenset[str] = used - allowed - traversing
     if unknown:
         yield f"{label} template {template!r} uses unknown tokens {sorted(unknown)}; available: {sorted(allowed)}"
 
