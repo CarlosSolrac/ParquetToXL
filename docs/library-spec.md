@@ -37,7 +37,7 @@ survive contact with the libraries.
 | 3 · Conversions | **done** | base, `None`, `ToExcel` at version 3.0, local wall-clock preservation and idempotency pinned |
 | 4 · Extract | **done** | `extract_metadata_from_dataframe`, five failure modes pinned |
 | 5 · Excel | **done** | registry, `ExcelWriteConfig`, both writers, `fast_excel_reader` |
-| 6 · Fixtures | **done** | `generate.py`, 20 files across three writers, invariants under test |
+| 6 · Fixtures | **done** | `generate.py`, 14 files across two writers, invariants under test |
 | 7 · Integration | **done** | `ZPath` landed early as a phase 4 prerequisite; `integration/test_excel_roundtrip.py` covers the single-workbook half, and `integration/test_excel_hash_roundtrip.py` is the headline test including the split-workbook half. Reader benchmark measured and recorded in the findings |
 | 8 · Sidecar | **done** | the unread statistics removed, `SidecarDocument`, the store registry and `JsonSidecarStore`, `integration/test_sidecar_roundtrip.py` |
 | 9 · Neutral dtypes | **done** | `ColumnDtype`, the sidecar at `schema_version` 2, validation without a lookup table |
@@ -111,8 +111,16 @@ in a different order.
 ## New dependencies
 
 Runtime (`[project].dependencies`): `polars`, `pydantic`, `universal-pathlib`, `adlfs`,
-`xxhash`, `structlog`, `fastexcel[pyarrow]`, `python-calamine`, `rustpy-xlsxwriter`,
-`xlsxwriter`, `duckdb`, `tzdata`.
+`xxhash`, `structlog`, `fastexcel[pyarrow]`, `rustpy-xlsxwriter`, `xlsxwriter`, `tzdata`.
+
+**`python-calamine` and `duckdb` were removed on 2026-09-14.** Neither was ever imported
+by `src/`: calamine served as a cross-check reader in one writer test and as a typing
+probe, and DuckDB wrote a third fixture workbook. Two runtime dependencies carried for
+test-only use is a cost every consumer of this package pays, so both went, along with
+`stubs/python_calamine/`. The selector-shaped-column-name test now reads through
+`fastexcel`, so its guarantee survives the removal. What DuckDB measured is preserved in
+`tests/fixtures/excel-round-trip-findings.md`, and the prose below still names it because
+that is where the evidence for those comparisons lives.
 
 `fastexcel` carries the `pyarrow` extra because `ExcelSheet.to_arrow_with_errors` is the only
 way to see a cell the requested dtype could not hold. Without it such a cell is silently
@@ -121,9 +129,8 @@ move the digest. The extra costs one large wheel and, measured, no runtime: the 
 falls out of the parse already being done (0.98x against `to_polars`), where detecting the
 same thing by reading every column a second time as text cost 2.66x.
 
-`rustpy-xlsxwriter` is the default Excel writer and `fastexcel` the reader. `xlsxwriter` and
-`python-calamine` are kept as the second writer and as a cross-check reader; `duckdb` writes
-the third fixture workbook. Three independent writers are a standing sanity check: where they
+`rustpy-xlsxwriter` is the default Excel writer and `fastexcel` the reader. `xlsxwriter` is
+kept as the second writer. Two independent writers are a standing sanity check: where they
 agree the behaviour is Excel's, where they disagree it is the writer's.
 
 `tzdata` is not optional and is deliberately unconditional. Windows ships no system
@@ -176,7 +183,6 @@ stubs/                  hand-written stubs for dependencies pyright strict canno
                         pyarrow, which is not a dependency, so the whole member reads unknown
   xlsxwriter/           Workbook construction; the package ships no types
   rustpy_xlsxwriter/    write_worksheet; ships a .pyi but no py.typed marker
-  python_calamine/      narrows one declaration typed with a bare os.PathLike
 tests/
   conftest.py           session-scoped ensure_fixtures() fixture
   fixtures/
@@ -830,8 +836,8 @@ session-scoped `conftest.py` fixture):
    seeded-random. `parquet_b` is `parquet_a` with **exactly one cell changed per column**.
    Regeneration is byte-identical (fixed seed, sorted schema).
 2. **Nine Excel files per Parquet** (18 total), written from the **source** frame -- not
-   a converted one -- by all three writers, because the set is a cross-writer sanity check:
-   `*_{full,part1,part2}_{duckdb,polars,rustpy}.xlsx`, where `full` is 1000 rows, `part1`
+   a converted one -- by both writers, because the set is a cross-writer sanity check:
+   `*_{full,part1,part2}_{polars,rustpy}.xlsx`, where `full` is 1000 rows, `part1`
    rows 0–499 and `part2` rows 500–999. Each writer takes only the adjustments it forces
    (hex `Binary` for polars, truncation for rustpy); the per-writer differences are the
    point, and are catalogued in `excel-round-trip-findings.md`.
@@ -867,7 +873,7 @@ session-scoped `conftest.py` fixture):
 
 ```bash
 uv add polars pydantic universal-pathlib adlfs xxhash structlog tzdata \
-       rustpy-xlsxwriter fastexcel python-calamine xlsxwriter duckdb
+       rustpy-xlsxwriter fastexcel xlsxwriter
 uv lock
 
 # per-unit, test-first
@@ -903,7 +909,7 @@ why the gate was ever a single number. This paragraph replaces the earlier
 "≥ 90% stmt / 85% branch on changed code" note, which described a gate that could not be
 configured as written.
 
-End-to-end check: after `uv run pytest tests/integration -q`, confirm the 20 files exist
+End-to-end check: after `uv run pytest tests/integration -q`, confirm the 14 files exist
 under `tests/fixtures/data/` and a second run reuses them (no regeneration). Both are
 asserted by `unit/test_fixtures.py` rather than left to inspection.
 

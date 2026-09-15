@@ -30,7 +30,7 @@ from tests.fixtures.generate import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-WRITERS: list[str] = ["duckdb", "polars", "rustpy"]
+WRITERS: list[str] = ["polars", "rustpy"]
 STEMS: list[str] = ["parquet_a", "parquet_b"]
 
 

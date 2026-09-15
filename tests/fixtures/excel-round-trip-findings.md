@@ -11,8 +11,13 @@ taken from documentation. Where a number appears, a script produced it. The fixt
 
 The reader for the per-writer tables below was `python-calamine`, which is what those
 measurements were taken with. It is no longer the project's reader: `fastexcel` is, for the
-reasons in [Choosing the reader](#choosing-the-reader-fastexcel-over-python-calamine), and
-both are runtime dependencies. `python-calamine` is kept as the independent cross-check.
+reasons in [Choosing the reader](#choosing-the-reader-fastexcel-over-python-calamine).
+
+> **`python-calamine` and `duckdb` were removed as dependencies on 2026-09-14**, so neither
+> is installed any more and the `_duckdb.xlsx` workbooks are no longer generated. Nothing
+> below was re-measured; this document is the record of what those two showed while they
+> were here, which is why it keeps naming them. Reproducing any DuckDB row now means
+> installing it again first.
 
 ## Summary for the impatient
 

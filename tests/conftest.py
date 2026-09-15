@@ -35,7 +35,7 @@ def restore_global_logging_state() -> Iterator[None]:
 def fixture_files() -> dict[str, Path]:
     """Build any missing Parquet and Excel fixture, and return every fixture path.
 
-    Session-scoped because generation writes twenty files and reuses whatever is already on
+    Session-scoped because generation writes fourteen files and reuses whatever is already on
     disk; per-test scope would re-resolve the same paths for no benefit.
 
     Returns:

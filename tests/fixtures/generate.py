@@ -13,27 +13,28 @@ from ``random`` or from the clock.
 The **workbooks** do not, and cannot. Writing the same frame twice a second apart produces
 files that differ, and the difference is confined to one zip member -- ``docProps/core.xml``,
 which carries ``dcterms:created`` and ``dcterms:modified`` wall-clock stamps. Every cell is
-identical; only that metadata moves. Measured for all three writers: DuckDB is stable,
-xlsxwriter and rustpy are not. xlsxwriter could be pinned with ``set_properties``, but
+identical; only that metadata moves. Measured for both writers: neither
+xlsxwriter nor rustpy is stable. xlsxwriter could be pinned with ``set_properties``, but
 rustpy-xlsxwriter exposes no document-properties API at all, so the chosen writer cannot be
 made byte-stable from Python. Compare workbook *contents* rather than workbook hashes.
 
 ``ensure_fixtures`` never rewrites a file that already exists, so this costs nothing in
 practice: regeneration only happens for a file that is missing.
 
-Every workbook is written three times, by three independent writers, and all three copies
-are kept. The set is a sanity check: where the writers agree, the behaviour belongs to
-Excel, and where they disagree, it belongs to the writer. None of them is yet the canonical
-one, so none claims the unqualified filename -- each carries its writer in its name.
+Every workbook is written twice, by two independent writers, and both copies are kept. The
+set is a sanity check: where the writers agree, the behaviour belongs to Excel, and where
+they disagree, it belongs to the writer. Neither is yet the canonical one, so neither claims
+the unqualified filename -- each carries its writer in its name.
 
-- ``_duckdb.xlsx`` comes from DuckDB's ``excel`` extension, straight from the Parquet with
-  **no casting at all**, which makes it the honest baseline for what a dtype does alone.
+A third writer, DuckDB's ``excel`` extension, wrote a ``_duckdb.xlsx`` baseline until that
+dependency was removed. What it measured is preserved in ``excel-round-trip-findings.md``;
+the comparisons below still name it, because that is where the evidence for them lives.
 - ``_polars.xlsx`` comes from ``DataFrame.write_excel``, which is what ``PolarsExcelWriter``
   will wrap in phase 5.
 - ``_rustpy.xlsx`` comes from ``rustpy-xlsxwriter``, Rust bindings over the ``rust_xlsxwriter``
   crate, a third implementation of the same file format.
 
-None of the three writes this frame unmodified, and what each one refuses is informative.
+Neither writer writes this frame unmodified, and what each one refuses is informative.
 
 The Polars path needs three adjustments, all forced by xlsxwriter's own limits:
 
@@ -42,7 +43,7 @@ The Polars path needs three adjustments, all forced by xlsxwriter's own limits:
 - A tz-aware ``Datetime`` raises, so the workbook is opened with ``remove_timezone``. That
   keeps the UTC wall clock, where DuckDB instead converts to the machine's local time.
 - ``NaN`` and ``+/-inf`` raise, so the workbook is opened with ``nan_inf_to_errors``, which
-  turns them into Excel error cells. DuckDB round-trips all three exactly.
+  turns them into Excel error cells. DuckDB round-tripped all three exactly.
 
 The rustpy path needs exactly one, and it is the spec's own rule rather than a workaround:
 a string longer than ``EXCEL_CELL_LIMIT`` makes it **raise**, where DuckDB writes the
@@ -52,14 +53,14 @@ three dtypes as Python text rather than as cell values -- ``Duration`` becomes
 ``str(timedelta)``, ``Time`` becomes ``str(time)``, and ``Binary`` becomes ``repr(bytes)``,
 which writes Python source syntax into the cell, quotes and escape sequences included.
 
-Two DuckDB behaviours are worth stating for the same reason:
+Two measured DuckDB behaviours are worth keeping on record for the same reason:
 
 - DuckDB reads a Parquet ``Datetime("us", "UTC")`` as ``TIMESTAMP WITH TIME ZONE`` and
   writes it to the sheet in the machine's **local** time, so the value read back is shifted
   by the local UTC offset and carries no zone to undo it with. That makes a digest taken
   from a DuckDB workbook depend on the machine that wrote it.
-- DuckDB silently drops NUL from strings, folds CRLF to LF, and strips surrounding
-  whitespace. The other two preserve all three.
+- DuckDB silently dropped NUL from strings, folded CRLF to LF, and stripped surrounding
+  whitespace. Both remaining writers preserve all three.
 """
 
 from __future__ import annotations
@@ -70,7 +71,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-import duckdb
 import polars as pl
 import rustpy_xlsxwriter
 import xlsxwriter
@@ -102,18 +102,6 @@ LCG_MODULUS: int = 1 << 64
 LCG_MULTIPLIER: int = 6364136223846793005
 LCG_INCREMENT: int = 1442695040888963407
 
-COPY_TO_XLSX: str = """
-COPY (
-    SELECT *
-    FROM read_parquet($source)
-    LIMIT $row_limit
-    OFFSET $row_offset
-)
-TO $target
-(FORMAT xlsx, HEADER true)
-"""
-"""Written with no CAST anywhere, so each dtype reaches the sheet as DuckDB holds it."""
-
 SLICES: dict[str, tuple[int, int]] = {"full": (ROW_COUNT, 0), "part1": (PART_ROW_COUNT, 0), "part2": (PART_ROW_COUNT, PART_ROW_COUNT)}
 """Workbook name suffix to (row count, first row), shared by both writers so the two agree."""
 
@@ -130,7 +118,7 @@ XLSXWRITER_OPTIONS: dict[str, bool] = {"remove_timezone": True, "nan_inf_to_erro
 whose text begins with ``=`` is written as a live formula: the fixture string ``=SUM(1+1)``
 was measured coming back as the float ``0.0``, not as text. Any string column holding
 user-supplied data can contain such a value, so the default silently converts data into
-computation. DuckDB writes the same string as literal text.
+computation. DuckDB wrote the same string as literal text.
 """
 
 
@@ -447,30 +435,6 @@ def build_frame(*, delta: bool) -> pl.DataFrame:
     return pl.DataFrame({name: columns[name] for name in sorted(columns)})
 
 
-def _write_workbooks_duckdb(connection: duckdb.DuckDBPyConnection, source: Path, stem: str) -> list[Path]:
-    """Write one Parquet file's three workbooks through DuckDB, casting nothing.
-
-    Args:
-        connection: An open DuckDB connection with the ``excel`` extension loaded.
-        source: The Parquet file to read.
-        stem: The fixture name, used as the workbook filename prefix.
-
-    Returns:
-        The workbook paths, in full, part1, part2 order.
-    """
-    written: list[Path] = []
-    label: str
-    for label in SLICES:
-        row_limit: int
-        row_offset: int
-        row_limit, row_offset = SLICES[label]
-        target: Path = DATA_DIR / f"{stem}_{label}_duckdb.xlsx"
-        if not target.exists():
-            connection.execute(COPY_TO_XLSX, {"source": str(source), "row_limit": row_limit, "row_offset": row_offset, "target": str(target)})
-        written.append(target)
-    return written
-
-
 def _write_workbooks_polars(frame: pl.DataFrame, stem: str) -> list[Path]:
     """Write one frame's three workbooks through ``DataFrame.write_excel``.
 
@@ -508,7 +472,7 @@ def ensure_fixtures() -> dict[str, Path]:
     """Create any missing fixture file and return every fixture path.
 
     Files already on disk are left untouched, so a run that needs one missing workbook does
-    not rewrite the other seven.
+    not rewrite the other eleven.
 
     Returns:
         Paths keyed by fixture name, e.g. ``"parquet_a"`` and ``"parquet_a_full"``.
@@ -523,14 +487,8 @@ def ensure_fixtures() -> dict[str, Path]:
             build_frame(delta=stem == "parquet_b").write_parquet(source)
         paths[stem] = source
         frames[stem] = pl.read_parquet(source)
-    connection: duckdb.DuckDBPyConnection = duckdb.connect(":memory:")
-    try:
-        connection.execute("INSTALL excel")
-        connection.execute("LOAD excel")
-        for stem in ("parquet_a", "parquet_b"):
-            book: Path
-            for book in [*_write_workbooks_duckdb(connection, paths[stem], stem), *_write_workbooks_polars(frames[stem], stem), *_write_workbooks_rustpy(frames[stem], stem)]:
-                paths[book.stem] = book
-    finally:
-        connection.close()
+    for stem in ("parquet_a", "parquet_b"):
+        book: Path
+        for book in [*_write_workbooks_polars(frames[stem], stem), *_write_workbooks_rustpy(frames[stem], stem)]:
+            paths[book.stem] = book
     return paths

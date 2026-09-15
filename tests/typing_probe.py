@@ -20,7 +20,6 @@ from typing import Final
 
 import polars as pl
 import pydantic
-import python_calamine
 import structlog
 import xlsxwriter
 import xxhash
@@ -64,12 +63,6 @@ def probe_structlog() -> str:
     """Return a bound logger's repr, exercising structlog's configuration entry point."""
     logger: structlog.stdlib.BoundLogger = structlog.get_logger("probe")
     return repr(logger)
-
-
-def probe_calamine() -> str:
-    """Return the name of calamine's workbook loader without touching the filesystem."""
-    loader: type[python_calamine.CalamineWorkbook] = python_calamine.CalamineWorkbook
-    return loader.__name__
 
 
 def probe_xlsxwriter() -> str:

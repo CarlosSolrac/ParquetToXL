@@ -10,9 +10,9 @@ import datetime as dt
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
+import fastexcel
 import polars as pl
 import pytest
-from python_calamine import CalamineWorkbook
 
 from parquet_to_xl.conversion.to_excel import DataframeConversionToExcel
 from parquet_to_xl.excel.writer import (
@@ -313,9 +313,16 @@ def test_selector_shaped_column_names_are_written_faithfully(identifier: str, tm
     frame: pl.DataFrame = pl.DataFrame({"*": pl.Series([1.0], dtype=pl.Float64), "b": pl.Series([2.0], dtype=pl.Float64)})
     target: UPath = ZPath(str(tmp_path / f"{identifier}-selector.xlsx"))
     get_excel_writer(identifier).write(frame, target, {})
-    rows: list[list[Any]] = CalamineWorkbook.from_path(str(target)).get_sheet_by_index(0).to_python(skip_empty_area=False)
-    assert [str(cell) for cell in rows[0]] == ["*", "b"]
-    assert rows[1] == [1.0, 2.0]
+    # Read through fastexcel rather than pl.read_excel, which is the component that cannot
+    # do this. Headers come from a header_row=None read so they arrive exactly as written;
+    # the values come from a normal read, because inferring dtypes over a column whose first
+    # cell is the header text would type the whole column as string.
+    reader: fastexcel.ExcelReader = fastexcel.read_excel(str(target))
+    header: pl.DataFrame = reader.load_sheet(0, header_row=None, n_rows=1).to_polars()
+    assert [str(cell) for cell in header.row(0)] == ["*", "b"]
+    data: pl.DataFrame = reader.load_sheet(0).to_polars()
+    assert data.columns == ["*", "b"]
+    assert list(data.row(0)) == [1.0, 2.0]
 
 
 @pytest.mark.parametrize("identifier", ["rustpy-xlsxwriter", "polars-xlsxwriter"])
