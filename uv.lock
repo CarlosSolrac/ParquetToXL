@@ -13,6 +13,7 @@ members = [
     "pqx-excel",
     "pqx-frame",
     "pqx-plan",
+    "pqx-report",
     "pqx-sidecar",
     "pqx-testing",
     "pqx-verify",
@@ -27,6 +28,7 @@ dev = [
     { name = "pqx-excel", editable = "packages/pqx-excel" },
     { name = "pqx-frame", editable = "packages/pqx-frame" },
     { name = "pqx-plan", editable = "packages/pqx-plan" },
+    { name = "pqx-report", editable = "packages/pqx-report" },
     { name = "pqx-sidecar", editable = "packages/pqx-sidecar" },
     { name = "pqx-testing", editable = "packages/pqx-testing" },
     { name = "pqx-verify", editable = "packages/pqx-verify" },
@@ -1347,6 +1349,31 @@ dev = [
     { name = "rfc3339-validator", specifier = ">=0.1.4" },
     { name = "types-jsonschema", specifier = ">=4.25" },
 ]
+
+[[package]]
+name = "pqx-report"
+version = "0.1.0"
+source = { editable = "packages/pqx-report" }
+dependencies = [
+    { name = "pqx-plan" },
+    { name = "pqx-verify" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pqx-plan", editable = "packages/pqx-plan" },
+    { name = "pqx-verify", editable = "packages/pqx-verify" },
+    { name = "pydantic", specifier = ">=2.13.5" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8,<9" }]
 
 [[package]]
 name = "pqx-sidecar"

@@ -24,6 +24,7 @@ dev = [
     "pqx-excel",
     "pqx-frame",
     "pqx-plan",
+    "pqx-report",
     "pqx-sidecar",
     "pqx-testing",               # fixtures and the shared pytest plugin
     "pqx-verify",
@@ -38,6 +39,7 @@ pqx-common = { workspace = true }
 pqx-excel = { workspace = true }
 pqx-frame = { workspace = true }
 pqx-plan = { workspace = true }
+pqx-report = { workspace = true }
 pqx-sidecar = { workspace = true }
 pqx-testing = { workspace = true }
 pqx-verify = { workspace = true }
@@ -156,6 +158,7 @@ source = [
     "packages/pqx-frame/src/pqx_frame",
     "packages/pqx-excel/src/pqx_excel",
     "packages/pqx-plan/src/pqx_plan",
+    "packages/pqx-report/src/pqx_report",
     "packages/pqx-sidecar/src/pqx_sidecar",
     "packages/pqx-verify/src/pqx_verify",
 ]

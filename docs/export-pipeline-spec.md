@@ -636,9 +636,23 @@ This adds the edge `pqx-plan -> pqx-verify`, which the dependency diagram's ASCI
 draw but the phase plan requires, since `verify_manifest` takes a `RunManifest`. No cycle:
 `pqx-plan` reaches only `pqx-calendar`, `pqx-common` and `pqx-frame`.
 
-**Phase G — `pqx-report`.** Model and JSON writer with the timestamp injected rather than read from
-the clock; Markdown and HTML renderers, stdlib only, no template-engine dependency; a failing run
-still publishes its report into `reports/` only.
+**Phase G — `pqx-report`. Built (2026-09-15).** `RunReport` with the timestamp injected rather than
+read from the clock; JSON, Markdown and HTML renderers, stdlib only, no template-engine dependency.
+`report_filename` spells the instant without colons, since these land on a Windows or SMB share
+where `12:00:00` in a name is refused. A failing run still publishes its report into `reports/`
+only.
+
+`outcome` is four values rather than two — `published`, `verification-failed`, `planning-failed`,
+`write-failed` — because "it failed" is the least useful thing a report can say, and the three
+failures reach the destination at different points and call for different responses. `SourceReport`
+records `rebuilt_because` as a tuple of staleness signals, which is what makes the spec's promise
+concrete: both the `config_modified_utc` check and the `resolved_config_hash` backstop are
+implemented, and the report names which one fired, so a forgotten bump is visible rather than
+silently compensated for.
+
+`FragmentReport.verdict` is a plain string rather than the `VerdictKind` literal. A report is read
+long after the run, and refusing to load one because it names a verdict a later build introduced
+would lose exactly the record that explains an upgrade.
 
 **Phase H — CLI and end to end.** `pqx status|sidecar|plan|write|verify|report|publish|run` with
 `--force`, `--dry-run`, `--scratch-root`, `--keep-scratch`. Then the lifecycles: selection,
