@@ -651,7 +651,21 @@ that chains the stages, which is Phase H's. `pqx_pipeline.staleness` holds `side
 `excel_stale`; `pqx_pipeline.ingest` holds `read_parquet` and `build_sidecar`, treating a `None`
 return as a failure rather than a crash, plus `observe` producing `SourceShape`;
 `pqx_pipeline.write` holds `write_profile`, producing the workbooks and the manifest with a digest
-per fragment; `pqx_pipeline.locations` holds where the bookkeeping lives and the keep-set.
+per fragment; `pqx_pipeline.locations` holds where the bookkeeping lives and the keep-set; and
+`pqx_pipeline.bucketing` is the link between a date column and a plan — it derives a partition key
+per row, arranges the frame so consecutive slices are consecutive buckets, counts each bucket, and
+drops the temporary keys before the frame is returned.
+
+**The bucket key is taken at month precision even under a `year` base.** Subdividing an oversized
+year needs month-level counts, and sorting by the month key also puts the months of one year
+contiguous and in order — so one key serves both the fine counts the planner asks for and the
+arrangement the writer slices. A coarser key would make a subdivided year's months arrive
+interleaved.
+
+⚠️ **`bucketing` is where the deferred vectorised decoder becomes load-bearing.** Decoding is scalar,
+so a forty-million-row source pays forty million Python calls. It is the single call site, so the
+replacement — a Polars expression built in `pqx-calendar` beside the scalar path and property-tested
+against it — is a local swap.
 
 **The trap gets its own test**, as this document asks:
 `test_the_original_path_supplies_the_modification_time` stages a copy, backdates the original by a
