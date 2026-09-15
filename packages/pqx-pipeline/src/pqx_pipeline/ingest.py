@@ -88,6 +88,7 @@ def build_sidecar(
     *,
     original_path: UPath,
     created_utc: dt.datetime,
+    sidecar_directory: UPath | None = None,
     timezones: Sequence[str] = (),
     store: str = "json",
 ) -> DataframeMetadata:
@@ -96,10 +97,17 @@ def build_sidecar(
     ``original_path`` rather than the staged copy, and named so it cannot be passed positionally
     by accident. See this module's own docstring for what handing over the scratch path does.
 
+    **What is described and where the description goes are separate**, which
+    ``sidecar_location: directory`` forces. Deriving the location from whatever path was described
+    would mean describing the sidecar's own directory to move it there -- the same confusion this
+    module exists to prevent, arrived at from the other side.
+
     Args:
         frame: The frame, read from the staged copy.
         original_path: The **source's** location, which supplies ``full_path`` and T1.
         created_utc: T2, the instant this run is describing its sources at.
+        sidecar_directory: Where the sidecar goes, for ``sidecar_location: directory``. ``None``
+            puts it beside the source, which is ``beside_source``.
         timezones: IANA zones to render the modification time in, beside UTC.
         store: Identifier of the sidecar store to write through.
 
@@ -122,7 +130,8 @@ def build_sidecar(
     if metadata is None:
         message: str = f"could not describe the frame read for {original_path}; extraction logged the reason and returned nothing"
         raise IngestError(message)
-    get_sidecar_store(store).write(metadata, original_path, created_utc=created_utc)
+    located: UPath = original_path if sidecar_directory is None else sidecar_directory / original_path.name
+    get_sidecar_store(store).write(metadata, located, created_utc=created_utc)
     return metadata
 
 

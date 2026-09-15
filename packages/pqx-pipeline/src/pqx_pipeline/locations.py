@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from upath import UPath
 
-__all__ = ["MANIFEST_SUFFIX", "RECEIPT_SUFFIX", "REPORTS_DIRECTORY", "keep_set", "manifest_path", "receipt_path", "reports_directory"]
+__all__ = ["MANIFEST_SUFFIX", "RECEIPT_SUFFIX", "REPORTS_DIRECTORY", "REPORT_JSON_GLOB", "keep_set", "manifest_path", "receipt_path", "reports_directory"]
 
 MANIFEST_SUFFIX: str = ".manifest.json"
 RECEIPT_SUFFIX: str = ".receipt.json"
@@ -20,6 +20,13 @@ RECEIPT_SUFFIX: str = ".receipt.json"
 
 REPORTS_DIRECTORY: str = "reports"
 """Excluded from reconciliation wholesale, so a failed run's report survives the next run."""
+
+REPORT_JSON_GLOB: str = "{profile}-*.report.json"
+"""Matches one profile's published JSON reports, and only that profile's.
+
+Kept here beside the directory it is used in rather than in ``pqx-report``, which names a single
+file and has no opinion about how several of them accumulate. The ``*`` stands for the fixed-width
+UTC stamp ``report_filename`` writes, so sorting the matches by name sorts them by time."""
 
 
 def manifest_path(destination: UPath, profile: str) -> UPath:

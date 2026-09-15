@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from pqx_frame.metadata.columns import DataframeColumnsMetadata
     from upath import UPath
 
-__all__ = ["ProfileStaleness", "SourceStaleness", "excel_stale", "read_receipt", "sidecar_stale", "truncate_to_second"]
+__all__ = ["ProfileStaleness", "SourceStaleness", "excel_record", "excel_stale", "read_receipt", "sidecar_stale", "truncate_to_second"]
 
 SUPPORTED_HASHER_VERSION: int = 2
 """The hasher algorithm version this build recomputes with. A v1 record aggregated without row
@@ -161,8 +161,21 @@ def sidecar_stale(alias: str, source_path: UPath, *, store: str = "json") -> Sou
     return SourceStaleness(alias=alias, signals=tuple(signals), described=document)
 
 
-def _excel_record(document: SidecarDocument) -> DataframeColumnsMetadata | None:
-    """Return the ToExcel record, found by identifier rather than by position."""
+def excel_record(document: SidecarDocument) -> DataframeColumnsMetadata | None:
+    """Return a sidecar's ToExcel record, found by identifier rather than by position.
+
+    Public because verification needs it too: the dtypes of the frame that was written live here,
+    and ``verify_manifest`` takes them as an argument rather than going looking for the sidecar
+    itself. Finding the record by identifier is the part worth having in one place -- a
+    ``DataframeMetadata`` holds one record per conversion in a plain list, so position is whatever
+    the caller happened to pass.
+
+    Args:
+        document: The sidecar.
+
+    Returns:
+        The record, or ``None`` when the sidecar carries none.
+    """
     record: DataframeColumnsMetadata
     for record in document.metadata.column_metadata_of_conversions:
         if record.conversion is not None and record.conversion.identifier == DataframeConversionToExcel.identifier:
@@ -177,7 +190,7 @@ def _conversion_current(document: SidecarDocument) -> bool:
     extracted without the conversion the export depends on, so it has to be re-described either
     way, and saying so here is cheaper than discovering it at verification.
     """
-    record: DataframeColumnsMetadata | None = _excel_record(document)
+    record: DataframeColumnsMetadata | None = excel_record(document)
     if record is None or record.conversion is None:
         return False
     return record.conversion.version == DataframeConversionToExcel.version
@@ -185,7 +198,7 @@ def _conversion_current(document: SidecarDocument) -> bool:
 
 def _hasher_current(document: SidecarDocument) -> bool:
     """Return whether the sidecar's dataframe digest was written by this build's hasher."""
-    record: DataframeColumnsMetadata | None = _excel_record(document)
+    record: DataframeColumnsMetadata | None = excel_record(document)
     if record is None or not record.dataframe_hashes:
         return False
     stored: HashedDataframe = record.dataframe_hashes[0]

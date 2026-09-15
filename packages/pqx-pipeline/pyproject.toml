@@ -18,6 +18,12 @@ dependencies = [
     "universal-pathlib>=0.3.10",
 ]
 
+# The console script. `pqx` is the only entry point the workspace exposes: every
+# other package is a library, and a second script would be a second place where
+# the stages are chained.
+[project.scripts]
+pqx = "pqx_pipeline.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8,<9",

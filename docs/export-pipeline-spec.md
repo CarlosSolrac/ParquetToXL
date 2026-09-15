@@ -716,9 +716,48 @@ silently compensated for.
 long after the run, and refusing to load one because it names a verdict a later build introduced
 would lose exactly the record that explains an upgrade.
 
-**Phase H — CLI and end to end.** `pqx status|sidecar|plan|write|verify|report|publish|run` with
-`--force`, `--dry-run`, `--scratch-root`, `--keep-scratch`. Then the lifecycles: selection,
-publication, exclusivity.
+**Phase H — CLI and end to end. Built (2026-09-15)** as `pqx_pipeline.run` and
+`pqx_pipeline.cli`. `run_profile` chains the stages in the order the order matters — select, stage,
+describe, plan, write, drop the staged Parquet, verify, publish — and `pqx` exposes eight verbs
+over it, with `--force`, `--dry-run`, `--scratch-root` and `--keep-scratch`.
+
+**Verify before publish, and delete the staged Parquet before verifying.** Nothing reaches the
+destination until every fragment has passed, which also makes verification cheap because it reads
+local scratch rather than the share. Deleting the sources first frees scratch where the run needs
+it most and makes verification's independence structural rather than asserted: the Parquet is
+physically absent while it runs.
+
+**Publication order is load-bearing**: ownership check, acquire lease, sidecars, workbooks,
+reconcile delete, manifest, receipt, report, release lease. The receipt is the completion marker,
+so nothing precedes it that a later step could invalidate; sidecars go early because they mark only
+*described*, so a crash after them costs the export rather than the hashing. Deletion happens under
+the lease and only after the workbooks are in place, so a run that dies mid-publish leaves too much
+rather than too little. **A failed run publishes its report and nothing else** — the deliberate
+carve-out from "a failed run changes nothing", because the report is the only artifact that
+explains the failure to someone who has the share and nothing else.
+
+**Every verb has a distinct job, and none of them is "`run`, but stop here".** `status`, `verify`
+and `report` are destination-side inspectors that open no Parquet and stage nothing — `verify` in
+particular checks a published export against the published manifest with the sources unreachable,
+which is the promise `pqx-verify` makes, made available at a terminal. `plan` and `write` are
+previews that publish nothing and write their sidecars into scratch rather than to the configured
+location, so previewing does not quietly tell the *next* run that a source has been described.
+`sidecar` does the one half of a run that stands alone. `run` honours selection; `publish` is
+`run --force` under the name an operator means by it. All of them go through
+`preview_profile`/`run_profile`, which share one body, so what a preview shows is what a run would
+do rather than what a second implementation believes it would do.
+
+**Exit codes are three-valued**: `0` the answer was good, `1` it ran and the answer was bad, `3` it
+refused before doing anything, with `2` left to argparse for a usage error. A script can tell "your
+export is broken" from "your invocation is broken" without reading the text. **Staleness is not a
+failure** — `status` exits `0` whether or not there is work to do, because that is the answer it
+was asked for. Each profile is refused on its own account, so one destination owned by something
+else does not stop the profiles that would have succeeded.
+
+⚠️ **`balanced` planning is not wired into a run.** `plan_balanced_sheets` and
+`minimum_balanced_workbooks` exist and are tested; nothing yet chooses between them and the
+calendar path inside a run, and a profile that asks for it is refused by name rather than silently
+planned some other way.
 
 ## Verification
 

@@ -144,3 +144,18 @@ def test_an_empty_source_observes_as_zero_rows(tmp_path: Path) -> None:
     assert seen.shape.rows == 0
     assert seen.shape.is_empty
     assert seen.shape.columns > 0
+
+
+def test_a_sidecar_can_be_written_somewhere_other_than_beside_its_source(tmp_path: Path) -> None:
+    # sidecar_location: directory. What is described and where the description goes are separate:
+    # deriving the location from whatever path was described would mean describing the sidecar's
+    # own directory to move it there.
+    source: UPath = _written(tmp_path, "sales.parquet")
+    elsewhere: UPath = ZPath(str(tmp_path / "sidecars"))
+    elsewhere.mkdir(parents=True)
+    recorded: DataframeMetadata = build_sidecar(read_parquet(source), original_path=source, created_utc=CREATED, sidecar_directory=elsewhere)
+    assert sidecar_path(elsewhere / "sales.parquet").exists()
+    assert not sidecar_path(source).exists()
+    # Still describing the source, not the place the sidecar landed.
+    assert str(source) in str(recorded.full_path)
+    assert "sidecars" not in str(recorded.full_path)
