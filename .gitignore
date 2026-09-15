@@ -11,7 +11,7 @@ dist/
 build/
 *.egg-info/
 
-# Test fixtures are generated on first run by tests/fixtures/generate.py and are
+# Test fixtures are generated on first run by pqx_testing/generate.py and are
 # byte-identical on regeneration, so the 8 parquet and xlsx files are rebuilt
 # rather than tracked.
-tests/fixtures/data/
+packages/pqx-testing/data/

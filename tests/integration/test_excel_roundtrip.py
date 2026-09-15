@@ -20,20 +20,18 @@ from typing import TYPE_CHECKING, Any
 
 import polars as pl
 import pytest
-
-from parquet_to_xl.conversion.none import DataframeConversionNone
-from parquet_to_xl.conversion.to_excel import DataframeConversionToExcel
-from parquet_to_xl.excel.writer import ExcelWriteConfig, get_excel_writer
-from parquet_to_xl.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
-from parquet_to_xl.metadata.extract import extract_metadata_from_dataframe
-from parquet_to_xl.paths import ZPath
+from pqx_common.paths import ZPath
+from pqx_excel.writer import ExcelWriteConfig, get_excel_writer
+from pqx_frame.conversion.none import DataframeConversionNone
+from pqx_frame.conversion.to_excel import DataframeConversionToExcel
+from pqx_frame.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
+from pqx_frame.metadata.extract import extract_metadata_from_dataframe
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from pqx_frame.metadata.dataframe import DataframeMetadata
     from upath import UPath
-
-    from parquet_to_xl.metadata.dataframe import DataframeMetadata
 
 FIXTURE_STEMS: list[str] = ["parquet_a", "parquet_b"]
 

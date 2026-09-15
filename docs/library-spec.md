@@ -23,6 +23,24 @@
 > Change any of those and the export pipeline is affected. Read this before editing the
 > conversion, the hashers, the canonical encoding or the reader.
 
+> **The code this describes now lives in a uv workspace.** Paths in the body name the
+> single-package layout that existed when it was written, and are left that way on purpose:
+> rewriting them would make the document claim a history it did not have. The mapping is:
+>
+> | Then | Now |
+> | --- | --- |
+> | `src/parquet_to_xl/paths.py`, `logging.py` | `packages/pqx-common/src/pqx_common/` |
+> | `src/parquet_to_xl/{hashing,metadata,conversion}/` | `packages/pqx-frame/src/pqx_frame/` |
+> | `src/parquet_to_xl/excel/` | `packages/pqx-excel/src/pqx_excel/` |
+> | `src/parquet_to_xl/sidecar/{document,store}.py` | `packages/pqx-sidecar/src/pqx_sidecar/` |
+> | `src/parquet_to_xl/sidecar/validation.py` | `packages/pqx-verify/src/pqx_verify/` |
+> | `tests/fixtures/generate.py` | `packages/pqx-testing/src/pqx_testing/generate.py` |
+> | `tests/fixtures/data/` | `packages/pqx-testing/data/` |
+> | `tests/unit/test_*.py` | `packages/<package>/tests/` |
+> | `tests/fixtures/excel-round-trip-findings.md` | `docs/excel-round-trip-findings.md` |
+>
+> Every module kept its name and its contents; only its home changed.
+
 **Status:** design approved 2026-09-06, fully implemented. Amended repeatedly against
 measurement -- every amendment records what was measured and why the original text did not
 survive contact with the libraries.
@@ -119,7 +137,7 @@ probe, and DuckDB wrote a third fixture workbook. Two runtime dependencies carri
 test-only use is a cost every consumer of this package pays, so both went, along with
 `stubs/python_calamine/`. The selector-shaped-column-name test now reads through
 `fastexcel`, so its guarantee survives the removal. What DuckDB measured is preserved in
-`tests/fixtures/excel-round-trip-findings.md`, and the prose below still names it because
+`docs/excel-round-trip-findings.md`, and the prose below still names it because
 that is where the evidence for those comparisons lives.
 
 `fastexcel` carries the `pyarrow` extra because `ExcelSheet.to_arrow_with_errors` is the only

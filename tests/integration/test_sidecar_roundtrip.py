@@ -16,22 +16,20 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 import pytest
-
-from parquet_to_xl.conversion.none import DataframeConversionNone
-from parquet_to_xl.conversion.to_excel import DataframeConversionToExcel
-from parquet_to_xl.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
-from parquet_to_xl.metadata.extract import extract_metadata_from_dataframe
-from parquet_to_xl.paths import ZPath
-from parquet_to_xl.sidecar.store import get_sidecar_store, sidecar_path
+from pqx_common.paths import ZPath
+from pqx_frame.conversion.none import DataframeConversionNone
+from pqx_frame.conversion.to_excel import DataframeConversionToExcel
+from pqx_frame.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
+from pqx_frame.metadata.extract import extract_metadata_from_dataframe
+from pqx_sidecar.store import get_sidecar_store, sidecar_path
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from pqx_frame.metadata.columns import DataframeColumnsMetadata
+    from pqx_frame.metadata.dataframe import DataframeMetadata
+    from pqx_sidecar.store import SidecarStoreBase
     from upath import UPath
-
-    from parquet_to_xl.metadata.columns import DataframeColumnsMetadata
-    from parquet_to_xl.metadata.dataframe import DataframeMetadata
-    from parquet_to_xl.sidecar.store import SidecarStoreBase
 
 FIXTURE_STEMS: list[str] = ["parquet_a", "parquet_b"]
 

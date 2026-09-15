@@ -1,8 +1,13 @@
-"""Marks the test tree as a package.
+"""Marks the cross-package integration tree as a package.
 
-Without these markers mypy reaches ``tests/fixtures/generate.py`` by two different module
-names at once -- ``generate`` and ``fixtures.generate`` -- and refuses to check anything:
-"Source file found twice under different module names". Package markers give every test
-module one unambiguous name, and let the fixture generator be imported as
-``tests.fixtures.generate`` from anywhere in the tree.
+The original reason was the fixture generator: without a package marker mypy reached it by
+two module names at once -- ``generate`` and ``fixtures.generate`` -- and refused to check
+anything. That generator now lives in ``pqx_testing`` and is imported by its distribution
+name, so the ambiguity is gone.
+
+The marker stays because the same collision would return the moment two packages each grow
+a ``tests/conftest.py`` or a same-named test module. Per-package test directories are
+deliberately *not* packages: pytest's rootdir-relative import mode gives each one a unique
+name already, and adding ``__init__.py`` under every ``packages/*/tests/`` would put twenty
+test modules back into one namespace.
 """

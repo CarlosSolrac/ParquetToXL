@@ -387,7 +387,10 @@ raises, because reporting an absent path as "invalid" makes it hard to find.
 ## Library decomposition
 
 Eleven distributions in a **uv workspace monorepo**: one repository, one `uv.lock`, each package
-separately installable under `packages/*`. Libraries are **layers**; the tools are **CLI
+separately installable under `packages/*`. **Six exist today** -- `pqx-common`, `pqx-frame`,
+`pqx-excel`, `pqx-sidecar`, `pqx-verify` and `pqx-testing`, the ones that received existing code
+in Phase A. The other five are created by the phases that give them content, rather than
+scaffolded empty now. Libraries are **layers**; the tools are **CLI
 subcommands** over them, each runnable as its own process.
 
 ```text
@@ -447,7 +450,10 @@ Each is a measurement or a proof, not a guess. Each can invalidate a decision ab
 finished, fully covered codebase. Nothing new is built until it is green, and the gate is that
 `git diff` contains only renames and import rewrites.
 
-1. Workspace root, eleven package skeletons, shared tool configuration.
+1. Workspace root and the six packages that receive existing code, with shared tool
+   configuration at the root. Empty skeletons for the remaining five are deliberately not
+   created: a package with no code is speculative scaffolding, and each later phase creates
+   its own.
 2. `pqx-testing` as a dev-only member; move the fixture generator and shared conftest fixtures into
    it. Check: `uv run --package pqx-frame pytest` resolves the import from a package directory.
 3. Move modules; rewrite `parquet_to_xl.*` imports. Ruff bans relative-to-parent imports, so every

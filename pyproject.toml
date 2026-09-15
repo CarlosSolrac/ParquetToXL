@@ -1,25 +1,11 @@
 ##
-## Baseline tooling configuration for a new Python project.
-## Use the repository's existing configuration when one is already present.
+## Workspace root. Holds no code of its own: every runtime package lives under
+## packages/, and this file carries the tooling configuration they share so there
+## is one Ruff rule set, one pyright mode and one coverage gate for all of them.
 ##
 
-[project]
-name = "ParquetToXL"
-version = "0.1.0"
-requires-python = ">=3.13"
-dependencies = [
-    "adlfs>=2026.4",            # Azure fsspec backend. 2026.4 is where `anon` began defaulting to false; before it,
-                                # an account_name-only path takes anonymous access instead of DefaultAzureCredential.
-    "fastexcel[pyarrow]>=0.21.0",
-    "polars>=1.44.1",
-    "pydantic>=2.13.5",
-    "rustpy-xlsxwriter>=0.6.1",
-    "structlog>=26.1.0",
-    "tzdata>=2026.3",
-    "universal-pathlib>=0.3.10",
-    "xlsxwriter>=3.2.9",
-    "xxhash>=4.0.1",
-]
+[tool.uv.workspace]
+members = ["packages/*"]
 
 [dependency-groups]
 dev = [
@@ -30,19 +16,27 @@ dev = [
     "pytest>=8,<9",
     "pytest-cov>=6,<8",
     "ruff>=0.14,<0.15",          # pinned: minor releases change which rules fire
+    # Everything tests/ imports. Naming them means `uv sync` at the root is enough
+    # for the integration suite; --all-packages is for building every member, not
+    # for making the root tests importable.
+    "pqx-common",
+    "pqx-excel",
+    "pqx-frame",
+    "pqx-sidecar",
+    "pqx-testing",               # fixtures and the shared pytest plugin
+    "pqx-verify",
 ]
 
-# Declared so uv installs the package itself, editable, into the project
-# environment. Without it uv treats this as a virtual project and `import
-# parquet_to_xl` only resolves by accident of sys.path.
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-# The distribution name normalizes to `parquettoxl`, which hatchling would not
-# find on its own under src layout; name the import package explicitly.
-packages = ["src/parquet_to_xl"]
+# The dev group above names members by bare name; without this uv would look for
+# them on PyPI. Members that depend on each other declare the same in their own
+# files, because a source is per-package rather than inherited from the root.
+[tool.uv.sources]
+pqx-common = { workspace = true }
+pqx-excel = { workspace = true }
+pqx-frame = { workspace = true }
+pqx-sidecar = { workspace = true }
+pqx-testing = { workspace = true }
+pqx-verify = { workspace = true }
 
 [tool.ruff]
 target-version = "py313"
@@ -84,10 +78,11 @@ fixable = ["ALL"]
 unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
-# pytest's assert-based style and test-only fixtures trip the bandit rules.
 # pytest's assert-based style trips bandit; test names carry the meaning that
 # a mandatory docstring would only restate, so docstrings in tests are optional.
-"tests/**/*.py" = ["S101", "S105", "S106", "D100", "D103", "INP001"]
+# The glob is anchored on any `tests/` directory, not the repository root one,
+# because tests now sit beside the package they cover.
+"**/tests/**/*.py" = ["S101", "S105", "S106", "D100", "D103", "INP001"]
 # A file named test_*.py is a test file wherever it sits. Without these two
 # patterns the ignores above never match a test written beside its module.
 "test_*.py" = ["S101", "S105", "S106", "D100", "D103", "INP001"]
@@ -117,6 +112,8 @@ typeCheckingMode = "strict"
 pythonVersion = "3.13"
 reportMissingTypeStubs = true
 reportUnknownMemberType = true
+# One stub directory for the whole workspace. Splitting it per package would mean
+# maintaining the same fastexcel stub in three places.
 stubPath = "stubs"
 
 [[tool.pyright.executionEnvironments]]
@@ -136,20 +133,25 @@ disallow_any_explicit = false
 
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers"
-testpaths = ["tests"]
+# Per-package tests plus the cross-package integration suite at the root.
+testpaths = ["packages", "tests"]
 
 [tool.coverage.run]
 branch = true
-# Without this the figure covers whatever happened to be imported, tests and
-# tools included. Scope it to the library so the number means the library.
-source = ["src/parquet_to_xl"]
+# The runtime packages only. pqx-testing is dev-only test support, so measuring it
+# would measure the fixtures rather than the libraries -- which is also why the
+# _style_example omit that used to live here is gone: the file moved into
+# pqx-testing and is therefore already outside this list.
+source = [
+    "packages/pqx-common/src/pqx_common",
+    "packages/pqx-frame/src/pqx_frame",
+    "packages/pqx-excel/src/pqx_excel",
+    "packages/pqx-sidecar/src/pqx_sidecar",
+    "packages/pqx-verify/src/pqx_verify",
+]
 
 [tool.coverage.report]
 # No fail_under: the gate is merge-only, applied as --cov-fail-under in CI. A
-# global threshold fails every phase-level run while the package is still
-# mostly unimplemented stubs, for reasons unrelated to the change under test.
-# _style_example.py is a style reference that nothing imports and nothing calls.
-# It is not library behaviour, so measuring it measures the wrong thing -- and it
-# alone dragged the gate from 100% to 85%.
-omit = ["*/_style_example.py"]
+# global threshold fails every phase-level run while a package is still mostly
+# unimplemented stubs, for reasons unrelated to the change under test.
 show_missing = true

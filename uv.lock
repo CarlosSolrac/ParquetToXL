@@ -6,6 +6,33 @@ resolution-markers = [
     "python_full_version < '3.15'",
 ]
 
+[manifest]
+members = [
+    "pqx-common",
+    "pqx-excel",
+    "pqx-frame",
+    "pqx-sidecar",
+    "pqx-testing",
+    "pqx-verify",
+]
+
+[manifest.dependency-groups]
+dev = [
+    { name = "mypy", specifier = ">=1.18,<2" },
+    { name = "numpy", specifier = ">=2.5.3" },
+    { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-excel", editable = "packages/pqx-excel" },
+    { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pqx-sidecar", editable = "packages/pqx-sidecar" },
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pqx-verify", editable = "packages/pqx-verify" },
+    { name = "pre-commit", specifier = ">=4,<5" },
+    { name = "pyright", specifier = ">=1.1.400,<2" },
+    { name = "pytest", specifier = ">=8,<9" },
+    { name = "pytest-cov", specifier = ">=6,<8" },
+    { name = "ruff", specifier = ">=0.14,<0.15" },
+]
+
 [[package]]
 name = "adlfs"
 version = "2026.8.0"
@@ -1064,59 +1091,6 @@ wheels = [
 ]
 
 [[package]]
-name = "parquettoxl"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "adlfs" },
-    { name = "fastexcel", extra = ["pyarrow"] },
-    { name = "polars" },
-    { name = "pydantic" },
-    { name = "rustpy-xlsxwriter" },
-    { name = "structlog" },
-    { name = "tzdata" },
-    { name = "universal-pathlib" },
-    { name = "xlsxwriter" },
-    { name = "xxhash" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "numpy" },
-    { name = "pre-commit" },
-    { name = "pyright" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "adlfs", specifier = ">=2026.4" },
-    { name = "fastexcel", extras = ["pyarrow"], specifier = ">=0.21.0" },
-    { name = "polars", specifier = ">=1.44.1" },
-    { name = "pydantic", specifier = ">=2.13.5" },
-    { name = "rustpy-xlsxwriter", specifier = ">=0.6.1" },
-    { name = "structlog", specifier = ">=26.1.0" },
-    { name = "tzdata", specifier = ">=2026.3" },
-    { name = "universal-pathlib", specifier = ">=0.3.10" },
-    { name = "xlsxwriter", specifier = ">=3.2.9" },
-    { name = "xxhash", specifier = ">=4.0.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.18,<2" },
-    { name = "numpy", specifier = ">=2.5.3" },
-    { name = "pre-commit", specifier = ">=4,<5" },
-    { name = "pyright", specifier = ">=1.1.400,<2" },
-    { name = "pytest", specifier = ">=8,<9" },
-    { name = "pytest-cov", specifier = ">=6,<8" },
-    { name = "ruff", specifier = ">=0.14,<0.15" },
-]
-
-[[package]]
 name = "pathlib-abc"
 version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1178,6 +1152,200 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/98/ac/769c598dd106e2a6647798da3ed25ddeee67f2d12c04f5da316cb3da6360/polars_runtime_32-1.44.1-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:0956f0cae632d8fad3a04b4315bf2bb69b56d10c83c79a75c2c4c5a13b9ce5cc", size = 56447612, upload-time = "2026-08-26T07:08:12.36Z" },
     { url = "https://files.pythonhosted.org/packages/b2/ee/98408296e15388020b6183323fdbe78ccab4f72c20d8e0d7092c062d3ad2/polars_runtime_32-1.44.1-cp310-abi3-win_amd64.whl", hash = "sha256:159334184e6fbb074c9f4692221ea19970a5e2bed2a479f9d7bdb00b7f3eedb9", size = 53702970, upload-time = "2026-08-26T07:08:15.398Z" },
     { url = "https://files.pythonhosted.org/packages/e9/9d/8b17e075aac73c881a50b6c1f690d20df46db2f3bcabc99f600ecdee1290/polars_runtime_32-1.44.1-cp310-abi3-win_arm64.whl", hash = "sha256:3ba28d638d0513e0b4afbcdab5c0059a85021e5f81d62b5f793e7e23badb2cf7", size = 47281050, upload-time = "2026-08-26T07:08:18.43Z" },
+]
+
+[[package]]
+name = "pqx-common"
+version = "0.1.0"
+source = { editable = "packages/pqx-common" }
+dependencies = [
+    { name = "adlfs" },
+    { name = "structlog" },
+    { name = "universal-pathlib" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pqx-testing" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "adlfs", specifier = ">=2026.4" },
+    { name = "structlog", specifier = ">=26.1.0" },
+    { name = "universal-pathlib", specifier = ">=0.3.10" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pytest", specifier = ">=8,<9" },
+]
+
+[[package]]
+name = "pqx-excel"
+version = "0.1.0"
+source = { editable = "packages/pqx-excel" }
+dependencies = [
+    { name = "fastexcel", extra = ["pyarrow"] },
+    { name = "polars" },
+    { name = "pydantic" },
+    { name = "rustpy-xlsxwriter" },
+    { name = "universal-pathlib" },
+    { name = "xlsxwriter" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pqx-common" },
+    { name = "pqx-frame" },
+    { name = "pqx-testing" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastexcel", extras = ["pyarrow"], specifier = ">=0.21.0" },
+    { name = "polars", specifier = ">=1.44.1" },
+    { name = "pydantic", specifier = ">=2.13.5" },
+    { name = "rustpy-xlsxwriter", specifier = ">=0.6.1" },
+    { name = "universal-pathlib", specifier = ">=0.3.10" },
+    { name = "xlsxwriter", specifier = ">=3.2.9" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pytest", specifier = ">=8,<9" },
+]
+
+[[package]]
+name = "pqx-frame"
+version = "0.1.0"
+source = { editable = "packages/pqx-frame" }
+dependencies = [
+    { name = "polars" },
+    { name = "pydantic" },
+    { name = "structlog" },
+    { name = "tzdata" },
+    { name = "universal-pathlib" },
+    { name = "xxhash" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pqx-common" },
+    { name = "pqx-testing" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "polars", specifier = ">=1.44.1" },
+    { name = "pydantic", specifier = ">=2.13.5" },
+    { name = "structlog", specifier = ">=26.1.0" },
+    { name = "tzdata", specifier = ">=2026.3" },
+    { name = "universal-pathlib", specifier = ">=0.3.10" },
+    { name = "xxhash", specifier = ">=4.0.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pytest", specifier = ">=8,<9" },
+]
+
+[[package]]
+name = "pqx-sidecar"
+version = "0.1.0"
+source = { editable = "packages/pqx-sidecar" }
+dependencies = [
+    { name = "pqx-frame" },
+    { name = "pydantic" },
+    { name = "universal-pathlib" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pqx-common" },
+    { name = "pqx-testing" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pydantic", specifier = ">=2.13.5" },
+    { name = "universal-pathlib", specifier = ">=0.3.10" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pytest", specifier = ">=8,<9" },
+]
+
+[[package]]
+name = "pqx-testing"
+version = "0.1.0"
+source = { editable = "packages/pqx-testing" }
+dependencies = [
+    { name = "polars" },
+    { name = "pytest" },
+    { name = "rustpy-xlsxwriter" },
+    { name = "structlog" },
+    { name = "xlsxwriter" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "polars", specifier = ">=1.44.1" },
+    { name = "pytest", specifier = ">=8,<9" },
+    { name = "rustpy-xlsxwriter", specifier = ">=0.6.1" },
+    { name = "structlog", specifier = ">=26.1.0" },
+    { name = "xlsxwriter", specifier = ">=3.2.9" },
+]
+
+[[package]]
+name = "pqx-verify"
+version = "0.1.0"
+source = { editable = "packages/pqx-verify" }
+dependencies = [
+    { name = "fastexcel", extra = ["pyarrow"] },
+    { name = "polars" },
+    { name = "pqx-excel" },
+    { name = "pqx-frame" },
+    { name = "pqx-sidecar" },
+    { name = "universal-pathlib" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pqx-common" },
+    { name = "pqx-testing" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastexcel", extras = ["pyarrow"], specifier = ">=0.21.0" },
+    { name = "polars", specifier = ">=1.44.1" },
+    { name = "pqx-excel", editable = "packages/pqx-excel" },
+    { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pqx-sidecar", editable = "packages/pqx-sidecar" },
+    { name = "universal-pathlib", specifier = ">=0.3.10" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pytest", specifier = ">=8,<9" },
 ]
 
 [[package]]

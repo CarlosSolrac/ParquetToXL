@@ -1,0 +1,33 @@
+[project]
+name = "pqx-excel"
+version = "0.1.0"
+description = "The Excel writer registry and the parallel workbook reader."
+requires-python = ">=3.13"
+dependencies = [
+    "fastexcel[pyarrow]>=0.21.0",
+    "polars>=1.44.1",
+    "pydantic>=2.13.5",
+    "rustpy-xlsxwriter>=0.6.1",
+    "universal-pathlib>=0.3.10",
+    "xlsxwriter>=3.2.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+    "pqx-common",
+    "pqx-frame",
+    "pqx-testing",
+]
+
+[tool.uv.sources]
+pqx-common = { workspace = true }
+pqx-frame = { workspace = true }
+pqx-testing = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pqx_excel"]

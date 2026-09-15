@@ -16,13 +16,15 @@ jobs:
         with:
           enable-cache: true
 
-      # Applications commit uv.lock and must install from it exactly.
+      # Applications commit uv.lock and must install from it exactly. --all-packages
+      # is what installs every workspace member; without it only the root is synced
+      # and every import of a pqx_* package fails at collection.
       # Libraries do not commit one, so they resolve at install time.
       # This is a property of the repository, declared here once — never
       # detected at runtime, because a workflow that drops --locked when the
       # lockfile is missing fails open the moment someone deletes it.
       - name: Sync the environment (application; commits uv.lock)
-        run: uv sync --locked --all-groups
+        run: uv sync --locked --all-groups --all-packages
       # For a library, replace the step above with:
       #   run: uv sync --all-groups
 

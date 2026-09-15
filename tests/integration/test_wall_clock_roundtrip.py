@@ -8,13 +8,12 @@ from zoneinfo import ZoneInfo
 
 import polars as pl
 import pytest
+from pqx_common.paths import zpath
+from pqx_excel.writer import RustpyExcelWriter
+from pqx_frame.conversion.base import ConvertedDataframe
+from pqx_frame.conversion.to_excel import DataframeConversionToExcel
+from pqx_frame.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
 from upath import UPath
-
-from parquet_to_xl.conversion.base import ConvertedDataframe
-from parquet_to_xl.conversion.to_excel import DataframeConversionToExcel
-from parquet_to_xl.excel.writer import RustpyExcelWriter
-from parquet_to_xl.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
-from parquet_to_xl.paths import zpath
 
 
 @pytest.mark.parametrize("zone", ["UTC", "America/New_York", "Asia/Kolkata"])
