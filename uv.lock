@@ -8,6 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "pqx-calendar",
     "pqx-common",
     "pqx-excel",
     "pqx-frame",
@@ -21,6 +22,7 @@ members = [
 dev = [
     { name = "mypy", specifier = ">=1.18,<2" },
     { name = "numpy", specifier = ">=2.5.3" },
+    { name = "pqx-calendar", editable = "packages/pqx-calendar" },
     { name = "pqx-common", editable = "packages/pqx-common" },
     { name = "pqx-excel", editable = "packages/pqx-excel" },
     { name = "pqx-frame", editable = "packages/pqx-frame" },
@@ -1155,6 +1157,29 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/ee/98408296e15388020b6183323fdbe78ccab4f72c20d8e0d7092c062d3ad2/polars_runtime_32-1.44.1-cp310-abi3-win_amd64.whl", hash = "sha256:159334184e6fbb074c9f4692221ea19970a5e2bed2a479f9d7bdb00b7f3eedb9", size = 53702970, upload-time = "2026-08-26T07:08:15.398Z" },
     { url = "https://files.pythonhosted.org/packages/e9/9d/8b17e075aac73c881a50b6c1f690d20df46db2f3bcabc99f600ecdee1290/polars_runtime_32-1.44.1-cp310-abi3-win_arm64.whl", hash = "sha256:3ba28d638d0513e0b4afbcdab5c0059a85021e5f81d62b5f793e7e23badb2cf7", size = 47281050, upload-time = "2026-08-26T07:08:18.43Z" },
 ]
+
+[[package]]
+name = "pqx-calendar"
+version = "0.1.0"
+source = { editable = "packages/pqx-calendar" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "tzdata" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.13.5" },
+    { name = "tzdata", specifier = ">=2026.3" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8,<9" }]
 
 [[package]]
 name = "pqx-common"

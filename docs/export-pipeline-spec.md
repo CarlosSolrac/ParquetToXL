@@ -514,9 +514,11 @@ finished, fully covered codebase. Nothing new is built until it is green, and th
 6. **Ask first:** move `duckdb` and `python-calamine` from runtime to the dev group of `pqx-excel`;
    both are test-only today.
 
-**Phase B — `pqx-calendar`.** Frozen tests first: every date, datetime and int format, `YY` window
-boundaries, leading zeros, month-precision refusals, invalid dates. Then decoding, period keys and
-ordering with `Undated` last, then labels reproducing the golden tables exactly.
+**Phase B — `pqx-calendar`. Built (2026-09-15).** Frozen tests first: every date, datetime and int
+format, `YY` window boundaries, leading zeros, month-precision refusals, invalid dates. Then
+decoding, period keys and ordering with `Undated` last, then labels reproducing the golden tables
+exactly. Shipped as eight modules and 286 tests at 100% statement and branch coverage; decisions and
+the two cases the specs left ambiguous are in `docs/decisions/2026-09-15-phase-b.md`.
 
 **Phase C — `pqx-plan`.** Gate 0d did not cut `balanced`; it gates it behind a per-source cell
 ceiling (see `partitioning-spec.md`, the marked note under sorting). The manifest and receipt

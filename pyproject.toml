@@ -19,6 +19,7 @@ dev = [
     # Everything tests/ imports. Naming them means `uv sync` at the root is enough
     # for the integration suite; --all-packages is for building every member, not
     # for making the root tests importable.
+    "pqx-calendar",
     "pqx-common",
     "pqx-excel",
     "pqx-frame",
@@ -32,6 +33,7 @@ dev = [
 # them on PyPI. Members that depend on each other declare the same in their own
 # files, because a source is per-package rather than inherited from the root.
 [tool.uv.sources]
+pqx-calendar = { workspace = true }
 pqx-common = { workspace = true }
 pqx-excel = { workspace = true }
 pqx-frame = { workspace = true }
@@ -149,6 +151,7 @@ branch = true
 # _style_example omit that used to live here is gone: the file moved into
 # pqx-testing and is therefore already outside this list.
 source = [
+    "packages/pqx-calendar/src/pqx_calendar",
     "packages/pqx-common/src/pqx_common",
     "packages/pqx-frame/src/pqx_frame",
     "packages/pqx-excel/src/pqx_excel",
