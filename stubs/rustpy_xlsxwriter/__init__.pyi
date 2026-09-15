@@ -24,6 +24,13 @@ installed package's **runtime source**, not from the ``.pyi`` beside it. Those t
 the shipped stub's ``sheet()`` carries no ``dedupe_strings`` parameter and the running code
 does. Transcribing the stub would have produced a signature the package does not have, which
 is a second reason this file exists rather than a redundant copy of one that ships.
+
+``validate_sheet_name`` returns a ``bool`` -- it answers, it does not raise. Declared here for
+the Phase D writer, and measured rather than assumed: it refuses the empty name, a name over
+31 characters and the characters Excel forbids, and it **accepts** ``History``, a name wrapped
+in apostrophes, and a name holding a tab, a newline or a NUL. So it is a length-and-charset
+check and not the whole rule, which is why ``pqx_excel.workbook`` layers it over
+``pqx_common.names``.
 """
 
 from collections.abc import Iterable, Iterator
@@ -41,6 +48,7 @@ class FastExcel:
     def sheet(self, name: str, data: SheetData, *, dedupe_strings: bool = False) -> FastExcel: ...
     def save(self) -> None: ...
 
+def validate_sheet_name(name: str) -> bool: ...
 def write_worksheet(
     records: Iterable[dict[str, Any]] | pl.DataFrame,
     file_name: str | PathLike[str],

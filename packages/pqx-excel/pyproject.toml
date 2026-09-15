@@ -5,6 +5,10 @@ description = "The Excel writer registry and the parallel workbook reader."
 requires-python = ">=3.13"
 dependencies = [
     "fastexcel[pyarrow]>=0.21.0",
+    # The multi-sheet writer validates sheet names against pqx_common.names, which is where
+    # "what is a legal name at our destinations" lives so pqx-plan can reach it too. The
+    # dependency diagram already draws this edge.
+    "pqx-common",
     "polars>=1.44.1",
     "pydantic>=2.13.5",
     "rustpy-xlsxwriter>=0.6.1",
@@ -15,7 +19,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8,<9",
-    "pqx-common",
     "pqx-frame",
     "pqx-testing",
 ]

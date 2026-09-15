@@ -551,13 +551,21 @@ Linux where the OS would have allowed it. `pqx-staging` is still to build. Scrat
 Stage, publish, delete, list. Ownership check against an existing receipt. Lease acquire, expiry and
 release. A failure-injection harness reaching every error branch without real storage.
 
-**Phase D — `pqx-excel` multi-sheet writer.** Gate 0a settled the shape: `FastExcel` streams
+**Phase D — `pqx-excel` multi-sheet writer. Built (2026-09-15)** as `pqx_excel.workbook`.
+Gate 0a settled the shape: `FastExcel` streams
 each sheet's generator at `save()`, so the writer takes an iterable of `(sheet_name, rows)` pairs
 and keeps constant memory whatever the sheet count. `autofit=False` and `dedupe_strings=False`
 stay, the second because it costs ~1.2 KiB per row and the first because a verified export should
-have deterministic column widths — not, as the current writer's docstring says, for memory, which
-gate 0a measured at zero. The `rustpy_xlsxwriter` stub already declares `FastExcel` for the three
-calls the writer makes; extend it for `validate_sheet_name`. Own sheet-name validator over that.
+have deterministic column widths — not, as the writer's docstring used to say, for memory, which
+gate 0a measured at zero; that docstring is now corrected. The stub is extended for
+`validate_sheet_name`, and the sheet-name validator layers it over `pqx_common.names`.
+
+**Measured while building it, and not visible in gate 0a's harness:** `FastExcel` consumes
+*nothing* at `.sheet()` and everything inside `.save()`. So sheet count is free, as 0a found, but
+every frame handed to the writer stays reachable until `save()` returns — peak memory is the sum
+of the frames, and a lazy generator of `(name, frame)` pairs does not change that. The writer
+drains the pairs before writing anything anyway, deliberately, so a bad name on the tenth sheet
+cannot leave a half-written workbook at the destination.
 
 **Phase E — `pqx-pipeline` ingest and write.** `sidecar_stale` and `excel_stale`; `read_parquet` and
 `build_sidecar`, treating a `None` return as a failure rather than a crash, and asserting

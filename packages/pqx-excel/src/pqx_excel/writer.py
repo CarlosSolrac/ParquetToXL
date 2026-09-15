@@ -127,7 +127,7 @@ def get_excel_writer(identifier: str) -> ExcelWriterBase:
     return EXCEL_WRITERS[identifier]()
 
 
-def _reject_unnameable_columns(df: pl.DataFrame) -> None:
+def reject_unnameable_columns(df: pl.DataFrame) -> None:
     """Refuse a frame with an empty column name, whichever writer is in use.
 
     Neither writer can carry one, and both corrupt it differently rather than failing:
@@ -231,12 +231,24 @@ class RustpyExcelWriter(ExcelWriterBase):
     it beats DuckDB below roughly 15-20k rows and is about 25% slower at 50k. Both are far
     ahead of ``polars.write_excel``, which was five times slower than DuckDB at 50k rows.
 
-    Rows are streamed with ``iter_rows`` rather than materialised with ``to_dicts``, and
-    ``autofit`` is off. Autofit measures every cell to size columns and its own
-    documentation says to disable it on large data; ``dedupe_strings`` is left off because
-    enabling it buffers the whole sheet to build a shared string table, which takes the
-    writer out of constant-memory mode. Streaming plus those two defaults is what keeps that
-    mode meaningful. A generator and a list were verified to produce identical workbooks.
+    Rows are streamed with ``iter_rows`` rather than materialised with ``to_dicts``, and both
+    ``autofit`` and ``dedupe_strings`` are off -- for two different reasons, which this
+    docstring used to give as one.
+
+    **Corrected by gate 0a (2026-09-15).** The reason stated here was memory, on the strength
+    of autofit's own documentation saying to disable it on large data. Measured, ``autofit=True``
+    costs nothing detectable. The reason it stays off is **determinism**: autofit sizes each
+    column by measuring the cells actually present, so the same rows split differently across
+    sheets produce different column widths, and a verified export whose bytes depend on how it
+    happened to be partitioned is a worse thing to explain than a narrow column.
+
+    ``dedupe_strings`` is off *for* memory, and that part was right: gate 0a measured it at
+    about 1.2 KiB per row, charged per sheet rather than shared across the workbook, because it
+    buffers the sheet to build a shared string table. Streaming plus that default is what keeps
+    constant-memory mode meaningful. A generator and a list were verified to produce identical
+    workbooks.
+
+    For more than one sheet, use :func:`pqx_excel.workbook.write_workbook`.
 
     One inherited quirk matters downstream: this writer renders ``Time`` as ``str(time)``
     rather than as a time cell, so a ``Time`` column comes back as text. The reader is what
@@ -259,7 +271,7 @@ class RustpyExcelWriter(ExcelWriterBase):
                 truncates strings precisely so this cannot happen for a converted frame.
         """
         sheet: str = _sheet_name(options)
-        _reject_unnameable_columns(df)
+        reject_unnameable_columns(df)
         if df.height == 0:
             # A zero-row frame still has columns, and streaming would lose them: iter_rows
             # yields nothing, so the writer never learns a single column name and emits a
@@ -317,7 +329,7 @@ class PolarsExcelWriter(ExcelWriterBase):
                 options applied -- ``Binary`` is the one the conversion does not remove.
         """
         name: str = _sheet_name(options)
-        _reject_unnameable_columns(df)
+        reject_unnameable_columns(df)
         _reject_unwritable_by_polars(df)
         # Time is rendered as text before handing over. Left as a Time, write_excel emits a
         # numeric time cell whose fraction is lost: measured, 23:59:59.999999 read back as

@@ -1217,6 +1217,7 @@ source = { editable = "packages/pqx-excel" }
 dependencies = [
     { name = "fastexcel", extra = ["pyarrow"] },
     { name = "polars" },
+    { name = "pqx-common" },
     { name = "pydantic" },
     { name = "rustpy-xlsxwriter" },
     { name = "universal-pathlib" },
@@ -1225,7 +1226,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "pqx-common" },
     { name = "pqx-frame" },
     { name = "pqx-testing" },
     { name = "pytest" },
@@ -1235,6 +1235,7 @@ dev = [
 requires-dist = [
     { name = "fastexcel", extras = ["pyarrow"], specifier = ">=0.21.0" },
     { name = "polars", specifier = ">=1.44.1" },
+    { name = "pqx-common", editable = "packages/pqx-common" },
     { name = "pydantic", specifier = ">=2.13.5" },
     { name = "rustpy-xlsxwriter", specifier = ">=0.6.1" },
     { name = "universal-pathlib", specifier = ">=0.3.10" },
@@ -1243,7 +1244,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pqx-common", editable = "packages/pqx-common" },
     { name = "pqx-frame", editable = "packages/pqx-frame" },
     { name = "pqx-testing", editable = "packages/pqx-testing" },
     { name = "pytest", specifier = ">=8,<9" },
