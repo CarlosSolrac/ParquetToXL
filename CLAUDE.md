@@ -51,7 +51,7 @@ total: int = 0
 row: Row
 for row in rows:          # loop targets DO need a prior annotation
     ...
-names = [row.name for row in rows]   # comprehension targets do NOT
+names: list[str] = [row.name for row in rows]   # the comprehension target `row` does NOT
 ```
 
 **Closed vocabularies are `Literal` + `Final`, never `Enum`.** An enum member is a bare class-body
