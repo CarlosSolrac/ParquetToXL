@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt
 
 import pytest
-from pqx_plan.timestamps import require_utc
+from pqx_frame.timestamps import require_utc
 
 
 class _OffsetlessZone(dt.tzinfo):

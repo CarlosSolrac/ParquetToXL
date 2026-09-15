@@ -12,6 +12,7 @@ editing it.
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -35,6 +36,9 @@ FIXTURE_STEMS: list[str] = ["parquet_a", "parquet_b"]
 
 TIMEZONES: list[str] = ["UTC", "America/Chicago", "Asia/Kolkata"]
 """Three zones, one of them UTC, so the per-zone mapping is exercised rather than trivial."""
+
+SIDECAR_CREATED: dt.datetime = dt.datetime(2026, 9, 15, 12, 0, tzinfo=dt.UTC)
+"""T2 for these tests. Fixed, so nothing here depends on when it ran."""
 
 
 def _recorded(path: UPath) -> DataframeMetadata:
@@ -68,7 +72,7 @@ def test_a_real_record_reloads_exactly(stem: str, fixture_files: dict[str, Path]
 
     target: UPath = ZPath(str(tmp_path / source.name))
     store: SidecarStoreBase = get_sidecar_store("json")
-    store.write(original, target)
+    store.write(original, target, created_utc=SIDECAR_CREATED)
 
     assert store.read(target).metadata == original
 
@@ -78,7 +82,7 @@ def test_the_excel_digest_survives_the_file_boundary(stem: str, fixture_files: d
     source: UPath = ZPath(str(fixture_files[stem]))
     original: DataframeMetadata = _recorded(source)
     target: UPath = ZPath(str(tmp_path / source.name))
-    get_sidecar_store("json").write(original, target)
+    get_sidecar_store("json").write(original, target, created_utc=SIDECAR_CREATED)
 
     reloaded: DataframeMetadata = get_sidecar_store("json").read(target).metadata
     before: DataframeColumnsMetadata = _to_excel_record(original)
@@ -100,7 +104,7 @@ def test_the_two_fixtures_produce_different_sidecars(fixture_files: dict[str, Pa
     for stem in FIXTURE_STEMS:
         source: UPath = ZPath(str(fixture_files[stem]))
         target: UPath = ZPath(str(tmp_path / f"{stem}.parquet"))
-        get_sidecar_store("json").write(_recorded(source), target)
+        get_sidecar_store("json").write(_recorded(source), target, created_utc=SIDECAR_CREATED)
         texts.append(sidecar_path(target).read_text(encoding="utf-8"))
     assert texts[0] != texts[1]
 
@@ -112,7 +116,7 @@ def test_the_modification_time_reloads_aware_and_names_the_same_instant(fixture_
     source: UPath = ZPath(str(fixture_files["parquet_a"]))
     original: DataframeMetadata = _recorded(source)
     target: UPath = ZPath(str(tmp_path / source.name))
-    get_sidecar_store("json").write(original, target)
+    get_sidecar_store("json").write(original, target, created_utc=SIDECAR_CREATED)
     reloaded: DataframeMetadata = get_sidecar_store("json").read(target).metadata
 
     assert reloaded.modified_utc.tzinfo is not None

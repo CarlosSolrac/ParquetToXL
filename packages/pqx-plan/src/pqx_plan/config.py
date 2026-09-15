@@ -24,9 +24,8 @@ from pqx_calendar.columns import DateColumn
 from pqx_calendar.labels import MonthFormat
 from pqx_calendar.periods import BasePeriod, PeriodOrder
 from pqx_common.names import PortableNameError, validate_identifier
+from pqx_frame.timestamps import UtcDatetime
 from pydantic import BaseModel, Field, model_validator
-
-from pqx_plan.timestamps import UtcDatetime
 
 CONFIG_VERSION: Final[int] = 1
 """The only configuration version v1 reads. Independent of the sidecar, conversion and hash versions."""

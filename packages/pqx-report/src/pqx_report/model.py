@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pqx_plan.timestamps import UtcDatetime
+from pqx_frame.timestamps import UtcDatetime
 from pydantic import BaseModel, Field, NonNegativeInt
 
 __all__ = [

@@ -34,10 +34,10 @@ from typing import Final, Literal, Self
 
 from pqx_frame.hashing.binary_aggregate import BinaryAggregateHashedDataframe
 from pqx_frame.metadata.columns import ConversionIdentity
+from pqx_frame.timestamps import UtcDatetime
 from pydantic import BaseModel, JsonValue, NonNegativeInt, model_validator
 
 from pqx_plan.paths import DestinationRelativePath
-from pqx_plan.timestamps import UtcDatetime
 
 type ManifestVersion = Literal[1]
 """The manifest schema versions this build reads. A closed vocabulary, so a ``Literal``.

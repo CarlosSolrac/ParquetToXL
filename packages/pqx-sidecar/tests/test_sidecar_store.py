@@ -18,11 +18,15 @@ from pqx_frame.metadata.columns import DataframeColumnsMetadata
 from pqx_frame.metadata.dataframe import DataframeMetadata
 from pqx_sidecar.document import SIDECAR_SCHEMA_VERSION, SidecarDocument
 from pqx_sidecar.store import JsonSidecarStore, SidecarStoreBase, get_sidecar_store, register_sidecar_store, sidecar_path
+from pydantic import ValidationError
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from upath import UPath
+
+SIDECAR_CREATED: dt.datetime = dt.datetime(2026, 9, 15, 12, 0, tzinfo=dt.UTC)
+"""T2 for these tests. Fixed, so nothing here depends on when it ran."""
 
 
 def _metadata() -> DataframeMetadata:
@@ -74,7 +78,7 @@ def test_registering_a_duplicate_identifier_raises() -> None:
     class _Clashing(SidecarStoreBase):
         identifier: ClassVar[str] = "json"
 
-        def write(self, metadata: DataframeMetadata, source_path: UPath) -> UPath:
+        def write(self, metadata: DataframeMetadata, source_path: UPath, *, created_utc: dt.datetime) -> UPath:
             """Never called."""
             raise NotImplementedError
 
@@ -89,7 +93,7 @@ def test_registering_a_duplicate_identifier_raises() -> None:
 def test_a_written_record_reloads_equal(tmp_path: Path) -> None:
     source: UPath = ZPath(str(tmp_path / "sales.parquet"))
     original: DataframeMetadata = _metadata()
-    written: UPath = get_sidecar_store("json").write(original, source)
+    written: UPath = get_sidecar_store("json").write(original, source, created_utc=SIDECAR_CREATED)
     assert written == sidecar_path(source)
     assert written.exists()
     assert get_sidecar_store("json").read(source).metadata == original
@@ -98,7 +102,7 @@ def test_a_written_record_reloads_equal(tmp_path: Path) -> None:
 def test_the_file_is_readable_json_carrying_the_version_and_the_digest(tmp_path: Path) -> None:
     # The point of a sidecar is that something other than this library can read it.
     source: UPath = ZPath(str(tmp_path / "sales.parquet"))
-    written: UPath = get_sidecar_store("json").write(_metadata(), source)
+    written: UPath = get_sidecar_store("json").write(_metadata(), source, created_utc=SIDECAR_CREATED)
     loaded: object = json.loads(written.read_text(encoding="utf-8"))
     assert isinstance(loaded, dict)
     assert loaded["schema_version"] == SIDECAR_SCHEMA_VERSION
@@ -107,7 +111,7 @@ def test_the_file_is_readable_json_carrying_the_version_and_the_digest(tmp_path:
 
 def test_an_unknown_schema_version_raises_and_names_both_versions(tmp_path: Path) -> None:
     source: UPath = ZPath(str(tmp_path / "sales.parquet"))
-    written: UPath = get_sidecar_store("json").write(_metadata(), source)
+    written: UPath = get_sidecar_store("json").write(_metadata(), source, created_utc=SIDECAR_CREATED)
     written.write_text(written.read_text(encoding="utf-8").replace(f'"schema_version": {SIDECAR_SCHEMA_VERSION}', '"schema_version": 99'), encoding="utf-8")
 
     caught: pytest.ExceptionInfo[ValueError]
@@ -144,17 +148,17 @@ def test_a_remote_path_round_trips() -> None:
     # not restricted to the local filesystem.
     source: UPath = ZPath("memory://data/sales.parquet")
     original: DataframeMetadata = _metadata()
-    written: UPath = get_sidecar_store("json").write(original, source)
+    written: UPath = get_sidecar_store("json").write(original, source, created_utc=SIDECAR_CREATED)
     assert written.protocol == "memory"
     assert get_sidecar_store("json").read(source).metadata == original
 
 
 def test_the_document_defaults_to_the_current_schema_version() -> None:
-    assert SidecarDocument(metadata=_metadata()).schema_version == SIDECAR_SCHEMA_VERSION
+    assert SidecarDocument(metadata=_metadata(), created_utc=SIDECAR_CREATED).schema_version == SIDECAR_SCHEMA_VERSION
 
 
 def test_the_document_is_frozen() -> None:
-    document: SidecarDocument = SidecarDocument(metadata=_metadata())
+    document: SidecarDocument = SidecarDocument(metadata=_metadata(), created_utc=SIDECAR_CREATED)
     attribute: str = "schema_version"
     with pytest.raises(ValueError, match="frozen"):
         setattr(document, attribute, 2)
@@ -163,3 +167,64 @@ def test_the_document_is_frozen() -> None:
 def test_the_base_class_is_abstract() -> None:
     with pytest.raises(TypeError):
         SidecarStoreBase()  # type: ignore[abstract]
+
+
+def test_a_document_records_when_it_was_written_as_well_as_when_the_source_changed() -> None:
+    # T2 and the source's mtime are two clocks answering different questions: that one says when
+    # the data changed, this one says when we last looked.
+    document: SidecarDocument = SidecarDocument(metadata=_metadata(), created_utc=SIDECAR_CREATED)
+    assert document.created_utc == SIDECAR_CREATED
+    assert document.created_utc != document.metadata.modified_utc
+
+
+def test_a_document_will_not_stamp_itself() -> None:
+    # No default. T2 feeds excel_stale through `T2(s) > T4`, and a fabricated instant there is a
+    # rebuild that never happens or one that never stops.
+    with pytest.raises(ValidationError):
+        SidecarDocument(metadata=_metadata())  # type: ignore[call-arg]
+
+
+def test_a_naive_created_utc_is_refused() -> None:
+    with pytest.raises(ValidationError):
+        SidecarDocument(metadata=_metadata(), created_utc=dt.datetime(2026, 9, 15, 12, 0))  # noqa: DTZ001
+
+
+def test_created_utc_normalises_to_utc(tmp_path: Path) -> None:
+    # Two runs recording the same instant in different zones must produce the same text, or a
+    # comparison over sidecars becomes a comparison over the writer's timezone.
+    source: UPath = ZPath(str(tmp_path / "sales.parquet"))
+    local: dt.datetime = dt.datetime(2026, 9, 15, 6, 0, tzinfo=dt.timezone(-dt.timedelta(hours=6)))
+    get_sidecar_store("json").write(_metadata(), source, created_utc=local)
+    assert get_sidecar_store("json").read(source).created_utc == SIDECAR_CREATED
+    assert '"created_utc": "2026-09-15T12:00:00Z"' in sidecar_path(source).read_text(encoding="utf-8")
+
+
+def test_the_whole_run_stamps_one_instant(tmp_path: Path) -> None:
+    # A store reading the clock per call would give sidecars written seconds apart different
+    # answers to the same staleness question.
+    first: UPath = ZPath(str(tmp_path / "a.parquet"))
+    second: UPath = ZPath(str(tmp_path / "b.parquet"))
+    store: SidecarStoreBase = get_sidecar_store("json")
+    store.write(_metadata(), first, created_utc=SIDECAR_CREATED)
+    store.write(_metadata(), second, created_utc=SIDECAR_CREATED)
+    assert store.read(first).created_utc == store.read(second).created_utc
+
+
+def test_a_version_two_sidecar_is_refused_rather_than_migrated(tmp_path: Path) -> None:
+    # There is no honest value to migrate to: when a v2 sidecar was written is exactly what it
+    # does not record. Every existing sidecar stops loading and is regenerated, which the
+    # selection rule already handles -- an unreadable sidecar is stale by definition.
+    source: UPath = ZPath(str(tmp_path / "sales.parquet"))
+    get_sidecar_store("json").write(_metadata(), source, created_utc=SIDECAR_CREATED)
+    written: UPath = sidecar_path(source)
+    legacy: str = written.read_text(encoding="utf-8").replace(f'"schema_version": {SIDECAR_SCHEMA_VERSION}', '"schema_version": 2')
+    written.write_text(legacy, encoding="utf-8")
+    caught: pytest.ExceptionInfo[ValueError]
+    with pytest.raises(ValueError, match="schema_version") as caught:
+        get_sidecar_store("json").read(source)
+    assert "2" in str(caught.value)
+    assert str(SIDECAR_SCHEMA_VERSION) in str(caught.value)
+
+
+def test_the_schema_version_is_three() -> None:
+    assert SIDECAR_SCHEMA_VERSION == 3

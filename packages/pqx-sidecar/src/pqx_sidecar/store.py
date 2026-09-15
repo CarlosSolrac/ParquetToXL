@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
@@ -47,8 +48,15 @@ class SidecarStoreBase(ABC):
     identifier: ClassVar[str]
 
     @abstractmethod
-    def write(self, metadata: DataframeMetadata, source_path: UPath) -> UPath:
-        """Persist ``metadata`` beside ``source_path`` and return where it was written."""
+    def write(self, metadata: DataframeMetadata, source_path: UPath, *, created_utc: dt.datetime) -> UPath:
+        """Persist ``metadata`` beside ``source_path`` and return where it was written.
+
+        ``created_utc`` is **T2** and is a required keyword argument, not a clock read inside the
+        store. The same choice ``RunReport.generated_utc`` and ``Lease.acquired_utc`` make, and for
+        a sharper reason here: T2 feeds ``excel_stale`` through ``T2(s) > T4``, so one run that
+        stamps several sidecars must stamp them all with one instant. A store reading the clock per
+        call would give sidecars written seconds apart different answers to the same question.
+        """
 
     @abstractmethod
     def read(self, source_path: UPath) -> SidecarDocument:
@@ -114,12 +122,13 @@ class JsonSidecarStore(SidecarStoreBase):
 
     identifier: ClassVar[str] = "json"
 
-    def write(self, metadata: DataframeMetadata, source_path: UPath) -> UPath:
+    def write(self, metadata: DataframeMetadata, source_path: UPath, *, created_utc: dt.datetime) -> UPath:
         """Persist ``metadata`` beside ``source_path`` and return where it was written.
 
         Args:
             metadata: The record to store.
             source_path: The file it describes. Not read; only its name is used.
+            created_utc: T2, the instant this run is describing its sources at.
 
         Returns:
             The path written, which is ``sidecar_path(source_path)``.
@@ -127,7 +136,7 @@ class JsonSidecarStore(SidecarStoreBase):
         target: UPath = sidecar_path(source_path)
         # Serialised in full before the destination is opened, so a failure to serialise
         # cannot leave a truncated file where a good one was.
-        text: str = SidecarDocument(metadata=metadata).model_dump_json(indent=2)
+        text: str = SidecarDocument(metadata=metadata, created_utc=created_utc).model_dump_json(indent=2)
         target.write_text(text, encoding="utf-8")
         return target
 

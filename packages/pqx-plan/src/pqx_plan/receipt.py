@@ -22,9 +22,8 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
+from pqx_frame.timestamps import UtcDatetime
 from pydantic import BaseModel
-
-from pqx_plan.timestamps import UtcDatetime
 
 type ReceiptVersion = Literal[1]
 """The receipt schema versions this build reads. A closed vocabulary, so a ``Literal``.

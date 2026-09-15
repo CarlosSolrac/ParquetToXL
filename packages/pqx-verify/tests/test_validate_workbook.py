@@ -54,6 +54,9 @@ if TYPE_CHECKING:
     from pqx_frame.metadata.dataframe import DataframeMetadata
     from upath import UPath
 
+SIDECAR_CREATED: dt.datetime = dt.datetime(2026, 9, 15, 12, 0, tzinfo=dt.UTC)
+"""T2 for these tests. Fixed, so nothing here depends on when it ran."""
+
 
 def _frame() -> pl.DataFrame:
     return pl.DataFrame(
@@ -84,7 +87,7 @@ def _publish(
         [DataframeConversionNone(), DataframeConversionToExcel()] if conversions is None else conversions,
     )
     assert recorded is not None
-    get_sidecar_store("json").write(recorded, parquet)
+    get_sidecar_store("json").write(recorded, parquet, created_utc=SIDECAR_CREATED)
 
     workbook: UPath = ZPath(str(tmp_path / "sales.xlsx"))
     converted: pl.DataFrame = DataframeConversionToExcel().metadata_of_converted_dataframe(source if written is None else written, []).converted_dataframe
@@ -170,7 +173,7 @@ def test_a_header_altered_into_a_name_the_reader_would_generate_is_caught(tmp_pa
     source.write_parquet(str(parquet))
     recorded: DataframeMetadata | None = extract_metadata_from_dataframe(source, parquet, [], [DataFrameHasherBinaryAggregateHash()], [DataframeConversionNone(), DataframeConversionToExcel()])
     assert recorded is not None
-    get_sidecar_store("json").write(recorded, parquet)
+    get_sidecar_store("json").write(recorded, parquet, created_utc=SIDECAR_CREATED)
 
     workbook: UPath = ZPath(str(tmp_path / "collide.xlsx"))
     book: xlsxwriter.Workbook = xlsxwriter.Workbook(str(workbook))
@@ -214,7 +217,7 @@ def test_a_cell_that_reads_but_cannot_be_hashed_is_a_verdict(tmp_path: Path) -> 
     source.write_parquet(str(parquet))
     recorded: DataframeMetadata | None = extract_metadata_from_dataframe(source, parquet, [], [DataFrameHasherBinaryAggregateHash()], [DataframeConversionNone(), DataframeConversionToExcel()])
     assert recorded is not None
-    get_sidecar_store("json").write(recorded, parquet)
+    get_sidecar_store("json").write(recorded, parquet, created_utc=SIDECAR_CREATED)
 
     workbook: UPath = ZPath(str(tmp_path / "dates.xlsx"))
     book: xlsxwriter.Workbook = xlsxwriter.Workbook(str(workbook))

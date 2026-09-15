@@ -385,15 +385,14 @@ became v2 and replaced `polars_dtype`. Every existing sidecar stops loading and 
 the next run, which the selection rule already handles: a missing or unreadable sidecar is stale by
 definition.
 
-> **Not built, deliberately (2026-09-15).** This is the one change in the remaining work that
-> invalidates data that already exists, so it lands with Phase E — the first code that writes a T2 —
-> rather than on its own, which would give one release where every sidecar is regenerated and
-> nothing yet reads what was added. Two notes for whoever lands it: `created_utc` should be a
-> **required keyword argument** to `SidecarStoreBase.write` rather than a default read from the
-> clock inside it, matching `RunReport.generated_utc` and `Lease.acquired_utc`; and `UtcDatetime`
-> needs to move from `pqx-plan` to `pqx-frame`, which `pqx-sidecar` and `pqx-plan` both already
-> depend on, since `pqx-sidecar` may not depend on `pqx-plan`. See
-> `docs/decisions/2026-09-15-phases-f-g-staging.md`.
+> **Built (2026-09-15), with Phase E.** `created_utc` is a **required keyword argument** to
+> `SidecarStoreBase.write`, not a default read from the clock inside it — matching
+> `RunReport.generated_utc` and `Lease.acquired_utc`, and for a sharper reason here: T2 feeds
+> `excel_stale` through `T2(s) > T4`, so one run that stamps several sidecars must stamp them all
+> with one instant. A store reading the clock per call would give sidecars written seconds apart
+> different answers to the same question. `UtcDatetime` moved from `pqx-plan` to `pqx-frame`, which
+> `pqx-sidecar` and `pqx-plan` both already depend on, so the rule "a recorded instant carries a
+> zone" stays one statement.
 
 ## Verification
 

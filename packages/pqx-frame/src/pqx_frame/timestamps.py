@@ -1,4 +1,10 @@
-"""The timestamp type every recorded instant in this package carries."""
+"""The timestamp type every recorded instant in this project carries.
+
+Here rather than in ``pqx-plan``, where it started, because ``pqx-sidecar`` needs it too for the
+schema v3 ``created_utc`` and may not depend on the planner. ``pqx-frame`` is the one package both
+already reach, so this is where one statement of "a recorded instant carries a zone" can live
+without becoming two.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +17,7 @@ from pydantic import AfterValidator
 def require_utc(value: dt.datetime) -> dt.datetime:
     """Refuse a naive datetime and normalise an aware one to UTC.
 
-    Every timestamp this package records exists to be compared against one written by
+    Every timestamp this project records exists to be compared against one written by
     something else -- a source store's mtime against a sidecar's recording of it, a sidecar's
     creation against a receipt's. Python refuses to compare an aware datetime with a naive one
     at all, raising ``TypeError`` from inside whichever comparison happens to reach it first,

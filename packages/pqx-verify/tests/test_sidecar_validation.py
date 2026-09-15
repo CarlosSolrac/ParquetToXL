@@ -45,6 +45,9 @@ if TYPE_CHECKING:
     from pqx_sidecar.document import SidecarDocument
     from upath import UPath
 
+SIDECAR_CREATED: dt.datetime = dt.datetime(2026, 9, 15, 12, 0, tzinfo=dt.UTC)
+"""T2 for these tests. Fixed, so nothing here depends on when it ran."""
+
 
 def _frame() -> pl.DataFrame:
     """A small frame whose last two rows are entirely null.
@@ -105,7 +108,7 @@ def _publish(tmp_path: Path, source: pl.DataFrame, *, written: pl.DataFrame | No
         [DataframeConversionNone(), DataframeConversionToExcel()],
     )
     assert recorded is not None
-    get_sidecar_store("json").write(recorded, parquet)
+    get_sidecar_store("json").write(recorded, parquet, created_utc=SIDECAR_CREATED)
 
     workbook: UPath = ZPath(str(tmp_path / "sales.xlsx"))
     get_excel_writer(ExcelWriteConfig().writer).write(_convert(source if written is None else written), workbook, {})
