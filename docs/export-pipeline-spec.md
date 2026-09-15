@@ -531,8 +531,17 @@ rules JSON Schema cannot state, and `pqx_plan.corpus` the 94-case shared corpus 
 division, the single-sheet shortcut and the minimum balanced workbook count — over a four-field
 `SourceShape` that keeps the package free of Polars. `pqx_plan.fingerprint` holds
 `resolved_config_hash`, stable across key reordering, reformatting and an equivalent timestamp in
-another zone. Still to build: the algorithms, allocation, naming and collisions, and replacing
-`manifest.ResolvedConfiguration` — still a `dict[str, JsonValue]` stand-in — with `ExportConfig`.
+another zone. `pqx_plan.partition` holds both calendar algorithms, the year-split escalation, the
+overflow rule and the undated bucket. Still to build: workbook allocation, naming and collisions,
+and replacing `manifest.ResolvedConfiguration` — still a `dict[str, JsonValue]` stand-in — with
+`ExportConfig`.
+
+**One contract the specs left implicit, now explicit.** `plan_calendar_sheets` takes counts keyed
+at `required_count_precision(partitioning)`, which is **not** the base period: a `year` base asks
+for *month*-precision counts, because subdividing an oversized year needs the months inside it and
+a count keyed by year cannot produce one. The planner rolls them up itself and keeps the finer
+numbers for the moment a year turns out not to fit. Counts at the wrong precision are refused
+rather than silently rolled into the wrong bucket.
 
 **Three findings from the corpus, already paid for.** It caught the models accepting
 `year_split_months` values and duplicates the schema refuses. It caught `format: date-time` being
