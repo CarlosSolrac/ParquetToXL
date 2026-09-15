@@ -18,13 +18,28 @@ path produces.
 
 Only the parameters this project supplies are declared. The real function takes about two
 dozen more formatting options; declaring them unused would invent a contract nothing checks.
+
+``FastExcel`` is the multi-sheet builder, declared here for gate 0a and transcribed from the
+installed package's **runtime source**, not from the ``.pyi`` beside it. Those two disagree:
+the shipped stub's ``sheet()`` carries no ``dedupe_strings`` parameter and the running code
+does. Transcribing the stub would have produced a signature the package does not have, which
+is a second reason this file exists rather than a redundant copy of one that ships.
 """
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from os import PathLike
 from typing import Any
 
 import polars as pl
+
+type SheetData = Iterable[dict[str, Any]] | Iterator[dict[str, Any]] | pl.DataFrame
+
+class FastExcel:
+    """Fluent builder writing one or more worksheets into a single workbook."""
+
+    def __init__(self, target: str | PathLike[str], *, autofit: bool = True) -> None: ...
+    def sheet(self, name: str, data: SheetData, *, dedupe_strings: bool = False) -> FastExcel: ...
+    def save(self) -> None: ...
 
 def write_worksheet(
     records: Iterable[dict[str, Any]] | pl.DataFrame,

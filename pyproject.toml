@@ -91,6 +91,10 @@ unfixable = []
 # AST and metaprogramming code cannot satisfy strict unknown-type reporting.
 # A CLI tool prints by design; that is the intentional-output carve-out.
 "tools/**/*.py" = ["INP001", "T201"]
+# The phase 0 gate harnesses. Same carve-out for the same reason: each is run by
+# hand and its table on stdout is the whole deliverable. They are outside
+# coverage.source, so nothing here loosens the 100% gate.
+"gates/**/*.py" = ["T201"]
 
 [tool.ruff.lint.pydocstyle]
 # This already disables the conflicting D rules; do not add redundant D2xx ignores.
