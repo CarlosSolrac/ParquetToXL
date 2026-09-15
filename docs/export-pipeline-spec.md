@@ -620,10 +620,21 @@ cannot leave a half-written workbook at the destination.
 `modified_utc` equals the **remote** source's mtime; `observe` producing `SourceShape`;
 `write_profile` producing the manifest with a digest per fragment.
 
-**Phase F — `pqx-verify`.** Refactor `validate_workbook` into a fragment-level primitive keeping the
-existing verdict kinds, then `verify_manifest`. Check: mutating one cell reports `digest-mismatch`
-on exactly that fragment; deleting a fragment fails the row count and the reassembly; no Parquet is
-opened, asserted with a path-access spy.
+**Phase F — `pqx-verify`. Built (2026-09-15)** as `pqx_verify.fragments`: `verify_fragment`,
+`verify_source` and `verify_manifest`, over the existing verdict kinds. All three negative checks
+are tests against real workbooks written by the Phase D writer — mutating one cell reports
+`digest-mismatch` on exactly that fragment and leaves its neighbour valid; deleting a fragment fails
+the row count and the reassembly while every remaining fragment stays individually valid; and a
+path-access spy asserts no Parquet is opened.
+
+`verify_manifest` takes the per-source schemas rather than discovering them. Locating and reading
+the published sidecars is the pipeline's business — it knows the destination layout, the credentials
+and what has been staged — and doing it here would put remote path discovery inside the package
+whose whole job is a judgement about bytes already in hand.
+
+This adds the edge `pqx-plan -> pqx-verify`, which the dependency diagram's ASCII above does not
+draw but the phase plan requires, since `verify_manifest` takes a `RunManifest`. No cycle:
+`pqx-plan` reaches only `pqx-calendar`, `pqx-common` and `pqx-frame`.
 
 **Phase G — `pqx-report`.** Model and JSON writer with the timestamp injected rather than read from
 the clock; Markdown and HTML renderers, stdlib only, no template-engine dependency; a failing run

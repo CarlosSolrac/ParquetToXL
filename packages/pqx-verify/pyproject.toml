@@ -8,6 +8,10 @@ dependencies = [
     "polars>=1.44.1",
     "pqx-excel",
     "pqx-frame",
+    # verify_manifest is specified as part of this package and takes a RunManifest, so this edge
+    # is required by the phase plan even though the dependency diagram's ASCII does not draw it.
+    # No cycle: pqx-plan reaches only pqx-calendar, pqx-common and pqx-frame.
+    "pqx-plan",
     "pqx-sidecar",
     "universal-pathlib>=0.3.10",
 ]
@@ -17,6 +21,7 @@ pqx-common = { workspace = true }
 pqx-testing = { workspace = true }
 pqx-excel = { workspace = true }
 pqx-frame = { workspace = true }
+pqx-plan = { workspace = true }
 pqx-sidecar = { workspace = true }
 
 [dependency-groups]

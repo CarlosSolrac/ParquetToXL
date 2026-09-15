@@ -1409,6 +1409,7 @@ dependencies = [
     { name = "polars" },
     { name = "pqx-excel" },
     { name = "pqx-frame" },
+    { name = "pqx-plan" },
     { name = "pqx-sidecar" },
     { name = "universal-pathlib" },
 ]
@@ -1426,6 +1427,7 @@ requires-dist = [
     { name = "polars", specifier = ">=1.44.1" },
     { name = "pqx-excel", editable = "packages/pqx-excel" },
     { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pqx-plan", editable = "packages/pqx-plan" },
     { name = "pqx-sidecar", editable = "packages/pqx-sidecar" },
     { name = "universal-pathlib", specifier = ">=0.3.10" },
 ]
