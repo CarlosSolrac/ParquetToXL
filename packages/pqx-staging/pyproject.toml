@@ -1,0 +1,28 @@
+[project]
+name = "pqx-staging"
+version = "0.1.0"
+description = "Scratch lifecycle, stage-in, publish, delete, list and the profile lease."
+requires-python = ">=3.13"
+# Pure file movement over pqx-common. It knows nothing about manifests: reconcile and the
+# ownership rule are manifest and configuration logic and live in pqx-plan, so this stays a
+# primitives library and the dependency arrow does not reverse.
+dependencies = [
+    "pqx-common",
+    "pydantic>=2.13.5",
+    "universal-pathlib>=0.3.10",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+]
+
+[tool.uv.sources]
+pqx-common = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pqx_staging"]

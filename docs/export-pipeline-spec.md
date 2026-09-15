@@ -592,10 +592,21 @@ a sheet's `source` naming a declared alias, `partition_column` being registered 
 output directory. Those live only in the semantic validator, so the corpus is what proves they
 exist.
 
-**Phase N — `pqx-common` names and `pqx-staging`.** Parallel with B and C. **Names built
-(2026-09-15)** in `pqx_common.names`: worksheet and workbook rules, the identifier pattern, the
-case-insensitive registry, `sheet_collision: suffix`, and the path-length cap, each rule tested on
-Linux where the OS would have allowed it. `pqx-staging` is still to build. Scratch lifecycle with cleanup on failure.
+**Phase N — `pqx-common` names and `pqx-staging`. Built (2026-09-15).** `pqx_common.names` holds
+the worksheet and workbook rules, the identifier pattern, the case-insensitive registry,
+`sheet_collision: suffix` and the path-length cap, each rule tested on Linux where the OS would have
+allowed it. `pqx-staging` holds the scratch lifecycle with cleanup on failure, the free-space
+precheck, stage-in with per-path deduplication, publish, list, delete and the lease. Error branches
+are reached by injecting failures — a fake `disk_usage` reading, a `copyfileobj` that fails midway —
+rather than by finding storage that produces them; the remote side is `memory://`.
+
+**Two things worth knowing before relying on them.** `tempfile.gettempdir()` **caches**: it resolves
+once and returns that answer for the life of the process, so setting `TMPDIR` after anything has
+called it has no effect, and a caller that needs to choose its scratch root at runtime must pass
+`root` explicitly. And scratch cleanup needs both `ignore_errors=True` *and* a `suppress(OSError)`
+around `rmtree`: the first covers failures encountered while walking the tree, the second covers
+`rmtree` itself refusing — without which a cleanup failure inside the `finally` replaces the
+exception the run was already raising. Scratch lifecycle with cleanup on failure.
 Stage, publish, delete, list. Ownership check against an existing receipt. Lease acquire, expiry and
 release. A failure-injection harness reaching every error branch without real storage.
 

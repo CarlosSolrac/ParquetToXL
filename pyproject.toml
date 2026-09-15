@@ -26,6 +26,7 @@ dev = [
     "pqx-plan",
     "pqx-report",
     "pqx-sidecar",
+    "pqx-staging",
     "pqx-testing",               # fixtures and the shared pytest plugin
     "pqx-verify",
 ]
@@ -41,6 +42,7 @@ pqx-frame = { workspace = true }
 pqx-plan = { workspace = true }
 pqx-report = { workspace = true }
 pqx-sidecar = { workspace = true }
+pqx-staging = { workspace = true }
 pqx-testing = { workspace = true }
 pqx-verify = { workspace = true }
 
@@ -160,6 +162,7 @@ source = [
     "packages/pqx-plan/src/pqx_plan",
     "packages/pqx-report/src/pqx_report",
     "packages/pqx-sidecar/src/pqx_sidecar",
+    "packages/pqx-staging/src/pqx_staging",
     "packages/pqx-verify/src/pqx_verify",
 ]
 
