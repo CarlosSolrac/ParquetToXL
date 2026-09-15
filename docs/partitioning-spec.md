@@ -260,6 +260,20 @@ row ordinal as the final tie-breaker. For the same sources, resolved configurati
 version, assignments and names must repeat; byte-identical ZIP files are not promised. Persist
 the resolved configuration and the planner version.
 
+> **Gate 0d note (2026-09-15, measured; not a rewrite of this section).** The global sort below
+> is an eager `pl.read_parquet` followed by an eager `DataFrame.sort`, and on the 16 GB target
+> its peak memory is linear in *cells*: about **0.023 GiB per million cells** for a mixed
+> text/int/float/date/bool/datetime source, about 0.04 for a text-heavy narrow one, at every
+> width from 3 to 100 columns. The sort itself costs ~2.1x the read, because input and output are
+> held at once. ~400M cells (4M rows x 100 columns, or 32M rows x 12) is the largest shape that
+> completed, at ~9 GiB; 800M cells was OOM-killed at 14 GB. The Polars streaming sort peaks at
+> 70-80% of the eager one, so it is not an escape. **`balanced` therefore ships in v1 gated
+> behind a per-source cell ceiling**, refused at planning with a clear message; the decision
+> record proposes 150M cells (~3.5 GiB peak, leaving room for the JVM and an open workbook)
+> and a configurable override. Harness and numbers: `gates/gate_0d_sort_memory.py`,
+> `docs/decisions/2026-09-15-phase-0.md`. The calendar algorithms are unaffected: they sort
+> within a bucket, never the whole source.
+
 Balanced exports sort the whole dataset before contiguous slicing. Calendar exports order buckets
 by `period_order`, then apply the requested sort within each final bucket before any row-based
 overflow split. A calendar export sorted by customer is therefore sorted by customer inside each
@@ -467,8 +481,11 @@ would overwrite the file. A multi-sheet interface is needed. `rustpy-xlsxwriter`
 provides one — `write_worksheets(...)`, and a `FastExcel(target).sheet(name, data).save()` builder
 — on the default round-trip-safe writer. Two traps: `FastExcel` defaults `autofit=True`, the
 opposite of what `RustpyExcelWriter.write` deliberately passes, and `dedupe_strings` is per-sheet.
-Whether `.sheet()` streams a generator or buffers every sheet until `.save()` is unmeasured, and
-decides the memory story. Writer selection stays in `ExcelWriteConfig`; the planner handles layout
+Whether `.sheet()` streams a generator or buffers every sheet until `.save()` was unmeasured
+when this was written; gate 0a measured it on 2026-09-15 and it **streams** -- peak RSS is flat
+in both sheet count and row count, with ~23 KiB of fixed cost per sheet. `dedupe_strings` is
+confirmed per-sheet and costs ~1.2 KiB per row. `autofit=True` turned out to cost nothing
+measurable in memory or time, so keeping it off is a determinism choice, not a memory one. Writer selection stays in `ExcelWriteConfig`; the planner handles layout
 rather than duplicating writer options.
 
 ### Acceptance cases

@@ -115,15 +115,19 @@ class Case:
 
 @dataclass(frozen=True)
 class Measurement:
-    """What one child process reported back."""
+    """What one child process reported back, or why it reported nothing."""
 
     label: str
     sheets: int
     rows: int
     total_rows: int
-    peak_mib: float
-    seconds: float
-    output_mib: float
+    peak_mib: float = 0.0
+    seconds: float = 0.0
+    output_mib: float = 0.0
+    failure: str | None = None
+    """The child's exit status and stderr when it did not return a result. A writer that refuses
+    a shape, or is killed writing it, is a result of its own and is printed as one rather than
+    raised -- raising would discard every row already measured."""
 
 
 def generate_rows(count: int, sheet: int) -> Iterator[dict[str, Any]]:
@@ -225,11 +229,7 @@ def measure(case: Case) -> Measurement:
         case: The case to run.
 
     Returns:
-        The measurement.
-
-    Raises:
-        RuntimeError: The child failed. Its stderr is included, because a writer that refuses
-            a shape is itself a result and must not be silently recorded as zero.
+        The measurement, or one carrying ``failure`` when the child did not return a result.
     """
     completed: subprocess.CompletedProcess[str] = subprocess.run(  # noqa: S603
         [sys.executable, "-m", "gates.gate_0a_sheet_memory", "--case", case.as_json()],
@@ -238,8 +238,7 @@ def measure(case: Case) -> Measurement:
         check=False,
     )
     if completed.returncode != 0:
-        message: str = f"case {case.label!r} failed with status {completed.returncode}: {completed.stderr.strip()}"
-        raise RuntimeError(message)
+        return Measurement(label=case.label, sheets=case.sheets, rows=case.rows, total_rows=case.sheets * case.rows, failure=f"status {completed.returncode}: {completed.stderr.strip()[-200:]}")
     reported: dict[str, Any] = json.loads(completed.stdout)
     return Measurement(
         label=case.label,
@@ -303,12 +302,22 @@ def main() -> int:
     parsed: argparse.Namespace = parser.parse_args()
     if parsed.case is not None:
         return _child(str(parsed.case))
-    results: list[Measurement] = [measure(case) for case in cases()]
-    baseline: float = results[0].peak_mib
+    # Printed one row at a time rather than collected first, so a child that dies on the last
+    # case leaves the seventeen rows before it on the screen rather than nowhere.
+    baseline: Measurement = measure(cases()[0])
+    if baseline.failure is not None:
+        message: str = f"the baseline case failed, so nothing else can be interpreted: {baseline.failure}"
+        raise RuntimeError(message)
     print(f"{'case':>20}  {'sheets':>6}  {'rows/sheet':>10}  {'total rows':>10}  {'peak MiB':>8}  {'over baseline':>13}  {'seconds':>7}  {'xlsx MiB':>8}")
-    result: Measurement
-    for result in results:
-        print(f"{result.label:>20}  {result.sheets:>6}  {result.rows:>10}  {result.total_rows:>10}  {result.peak_mib:>8.1f}  {result.peak_mib - baseline:>13.1f}  {result.seconds:>7.1f}  {result.output_mib:>8.1f}")
+    case: Case
+    for case in cases():
+        result: Measurement = baseline if case.label == baseline.label else measure(case)
+        if result.failure is not None:
+            print(f"{result.label:>20}  {result.sheets:>6}  {result.rows:>10}  {result.total_rows:>10}  FAILED: {result.failure}")
+            continue
+        print(
+            f"{result.label:>20}  {result.sheets:>6}  {result.rows:>10}  {result.total_rows:>10}  {result.peak_mib:>8.1f}  {result.peak_mib - baseline.peak_mib:>13.1f}  {result.seconds:>7.1f}  {result.output_mib:>8.1f}"
+        )
     return 0
 
 

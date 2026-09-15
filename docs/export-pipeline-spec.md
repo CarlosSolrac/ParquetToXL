@@ -1,6 +1,7 @@
 # ParquetToXL — Export pipeline specification
 
-**Status:** design, unbuilt.
+**Status:** design. Gates 0a-0d ran on 2026-09-15 (`docs/decisions/2026-09-15-phase-0.md`);
+the manifest and receipt models of gate 0c are built, in `pqx-plan`. Everything else is unbuilt.
 
 This document covers the decomposition into installable libraries, how a run decides what work
 is out of date, how files move between remote storage and local scratch, how an export is
@@ -195,10 +196,14 @@ same instant can both acquire. It closes the realistic case — someone launchin
 not the theoretical one.
 
 **Reconcile by listing, not by diff.** Because the directory belongs to exactly one profile, the
-delete set is `listing - (manifest.workbooks + {manifest, receipt, lock} + reports/)`. This
+delete set is `listing - (manifest.workbooks + manifest.sidecars + {manifest, receipt, lock} + reports/)`.
+This
 recovers from a crashed run, a missing manifest, and a template that changed two runs ago — none
 of which a previous-manifest diff would clean up. **The keep-set must include the bookkeeping**, or
-the run deletes its own records on the way out.
+the run deletes its own records on the way out. `manifest.sidecars` is in it for the same reason:
+with `sidecar_location: beside_output` the sidecars share the directory, and a keep-set without
+them would have the run delete the sidecars it published a few steps earlier. (Gate 0c found this
+omission; `RunManifest` now refuses a source whose `sidecar_path` is not in `sidecars`.)
 
 Deleting from a shared folder is hard to undo, so four guards:
 
@@ -250,11 +255,18 @@ the Parquet file is never opened. Sorting is free, because the hash is order-ind
 Two conditions, enforced rather than assumed:
 
 1. `convert(row_subset) == row_subset(convert(whole))`. Every ToExcel rule is element-wise, so
-   this should hold, but it is proved by a property test over random splits of the 1000-row,
-   23-dtype fixture before anything depends on it. If it fails, verification must read every
-   fragment back and reassemble instead — a different and much more expensive design.
+   this should hold, and **gate 0b proved it** (2026-09-15,
+   `packages/pqx-frame/tests/test_row_partition_additivity.py`): 200 contiguous and 60 scattered
+   partitions of the 1000-row, 23-dtype fixture, 1633 fragments, every fragment equal to the
+   corresponding slice of the converted whole, every fragment carrying the whole frame's converted
+   schema, and every sum exact on both `digest_hex` and `row_digest_hex`. Scattered splits matter
+   because a calendar fragment is the rows matching a predicate, not a slice. An empty fragment
+   contributes the additive identity. The test also pins the one thing that does **not** commute:
+   `ConvertedDataframe.schema_or_data_changed` is an `any` over rows, so it must never be recorded
+   per fragment and read as the source's; the disjunction over fragments is what carries over.
 2. Temporary partition keys and source ordinals never reach exported data. An extra column breaks
-   both the additivity and the sidecar comparison.
+   both the additivity and the sidecar comparison. Gate 0b pins this as a failure too, alongside
+   overlapping fragments, a missing fragment, and a fragment whose columns are reordered.
 
 ## The run manifest and receipt
 
@@ -267,44 +279,63 @@ and sheet.
 
 Paths in the manifest are **destination-relative**, never absolute. The same manifest then serves
 verification (join the scratch root) and reconciliation (join the destination), and stays valid if
-the destination is moved or remapped.
+the destination is moved or remapped. The models enforce it: `Path("/a") / "/b"` is `/b`, so an
+absolute path would not fail the join, it would read and delete somewhere else. A `..` segment is
+refused for the same reason.
+
+**Built, in `packages/pqx-plan/src/pqx_plan/manifest.py` (gate 0c).** What follows is that code,
+abbreviated; the file is the authority.
 
 ```python
+type ManifestVersion = Literal[1]                # closed vocabulary: Literal, not Enum
+MANIFEST_VERSION: Final[ManifestVersion] = 1     # annotated by the alias so the two cannot drift
+type ResolvedConfiguration = dict[str, JsonValue]  # stand-in until Phase C builds ExportConfig
+
 class Fragment(BaseModel, frozen=True):
-    workbook: str                                # destination-relative
+    workbook: DestinationRelativePath
     sheet_name: str                              # final, after prefix and collision resolution
     source_alias: str
     period_label: str | None                     # None for balanced output
-    part_index: int | None                       # set only for an overflow fragment
-    row_count: int
+    part_index: int | None = None                # set only for an overflow fragment
+    row_count: NonNegativeInt
     column_names: list[str]                      # as written, pre-normalization
     expected: BinaryAggregateHashedDataframe
 
 class SourceFragments(BaseModel, frozen=True):
     source_alias: str
-    source_path: str
-    sidecar_path: str
+    source_path: str                             # the ORIGINAL remote path, never scratch
+    sidecar_path: DestinationRelativePath
     conversion: ConversionIdentity
-    total_and_disjoint: bool                     # always True in v1; the seam for future filters
+    total_and_disjoint: bool = True              # the seam for future filters
     expected_whole: BinaryAggregateHashedDataframe
-    expected_row_count: int
-    fragments: list[Fragment]
+    expected_row_count: NonNegativeInt
+    fragments: list[Fragment]                    # every one carries this source_alias
 
 class RunManifest(BaseModel, frozen=True):
-    manifest_version: int
+    manifest_version: ManifestVersion = MANIFEST_VERSION
     run_id: str
     config_path: str
     profile: str
-    planner_version: str
-    resolved_config: ExportConfig
+    planner_version: str                         # open until Phase C pins it
+    resolved_config: ResolvedConfiguration
     output_directory: str
-    started_utc: datetime
-    sources: list[SourceFragments]
-    workbooks: list[str]                         # destination-relative
-    sidecars: list[str]                          # wherever sidecar_location put them
+    started_utc: UtcDatetime                     # aware, normalised to UTC; naive is refused
+    sources: list[SourceFragments]               # aliases unique
+    workbooks: list[DestinationRelativePath]     # unique without case; every fragment's workbook is here
+    sidecars: list[DestinationRelativePath]      # every source's sidecar_path is here
 ```
 
 Published per profile as `<profile>.manifest.json`.
+
+Name uniqueness in the manifest is checked **case-insensitively**, as `partitioning-spec.md`
+requires for both sheet and workbook names: `Sales.xlsx` and `sales.xlsx` are one file on SMB,
+and the Linux host that writes the manifest would never object.
+
+What the manifest deliberately does **not** check: that `expected_row_count` equals the sum of
+the fragments' `row_count`, or that the fragment digests sum to `expected_whole`. Those are
+verification's checks 4 and 5 below, and each exists to name a specific failure; a manifest that
+could not be loaded when it disagreed would turn that report into a validation error naming the
+wrong thing.
 
 ### The receipt
 
@@ -312,21 +343,35 @@ A **separate, small** file beside it, `<profile>.receipt.json`. Separate on purp
 reads it on every run, and the manifest is large — it embeds `resolved_config` and a digest per
 fragment. Pulling megabytes over Azure to read four timestamps would be the wrong trade.
 
+**Built, in `packages/pqx-plan/src/pqx_plan/receipt.py` (gate 0c).** Versioned independently of
+the manifest, because selection reads the receipt alone: a manifest layout change must not make
+every receipt unreadable and every export stale.
+
 ```python
+type ReceiptVersion = Literal[1]
+RECEIPT_VERSION: Final[ReceiptVersion] = 1
+
 class SourceStamp(BaseModel, frozen=True):
-    source_modified_utc: datetime                # T1 when this export was built
-    sidecar_created_utc: datetime                # T2 when this export was built
+    source_modified_utc: UtcDatetime             # T1 when this export was built
+    sidecar_created_utc: UtcDatetime             # T2 when this export was built
 
 class RunReceipt(BaseModel, frozen=True):
-    receipt_version: int
+    receipt_version: ReceiptVersion = RECEIPT_VERSION
     config_id: str                               # also the ownership marker
     profile: str                                 # also the ownership marker
-    excel_created_utc: datetime                  # T4
-    config_modified_utc: datetime                # T3 at build time
+    excel_created_utc: UtcDatetime               # T4
+    config_modified_utc: UtcDatetime             # T3 at build time
     resolved_config_hash: str
     planner_version: str
     sources: dict[str, SourceStamp]              # keyed by source alias
 ```
+
+Every timestamp is `UtcDatetime`: aware, normalised to UTC on validation, naive refused. A naive
+one raises `TypeError` from inside whichever comparison reaches it first, and two naive ones from
+different stores compare successfully and wrongly; both surface far from the model that admitted
+them, so the model does not admit them. Normalising also makes the serialised text independent of
+the writer's zone. Gate 0c proves the round trip through real bytes on disk, with real hasher
+output nested in the fragments.
 
 It does triple duty: the T4 anchor, the ownership marker, and the "this export completed" marker
 that makes a partial run detectable.
@@ -387,10 +432,10 @@ raises, because reporting an absent path as "invalid" makes it hard to find.
 ## Library decomposition
 
 Eleven distributions in a **uv workspace monorepo**: one repository, one `uv.lock`, each package
-separately installable under `packages/*`. **Six exist today** -- `pqx-common`, `pqx-frame`,
+separately installable under `packages/*`. **Seven exist today** -- `pqx-common`, `pqx-frame`,
 `pqx-excel`, `pqx-sidecar`, `pqx-verify` and `pqx-testing`, the ones that received existing code
-in Phase A. The other five are created by the phases that give them content, rather than
-scaffolded empty now. Libraries are **layers**; the tools are **CLI
+in Phase A, and `pqx-plan`, created by gate 0c with the manifest and receipt models only. The
+other four are created by the phases that give them content, rather than scaffolded empty now. Libraries are **layers**; the tools are **CLI
 subcommands** over them, each runnable as its own process.
 
 ```text
@@ -398,6 +443,8 @@ pqx-common --+-> pqx-frame --+-> pqx-sidecar --+
              |               |                 +-> pqx-verify --+
              +-> pqx-excel --+-----------------+                |
              +-> pqx-calendar -> pqx-plan --+------------------- +-> pqx-pipeline
+             |                    ^          |                   |
+             +-> pqx-frame -------+  (the manifest embeds hash records and ConversionIdentity)
              +-> pqx-staging --------------+                     |
              +--------------------------------> pqx-report ------+
 ```
@@ -411,7 +458,7 @@ pqx-common --+-> pqx-frame --+-> pqx-sidecar --+
 | `pqx-sidecar` | `document.py`, `store.py`, `sidecar_stale` | Needs only `pqx-frame`. Its remote `UPath` **read** is load-bearing: selection reads sidecars in place, before anything is staged. |
 | `pqx-verify` | fragment and reassembly validation, moved out of `sidecar/validation.py` | The integration seam — the one module pulling all four subpackages together and hard-coding `DataframeConversionToExcel` and `DataFrameHasherBinaryAggregateHash`. It does not belong inside `sidecar`. |
 | `pqx-calendar` | date-column interpretation, period keys, period labels, ranges, month formats | Pure, and carries the largest test matrix in the project: `YY` century boundaries, leading zeros, cross-year ranges, month-precision refusals, timezone year boundaries. Isolating it keeps that matrix out of the planner's tests. |
-| `pqx-plan` | configuration and manifest models, capacity math, the algorithms, allocation, naming, `reconcile`, `excel_stale` | Pure. No file I/O, no Polars frames — it plans over a small `SourceShape` value object. |
+| `pqx-plan` | configuration and manifest models, capacity math, the algorithms, allocation, naming, `reconcile`, `excel_stale` | Pure. No file I/O, no Polars frames — it plans over a small `SourceShape` value object. Depends on `pqx-frame`, an edge the first draft of the diagram omitted: `Fragment.expected` is a `BinaryAggregateHashedDataframe` and `SourceFragments.conversion` a `ConversionIdentity`, and neither can be typed without it. |
 | `pqx-report` | `RunReport` model, JSON/Markdown/HTML renderers | Keeps presentation out of the pipeline's dependency set. Pure: result to text. Depends on `pqx-plan` and `pqx-verify` and defines `RunReport`; `pqx-pipeline` constructs it, which avoids the cycle a pipeline-owned `RunReport` would create. |
 | `pqx-pipeline` | Parquet read, orchestration, CLI | The only place that chains stages and touches everything. |
 | `pqx-testing` | fixture generator, the 23-dtype frame, shared pytest fixtures | **Dev-only**, in every package's dev group. `tests/conftest.py` currently does `from tests.fixtures.generate import ensure_fixtures`, a root-level package that `uv run --package pqx-frame pytest` cannot resolve. A workspace member keeps that import identical from the root or from one package. |
@@ -435,14 +482,17 @@ real storage. Budget for it rather than discovering it at the merge gate.
 
 Each is a measurement or a proof, not a guess. Each can invalidate a decision above.
 
-| # | Gate | What it decides |
-| --- | --- | --- |
-| 0a | Does `FastExcel.sheet()` stream or buffer? Write N sheets from a generator, measure peak RSS against sheet count. | Whether multi-sheet output keeps the constant-memory mode `RustpyExcelWriter` was built around. Drives `max_cells_per_workbook` guidance and the writer interface. |
-| 0b | Does ToExcel conversion commute with row subsetting? Property test over random splits of the fixture. | If it fails, additive verification is unsound and verification must read back and reassemble. |
-| 0c | Specify the manifest and receipt; JSON round trip through real bytes. | The contract between write and verify. Nothing writes a file before it exists. |
-| 0d | Size the global-sort memory story at representative widths on a 16 GB machine. | `balanced` sorts the whole dataset before slicing, and lazy frames are out of scope. Decides whether `balanced` ships in v1 or is gated behind a row ceiling. |
-| 0e | Is the scratch root tmpfs? Check what `tempfile.gettempdir()` resolves to on the Spark image. | Whether the free-space precheck is also a memory precheck, and what the default scratch root should be. |
-| 0f | Azure round trip: `stat().st_mtime` on a blob, a small JSON read, an `.xlsx` copy up, a delete by listing — with production's credential path. | That `adlfs` surfaces a usable `st_mtime` at all, since **the whole freshness rule depends on it**; `DefaultAzureCredential` under a managed identity; throughput; and that there is no atomic rename, since `adlfs` does copy plus delete. |
+Results and numbers are in `docs/decisions/2026-09-15-phase-0.md`; the harnesses for 0a and 0d
+are committed under `gates/` and re-runnable.
+
+| # | Gate | What it decides | Result (2026-09-15) |
+| --- | --- | --- | --- |
+| 0a | Does `FastExcel.sheet()` stream or buffer? Write N sheets from a generator, measure peak RSS against sheet count. | Whether multi-sheet output keeps the constant-memory mode `RustpyExcelWriter` was built around. Drives `max_cells_per_workbook` guidance and the writer interface. | **Streams.** Peak RSS flat at ~1 MiB over baseline from 1 to 32 sheets and from 400k to 6.4M rows; ~23 KiB fixed cost per sheet. `dedupe_strings` costs ~1.2 KiB per row and is exactly per-sheet. `autofit=True` costs nothing measurable, so the writer's memory reason for `autofit=False` is gone; determinism is the reason that remains. |
+| 0b | Does ToExcel conversion commute with row subsetting? Property test over random splits of the fixture. | If it fails, additive verification is unsound and verification must read back and reassemble. | **Holds**, for contiguous and scattered subsets, with the additive identity exact on both digests. Only `schema_or_data_changed` fails to commute, and it is a disjunction. |
+| 0c | Specify the manifest and receipt; JSON round trip through real bytes. | The contract between write and verify. Nothing writes a file before it exists. | **Built** in `pqx-plan`; round trip through bytes on disk proved. Found and fixed the keep-set's missing `sidecars`. |
+| 0d | Size the global-sort memory story at representative widths on a 16 GB machine. | `balanced` sorts the whole dataset before slicing, and lazy frames are out of scope. Decides whether `balanced` ships in v1 or is gated behind a row ceiling. | **Ships behind a cell ceiling.** Read plus eager sort peaks at ~0.023 GiB per million cells for mixed data (~0.04 for text-heavy narrow data), linear, at every width from 3 to 100; ~400M cells is the last shape that survives on 16 GB and 800M is OOM-killed. The Polars streaming sort saves at most a quarter, not an order of magnitude. |
+| 0e | Is the scratch root tmpfs? Check what `tempfile.gettempdir()` resolves to on the Spark image. | Whether the free-space precheck is also a memory precheck, and what the default scratch root should be. | Unrun: needs the Spark image. |
+| 0f | Azure round trip: `stat().st_mtime` on a blob, a small JSON read, an `.xlsx` copy up, a delete by listing — with production's credential path. | That `adlfs` surfaces a usable `st_mtime` at all, since **the whole freshness rule depends on it**; `DefaultAzureCredential` under a managed identity; throughput; and that there is no atomic rename, since `adlfs` does copy plus delete. | Unrun: needs credentials. |
 
 ## Implementation order
 
@@ -468,7 +518,10 @@ finished, fully covered codebase. Nothing new is built until it is green, and th
 boundaries, leading zeros, month-precision refusals, invalid dates. Then decoding, period keys and
 ordering with `Undated` last, then labels reproducing the golden tables exactly.
 
-**Phase C — `pqx-plan`.** Gate 0d may cut `balanced`. Frozen tests for the configuration including
+**Phase C — `pqx-plan`.** Gate 0d did not cut `balanced`; it gates it behind a per-source cell
+ceiling (see `partitioning-spec.md`, the marked note under sorting). The manifest and receipt
+models already exist from gate 0c; `resolved_config` is a JSON object there until `ExportConfig`
+replaces it. Frozen tests for the configuration including
 every refusal, the `{source}`-token rule, and two profiles resolving to one directory. Then the
 models, `resolved_config_hash` (stable across key reordering and formatting), the receipt, capacity
 math with per-source `C_s`, the algorithms, allocation, naming and collisions.
@@ -494,8 +547,13 @@ every rule failing on Linux where the OS would allow it. Scratch lifecycle with 
 Stage, publish, delete, list. Ownership check against an existing receipt. Lease acquire, expiry and
 release. A failure-injection harness reaching every error branch without real storage.
 
-**Phase D — `pqx-excel` multi-sheet writer.** Shape determined by gate 0a. `autofit=False`. Extend
-the `rustpy_xlsxwriter` stub. Own sheet-name validator over `validate_sheet_name`.
+**Phase D — `pqx-excel` multi-sheet writer.** Gate 0a settled the shape: `FastExcel` streams
+each sheet's generator at `save()`, so the writer takes an iterable of `(sheet_name, rows)` pairs
+and keeps constant memory whatever the sheet count. `autofit=False` and `dedupe_strings=False`
+stay, the second because it costs ~1.2 KiB per row and the first because a verified export should
+have deterministic column widths — not, as the current writer's docstring says, for memory, which
+gate 0a measured at zero. The `rustpy_xlsxwriter` stub already declares `FastExcel` for the three
+calls the writer makes; extend it for `validate_sheet_name`. Own sheet-name validator over that.
 
 **Phase E — `pqx-pipeline` ingest and write.** `sidecar_stale` and `excel_stale`; `read_parquet` and
 `build_sidecar`, treating a `None` return as a failure rather than a crash, and asserting
@@ -567,4 +625,6 @@ Negative checks, each exercising a guard that is expensive to get wrong:
   and nothing prunes it. Deliberate — the history is the point — but it grows without bound and is
   the operator's to manage.
 - Nested dtypes, Excel formatting, `.xls`, lazy and streaming frames — inherited from
-  `library-spec.md`, unchanged, subject to gate 0d.
+  `library-spec.md`, unchanged. Gate 0d measured the streaming sort as well and it does not
+  change the answer: it peaks at 70-80% of the eager sort on large inputs, so it would buy a
+  quarter more headroom, not a different design.
