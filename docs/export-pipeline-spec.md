@@ -544,8 +544,10 @@ a sheet's `source` naming a declared alias, `partition_column` being registered 
 output directory. Those live only in the semantic validator, so the corpus is what proves they
 exist.
 
-**Phase N — `pqx-common` names and `pqx-staging`.** Parallel with B and C. Portable-name validator,
-every rule failing on Linux where the OS would allow it. Scratch lifecycle with cleanup on failure.
+**Phase N — `pqx-common` names and `pqx-staging`.** Parallel with B and C. **Names built
+(2026-09-15)** in `pqx_common.names`: worksheet and workbook rules, the identifier pattern, the
+case-insensitive registry, `sheet_collision: suffix`, and the path-length cap, each rule tested on
+Linux where the OS would have allowed it. `pqx-staging` is still to build. Scratch lifecycle with cleanup on failure.
 Stage, publish, delete, list. Ownership check against an existing receipt. Lease acquire, expiry and
 release. A failure-injection harness reaching every error branch without real storage.
 
