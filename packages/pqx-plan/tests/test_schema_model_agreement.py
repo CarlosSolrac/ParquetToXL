@@ -163,3 +163,32 @@ def test_every_exported_record_carries_its_verdict() -> None:
     for record in records:
         assert set(record) == {"id", "reason", "structurally_valid", "semantic_only", "expected_findings", "dialect_divergence", "document"}
     assert json.dumps(records)
+
+
+def test_a_configuration_round_trips_through_its_own_serialisation() -> None:
+    # One field has an alias it cannot be spelled without -- `$schema` is not a Python identifier
+    # -- and without `serialize_by_alias` a dump writes the field name, which validation then
+    # refuses under extra="forbid". Found by embedding a configuration in a run manifest, which
+    # dumps the whole thing in one call and cannot be asked to remember by_alias=True.
+    config: ExportConfig = ExportConfig.model_validate({**BASE, "$schema": "./export-config.schema.json"})
+    assert ExportConfig.model_validate_json(config.model_dump_json()) == config
+
+
+def test_a_configuration_with_no_schema_pointer_round_trips_too() -> None:
+    config: ExportConfig = ExportConfig.model_validate(BASE)
+    assert ExportConfig.model_validate_json(config.model_dump_json()) == config
+
+
+def test_a_serialised_configuration_is_one_the_schema_accepts(validator: Draft202012Validator) -> None:
+    # The property that matters for a manifest: what a web editor reads back out of
+    # `resolved_config` should be a configuration document it would accept.
+    config: ExportConfig = ExportConfig.model_validate(BASE)
+    assert _schema_accepts(validator, json.loads(config.model_dump_json()))
+
+
+def test_an_absent_schema_pointer_is_omitted_rather_than_written_as_null() -> None:
+    # The schema types the pointer as a string, so a null there would make a configuration fail
+    # the very schema it names.
+    dumped: dict[str, Any] = json.loads(ExportConfig.model_validate(BASE).model_dump_json())
+    assert "$schema" not in dumped
+    assert dumped["scratch_root"] is None, "an explicit null that must stay: `null` is written down rather than left out"

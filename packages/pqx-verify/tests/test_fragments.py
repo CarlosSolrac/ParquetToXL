@@ -17,6 +17,8 @@ from pqx_excel.workbook import write_workbook
 from pqx_frame.conversion.to_excel import DataframeConversionToExcel
 from pqx_frame.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
 from pqx_frame.metadata.columns import ConversionIdentity
+from pqx_plan.config import ExportConfig
+from pqx_plan.corpus import BASE
 from pqx_plan.manifest import Fragment, RunManifest, SourceFragments
 from pqx_verify.fragments import ManifestVerdict, SourceVerdict, verify_fragment, verify_manifest, verify_source
 from pqx_verify.validation import Verdict
@@ -328,7 +330,7 @@ def _manifest(sources: list[SourceFragments], workbooks: list[str]) -> RunManife
         run_id="2026-09-15T12-00-00Z-annual_review",
         config_path="/nowhere/export-config.json",
         profile="annual_review",
-        resolved_config={},
+        resolved_config=ExportConfig.model_validate(BASE),
         planner_version="1",
         output_directory="/nowhere",
         started_utc=dt.datetime(2026, 9, 15, 12, 0, tzinfo=dt.UTC),

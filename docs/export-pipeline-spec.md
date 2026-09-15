@@ -544,7 +544,18 @@ rules JSON Schema cannot state, and `pqx_plan.corpus` the 94-case shared corpus 
 division, the single-sheet shortcut and the minimum balanced workbook count — over a four-field
 `SourceShape` that keeps the package free of Polars. `pqx_plan.fingerprint` holds
 `resolved_config_hash`, stable across key reordering, reformatting and an equivalent timestamp in
-another zone. `pqx_plan.partition` holds both calendar algorithms, the year-split escalation, the
+another zone. `RunManifest.resolved_config` is now `ExportConfig` rather than the
+`dict[str, JsonValue]` stand-in gate 0c left.
+
+**That swap found two serialisation bugs of the same class,** both of which would have produced a
+manifest whose embedded configuration the schema refuses — which matters because that is exactly
+what a web editor reads back. `$schema` serialised under its Python field name, so the model did
+not round-trip through its own `model_dump_json()`; and `two_digit_year_window_start` serialised as
+`null` beside a four-digit format, a key the schema **forbids** outright. Both are settled by one
+statement: `ConfigurationModel` in `pqx-calendar` — the lowest layer that mirrors part of this
+schema, and one `pqx-plan` already depends on — sets `serialize_by_alias` and carries an
+`omit_when_absent` list for keys the schema forbids when absent. `scratch_root` is deliberately not
+in that list: its null *is* the value. `pqx_plan.partition` holds both calendar algorithms, the year-split escalation, the
 overflow rule and the undated bucket. `pqx_plan.allocate` orders a profile's sheets across its
 sources and packs them into workbooks; `pqx_plan.naming` renders and validates every name.
 Still to build: replacing `manifest.ResolvedConfiguration` — still a `dict[str, JsonValue]`

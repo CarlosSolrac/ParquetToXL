@@ -12,10 +12,11 @@ dependency arrow runs ``pqx-calendar -> pqx-plan``: decoding cannot import the p
 
 from __future__ import annotations
 
-from typing import Annotated, Final, Literal, Self
+from typing import Annotated, ClassVar, Final, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
+from pqx_calendar.configuration import ConfigurationModel
 from pqx_calendar.points import MAX_YEAR, MIN_YEAR, DatePrecision
 
 type IntDateFormat = Literal["YYMM", "YYYYMM", "YYMMDD", "YYYYMMDD"]
@@ -34,20 +35,12 @@ MAX_WINDOW_START: Final[int] = MAX_YEAR - 99
 """The last window start whose hundred-year span stays inside the supported years."""
 
 
-class _CalendarModel(BaseModel, extra="forbid", frozen=True):
-    """Shared configuration for every model in this module.
-
-    ``extra="forbid"`` mirrors the schema's ``unevaluatedProperties: false``: a misspelled
-    key is a configuration bug that would otherwise take effect as a default. ``frozen``
-    because a resolved configuration is hashed, and a mutable field would let the hash and
-    the value disagree.
-
-    Set as class keywords rather than a ``model_config`` assignment, matching ``pqx_plan``'s
-    models and keeping the house rule that every name is annotated before its first binding.
-    """
+type _CalendarModel = ConfigurationModel
+"""These models mirror the schema's ``dateColumn``, so they share the project's one configuration
+base. See :class:`pqx_calendar.configuration.ConfigurationModel` for what it settles and why."""
 
 
-class SourceWallClockTimezone(_CalendarModel, extra="forbid", frozen=True):
+class SourceWallClockTimezone(ConfigurationModel, extra="forbid", frozen=True):
     """Take the source's local calendar date, whatever zone it was written in.
 
     Consistent with the existing ToExcel policy, and the only mode v1 allows for naive
@@ -58,7 +51,7 @@ class SourceWallClockTimezone(_CalendarModel, extra="forbid", frozen=True):
     mode: Literal["source_wall_clock"]
 
 
-class ZoneTimezone(_CalendarModel, extra="forbid", frozen=True):
+class ZoneTimezone(ConfigurationModel, extra="forbid", frozen=True):
     """Convert timezone-aware input to a named IANA zone before deriving the date.
 
     The zone is validated when the column is first used rather than at construction: a
@@ -79,7 +72,7 @@ IANA namespace and gives a reader no way to tell a typo from a mode.
 """
 
 
-class DateColumnBase(_CalendarModel, extra="forbid", frozen=True):
+class DateColumnBase(ConfigurationModel, extra="forbid", frozen=True):
     """The shared base of the three registered column kinds.
 
     It deliberately declares no ``type`` field. A base declaring ``type: str`` would make each
@@ -109,6 +102,8 @@ class IntDateColumn(DateColumnBase, extra="forbid", frozen=True):
     ``Field(discriminator="type")``, which requires unique discriminator values, so the
     window field stays optional on the model and the rule becomes a validator.
     """
+
+    omit_when_absent: ClassVar[tuple[str, ...]] = ("two_digit_year_window_start",)
 
     type: Literal["int"]
     format: IntDateFormat

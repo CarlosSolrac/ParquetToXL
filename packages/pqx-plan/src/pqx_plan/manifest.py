@@ -35,8 +35,9 @@ from typing import Final, Literal, Self
 from pqx_frame.hashing.binary_aggregate import BinaryAggregateHashedDataframe
 from pqx_frame.metadata.columns import ConversionIdentity
 from pqx_frame.timestamps import UtcDatetime
-from pydantic import BaseModel, JsonValue, NonNegativeInt, model_validator
+from pydantic import BaseModel, NonNegativeInt, model_validator
 
+from pqx_plan.config import ExportConfig
 from pqx_plan.paths import DestinationRelativePath
 
 type ManifestVersion = Literal[1]
@@ -58,14 +59,17 @@ reason the sidecar's own docstring gives -- this one describes the shape of a fi
 it into a digest version would bump stored digests every time the layout moved.
 """
 
-type ResolvedConfiguration = dict[str, JsonValue]
+type ResolvedConfiguration = ExportConfig
 """The resolved configuration, as it will be serialised into the manifest.
 
-**A stand-in.** ``export-pipeline-spec.md`` types this field ``ExportConfig``, which Phase C
-builds; ``docs/export-config.schema.json`` already describes its shape. Modelling it here would
-be writing Phase C inside a gate, and gate 0d can still change what a profile may declare. A
-JSON object round-trips through the file identically either way, so replacing this alias with
-``ExportConfig`` later changes what is validated and nothing about what is written.
+Was a bare ``dict[str, JsonValue]`` stand-in while gate 0c predated Phase C. Now the real model,
+which changes what is *validated* and nothing about what is written: a manifest carrying a
+configuration the models refuse would have been a manifest no run could have produced, and
+catching that at read time rather than at the first field that happens to matter is the whole
+reason the field is typed at all.
+
+The alias stays rather than being inlined, because ``export-pipeline-spec.md`` names this field by
+this name and a reader following the spec into the code should find it.
 """
 
 

@@ -18,14 +18,18 @@ member.
 
 from __future__ import annotations
 
-from typing import Annotated, Final, Literal, Self
+from typing import TYPE_CHECKING, Annotated, ClassVar, Final, Literal, Self
 
 from pqx_calendar.columns import DateColumn
+from pqx_calendar.configuration import ConfigurationModel
 from pqx_calendar.labels import MonthFormat
 from pqx_calendar.periods import BasePeriod, PeriodOrder
 from pqx_common.names import PortableNameError, validate_identifier
 from pqx_frame.timestamps import UtcDatetime
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
+
+if TYPE_CHECKING:
+    pass
 
 CONFIG_VERSION: Final[int] = 1
 """The only configuration version v1 reads. Independent of the sidecar, conversion and hash versions."""
@@ -71,21 +75,12 @@ would make every verification fail for reasons unrelated to the data.
 """
 
 
-class _ConfigModel(BaseModel, extra="forbid", frozen=True):
-    """Shared configuration for every model here.
-
-    ``extra="forbid"`` mirrors the schema's ``additionalProperties: false``, which the schema sets
-    on every object: an unknown field is rejected rather than ignored, because a misspelled key
-    that takes effect as a default is invisible. ``frozen`` because the resolved configuration is
-    hashed, and a mutable field would let the hash and the value disagree.
-
-    Repeated as class keywords on every subclass rather than inherited: Pydantic carries the
-    config down, but a type checker reads a non-frozen subclass of a frozen base as an error, and
-    the keywords are the only thing that tells it otherwise.
-    """
+type _ConfigModel = ConfigurationModel
+"""The project's one configuration base, which ``pqx-calendar`` also derives ``dateColumn`` from.
+See :class:`pqx_calendar.configuration.ConfigurationModel`."""
 
 
-class BesideSourceSidecar(_ConfigModel, extra="forbid", frozen=True):
+class BesideSourceSidecar(ConfigurationModel, extra="forbid", frozen=True):
     """Sidecars live next to the Parquet file they describe.
 
     Needs write access to the source location, which a read-only container will not give.
@@ -94,7 +89,7 @@ class BesideSourceSidecar(_ConfigModel, extra="forbid", frozen=True):
     kind: Literal["beside_source"]
 
 
-class DirectorySidecar(_ConfigModel, extra="forbid", frozen=True):
+class DirectorySidecar(ConfigurationModel, extra="forbid", frozen=True):
     """Sidecars live together under one directory."""
 
     kind: Literal["directory"]
@@ -105,7 +100,7 @@ type SidecarLocation = Annotated[BesideSourceSidecar | DirectorySidecar, Field(d
 """Where this configuration's sidecars are written."""
 
 
-class ExcelSettings(_ConfigModel, extra="forbid", frozen=True):
+class ExcelSettings(ConfigurationModel, extra="forbid", frozen=True):
     """Which writer produces the workbooks, and what to tell it."""
 
     writer: Literal["rustpy-xlsxwriter"]
@@ -114,7 +109,7 @@ class ExcelSettings(_ConfigModel, extra="forbid", frozen=True):
     a document the schema refuses."""
 
 
-class SourceSettings(_ConfigModel, extra="forbid", frozen=True):
+class SourceSettings(ConfigurationModel, extra="forbid", frozen=True):
     """One Parquet file and what is interpretable as a date in it.
 
     ``date_columns`` declares what *could* be partitioned on; a sheet's ``partition_column`` picks
@@ -144,7 +139,7 @@ class SourceSettings(_ConfigModel, extra="forbid", frozen=True):
         return self
 
 
-class SortKey(_ConfigModel, extra="forbid", frozen=True):
+class SortKey(ConfigurationModel, extra="forbid", frozen=True):
     """One level of a sheet's sort, with its direction and null placement stated rather than defaulted."""
 
     column: str = Field(min_length=1)
@@ -152,7 +147,7 @@ class SortKey(_ConfigModel, extra="forbid", frozen=True):
     nulls: Literal["first", "last"]
 
 
-class SheetSettings(_ConfigModel, extra="forbid", frozen=True):
+class SheetSettings(ConfigurationModel, extra="forbid", frozen=True):
     """One source's contribution to a profile: which file, which date column, and in what order.
 
     ``partition_column`` is ``null`` when, and only when, the profile's algorithm is ``balanced``.
@@ -166,7 +161,7 @@ class SheetSettings(_ConfigModel, extra="forbid", frozen=True):
     sort: tuple[SortKey, ...]
 
 
-class ProfileLimits(_ConfigModel, extra="forbid", frozen=True):
+class ProfileLimits(ConfigurationModel, extra="forbid", frozen=True):
     """The two planning ceilings, both enforced and neither an Excel memory guarantee.
 
     ``max_cells_per_workbook`` counts every exported position, nulls included, plus one header row
@@ -178,14 +173,14 @@ class ProfileLimits(_ConfigModel, extra="forbid", frozen=True):
     max_cells_per_workbook: int = Field(ge=1)
 
 
-class BalancedPartitioning(_ConfigModel, extra="forbid", frozen=True):
+class BalancedPartitioning(ConfigurationModel, extra="forbid", frozen=True):
     """Slice globally sorted rows evenly. Consults no date at all, which is why no grid is declared."""
 
     algorithm: Literal["balanced"]
     balance_across: Literal["worksheets", "workbooks"]
 
 
-class CalendarPartitioning(_ConfigModel, extra="forbid", frozen=True):
+class CalendarPartitioning(ConfigurationModel, extra="forbid", frozen=True):
     """One shared calendar grid every sheet in the profile is bucketed against.
 
     The partition column is per sheet, not here: each source has its own date column. What is here
@@ -230,7 +225,7 @@ type Partitioning = Annotated[BalancedPartitioning | CalendarPartitioning, Field
 """How a profile turns rows into sheets."""
 
 
-class NamingSettings(_ConfigModel, extra="forbid", frozen=True):
+class NamingSettings(ConfigurationModel, extra="forbid", frozen=True):
     """The templates every output name is rendered from, and the two choices that shape them.
 
     ``worksheet_prefix`` is literal text, not another template: a nonempty value is prepended to
@@ -248,7 +243,7 @@ class NamingSettings(_ConfigModel, extra="forbid", frozen=True):
     sheet_collision: Literal["suffix", "error"]
 
 
-class ProfileSettings(_ConfigModel, extra="forbid", frozen=True):
+class ProfileSettings(ConfigurationModel, extra="forbid", frozen=True):
     """One way of arranging the same sources: an annual review, a monthly view, balanced delivery.
 
     ``output_subdirectory`` is owned exclusively by this profile. Two profiles resolving to one
@@ -263,13 +258,15 @@ class ProfileSettings(_ConfigModel, extra="forbid", frozen=True):
     naming: NamingSettings
 
 
-class ExportConfig(_ConfigModel, extra="forbid", frozen=True):
+class ExportConfig(ConfigurationModel, extra="forbid", frozen=True):
     """A whole export configuration, as read from disk and before any semantic check.
 
     Structurally valid is not the same as coherent: a document passing this model may still name a
     source alias that does not exist, or partition on a column that source never registered. Run
     :func:`pqx_plan.semantics.validate_config` before planning anything from it.
     """
+
+    omit_when_absent: ClassVar[tuple[str, ...]] = ("$schema",)
 
     json_schema: str | None = Field(default=None, alias="$schema")
     """The optional schema pointer an editor writes at the top of the document.

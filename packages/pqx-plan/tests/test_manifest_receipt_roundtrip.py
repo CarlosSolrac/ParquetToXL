@@ -24,6 +24,8 @@ import polars as pl
 import pytest
 from pqx_frame.hashing.binary_aggregate import BinaryAggregateHashedDataframe, DataFrameHasherBinaryAggregateHash
 from pqx_frame.metadata.columns import ConversionIdentity
+from pqx_plan.config import ExportConfig
+from pqx_plan.corpus import BASE
 from pqx_plan.manifest import MANIFEST_VERSION, Fragment, RunManifest, SourceFragments
 from pqx_plan.receipt import RECEIPT_VERSION, RunReceipt, SourceStamp
 from pydantic import ValidationError
@@ -114,14 +116,7 @@ def _manifest() -> RunManifest:
         config_path="/opt/exports/annual.json",
         profile="annual_review",
         planner_version="0.1.0",
-        resolved_config={
-            "config_version": 1,
-            "config_id": "0f7c1a94-3b52-4c8e-9a1d-6e2f0b5d7c33",
-            "scratch_root": None,
-            "excel": {"writer": "rustpy-xlsxwriter", "options": {}},
-            "profiles": [{"name": "annual_review", "sheets": [{"source": "sales", "sort": []}]}],
-            "thresholds": [10000000, 20000000.5, True],
-        },
+        resolved_config=ExportConfig.model_validate(BASE),
         output_directory="abfss://out@acct.dfs.core.windows.net/exports",
         started_utc=dt.datetime(2026, 9, 15, 7, 0, 0, tzinfo=dt.UTC),
         sources=[sales, returns],
@@ -189,8 +184,13 @@ def test_what_reaches_the_file_is_json_the_web_editor_could_read(tmp_path: Path)
     written: dict[str, Any] = _through_disk(_manifest(), tmp_path / "m.json")
     assert written["manifest_version"] == MANIFEST_VERSION
     assert written["started_utc"] == "2026-09-15T07:00:00Z"
+    # The resolved configuration is now the real model rather than an opaque JSON object, so
+    # what reaches the file is what a web editor would read back as a configuration: a null that
+    # stays null, a nested array of mixed numbers, and the discriminated unions resolved.
     assert written["resolved_config"]["scratch_root"] is None
-    assert written["resolved_config"]["thresholds"] == [10000000, 20000000.5, True]
+    assert written["resolved_config"]["config_version"] == 1
+    assert written["resolved_config"]["profiles"][0]["partitioning"]["year_split_months"] == [6, 4, 3, 2, 1]
+    assert written["resolved_config"]["sources"]["returns"]["date_columns"]["returned_on"]["type"] == "int"
     assert written["sources"][0]["fragments"][0]["expected"]["identifier"] == "binary-aggregate-xxh3-128"
     assert written["sources"][0]["fragments"][0]["expected"]["row_digest_hex"] is not None
     assert written["sources"][0]["fragments"][0]["part_index"] is None
