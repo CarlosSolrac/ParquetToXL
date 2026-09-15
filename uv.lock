@@ -12,6 +12,7 @@ members = [
     "pqx-common",
     "pqx-excel",
     "pqx-frame",
+    "pqx-pipeline",
     "pqx-plan",
     "pqx-report",
     "pqx-sidecar",
@@ -28,6 +29,7 @@ dev = [
     { name = "pqx-common", editable = "packages/pqx-common" },
     { name = "pqx-excel", editable = "packages/pqx-excel" },
     { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pqx-pipeline", editable = "packages/pqx-pipeline" },
     { name = "pqx-plan", editable = "packages/pqx-plan" },
     { name = "pqx-report", editable = "packages/pqx-report" },
     { name = "pqx-sidecar", editable = "packages/pqx-sidecar" },
@@ -1313,6 +1315,51 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-testing", editable = "packages/pqx-testing" },
+    { name = "pytest", specifier = ">=8,<9" },
+]
+
+[[package]]
+name = "pqx-pipeline"
+version = "0.1.0"
+source = { editable = "packages/pqx-pipeline" }
+dependencies = [
+    { name = "polars" },
+    { name = "pqx-calendar" },
+    { name = "pqx-common" },
+    { name = "pqx-excel" },
+    { name = "pqx-frame" },
+    { name = "pqx-plan" },
+    { name = "pqx-report" },
+    { name = "pqx-sidecar" },
+    { name = "pqx-staging" },
+    { name = "pqx-verify" },
+    { name = "universal-pathlib" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pqx-testing" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "polars", specifier = ">=1.44.1" },
+    { name = "pqx-calendar", editable = "packages/pqx-calendar" },
+    { name = "pqx-common", editable = "packages/pqx-common" },
+    { name = "pqx-excel", editable = "packages/pqx-excel" },
+    { name = "pqx-frame", editable = "packages/pqx-frame" },
+    { name = "pqx-plan", editable = "packages/pqx-plan" },
+    { name = "pqx-report", editable = "packages/pqx-report" },
+    { name = "pqx-sidecar", editable = "packages/pqx-sidecar" },
+    { name = "pqx-staging", editable = "packages/pqx-staging" },
+    { name = "pqx-verify", editable = "packages/pqx-verify" },
+    { name = "universal-pathlib", specifier = ">=0.3.10" },
+]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "pqx-testing", editable = "packages/pqx-testing" },
     { name = "pytest", specifier = ">=8,<9" },
 ]

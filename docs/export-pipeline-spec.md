@@ -635,10 +635,27 @@ of the frames, and a lazy generator of `(name, frame)` pairs does not change tha
 drains the pairs before writing anything anyway, deliberately, so a bad name on the tenth sheet
 cannot leave a half-written workbook at the destination.
 
-**Phase E — `pqx-pipeline` ingest and write.** `sidecar_stale` and `excel_stale`; `read_parquet` and
-`build_sidecar`, treating a `None` return as a failure rather than a crash, and asserting
-`modified_utc` equals the **remote** source's mtime; `observe` producing `SourceShape`;
-`write_profile` producing the manifest with a digest per fragment.
+**Phase E — `pqx-pipeline` ingest and write. Built (2026-09-15)**, except for the orchestration
+that chains the stages, which is Phase H's. `pqx_pipeline.staleness` holds `sidecar_stale` and
+`excel_stale`; `pqx_pipeline.ingest` holds `read_parquet` and `build_sidecar`, treating a `None`
+return as a failure rather than a crash, plus `observe` producing `SourceShape`;
+`pqx_pipeline.write` holds `write_profile`, producing the workbooks and the manifest with a digest
+per fragment; `pqx_pipeline.locations` holds where the bookkeeping lives and the keep-set.
+
+**The trap gets its own test**, as this document asks:
+`test_the_original_path_supplies_the_modification_time` stages a copy, backdates the original by a
+week, and asserts the recorded `modified_utc` is the *source's* and that the scratch path appears
+nowhere in `full_path`. `build_sidecar` takes both paths as separate required keyword arguments so
+that confusing them takes effort.
+
+**Version drift is checked at selection, and split by what it invalidates.** A conversion or hasher
+bump makes the *sidecar* stale, because its recorded digests describe different rules; a planner
+bump makes only the *export* stale, because the description is still accurate. Both are recorded as
+their own signals, so a rebuild names what caused it.
+
+`test_what_was_written_verifies_against_the_manifest_written_beside_it` closes the loop end to end:
+plan, write, then verify what was written against the manifest produced alongside it, with the
+fragments reassembling into the whole-source digest.
 
 **Phase F — `pqx-verify`. Built (2026-09-15)** as `pqx_verify.fragments`: `verify_fragment`,
 `verify_source` and `verify_manifest`, over the existing verdict kinds. All three negative checks

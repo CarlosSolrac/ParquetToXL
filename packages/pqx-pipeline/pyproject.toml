@@ -1,0 +1,44 @@
+[project]
+name = "pqx-pipeline"
+version = "0.1.0"
+description = "Selection, Parquet ingest and the write that produces a manifest."
+requires-python = ">=3.13"
+# The only place that chains stages and touches everything.
+dependencies = [
+    "pqx-calendar",
+    "pqx-common",
+    "pqx-excel",
+    "pqx-frame",
+    "pqx-plan",
+    "pqx-report",
+    "pqx-sidecar",
+    "pqx-staging",
+    "pqx-verify",
+    "polars>=1.44.1",
+    "universal-pathlib>=0.3.10",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<9",
+    "pqx-testing",
+]
+
+[tool.uv.sources]
+pqx-calendar = { workspace = true }
+pqx-common = { workspace = true }
+pqx-excel = { workspace = true }
+pqx-frame = { workspace = true }
+pqx-plan = { workspace = true }
+pqx-report = { workspace = true }
+pqx-sidecar = { workspace = true }
+pqx-staging = { workspace = true }
+pqx-testing = { workspace = true }
+pqx-verify = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pqx_pipeline"]

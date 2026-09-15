@@ -42,10 +42,14 @@ class NamedSheet:
     Attributes:
         sheet: The planned sheet this names.
         name: The expanded name, prefix included, as it will appear in the workbook.
+        period_label: The coverage label this name was rendered from, or ``None`` for output that
+            describes no calendar. Carried rather than re-derived so the manifest records exactly
+            what the sheet is called: a second derivation could drift from the first.
     """
 
     sheet: PlannedSheet
     name: str
+    period_label: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,11 +263,14 @@ def _name_sheets(workbook: AllocatedWorkbook, naming: NamingSettings, *, profile
             },
         )
         candidate: str = validate_worksheet_name(_prefixed(naming.worksheet_prefix, rendered))
+        # None for output that describes no calendar -- balanced, and the single-sheet shortcut --
+        # which is what Fragment.period_label expects. `Data` is a name, not a coverage.
+        label: str | None = sheet_period_label(sheet, naming.month_format) if (sheet.coverage is not None or sheet.kind == "undated") else None
         if naming.sheet_collision == "suffix":
-            named.append(NamedSheet(sheet=sheet, name=deduplicate_worksheet_name(candidate, registry)))
+            named.append(NamedSheet(sheet=sheet, name=deduplicate_worksheet_name(candidate, registry), period_label=label))
             continue
         if candidate in registry:
             message: str = f"worksheet name {candidate!r} is already used in workbook {filename!r}, and sheet_collision is 'error'"
             raise PortableNameError(message)
-        named.append(NamedSheet(sheet=sheet, name=registry.claim(candidate)))
+        named.append(NamedSheet(sheet=sheet, name=registry.claim(candidate), period_label=label))
     return tuple(named)
