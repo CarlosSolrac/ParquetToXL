@@ -526,9 +526,13 @@ behind a per-source cell ceiling (see `partitioning-spec.md`, the marked note un
 manifest and receipt models already exist from gate 0c; `resolved_config` is a JSON object there
 until `ExportConfig` replaces it. `pqx_plan.config` holds the models, `pqx_plan.semantics` the
 rules JSON Schema cannot state, and `pqx_plan.corpus` the 94-case shared corpus — exported to
-`docs/export-config-corpus.json` by `tools/build_config_corpus.py` for the web editor. Still to
-build: `resolved_config_hash` (stable across key reordering and formatting), the receipt, capacity
-math with per-source `C_s`, the algorithms, allocation, naming and collisions.
+`docs/export-config-corpus.json` by `tools/build_config_corpus.py` for the web editor.
+`pqx_plan.capacity` holds the per-source `C_s` arithmetic — `R_s`, the workbook sum, balanced
+division, the single-sheet shortcut and the minimum balanced workbook count — over a four-field
+`SourceShape` that keeps the package free of Polars. `pqx_plan.fingerprint` holds
+`resolved_config_hash`, stable across key reordering, reformatting and an equivalent timestamp in
+another zone. Still to build: the algorithms, allocation, naming and collisions, and replacing
+`manifest.ResolvedConfiguration` — still a `dict[str, JsonValue]` stand-in — with `ExportConfig`.
 
 **Three findings from the corpus, already paid for.** It caught the models accepting
 `year_split_months` values and duplicates the schema refuses. It caught `format: date-time` being
