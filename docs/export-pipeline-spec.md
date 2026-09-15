@@ -520,13 +520,25 @@ decoding, period keys and ordering with `Undated` last, then labels reproducing 
 exactly. Shipped as eight modules and 286 tests at 100% statement and branch coverage; decisions and
 the two cases the specs left ambiguous are in `docs/decisions/2026-09-15-phase-b.md`.
 
-**Phase C — `pqx-plan`.** Gate 0d did not cut `balanced`; it gates it behind a per-source cell
-ceiling (see `partitioning-spec.md`, the marked note under sorting). The manifest and receipt
-models already exist from gate 0c; `resolved_config` is a JSON object there until `ExportConfig`
-replaces it. Frozen tests for the configuration including
-every refusal, the `{source}`-token rule, and two profiles resolving to one directory. Then the
-models, `resolved_config_hash` (stable across key reordering and formatting), the receipt, capacity
+**Phase C — `pqx-plan`. Configuration and its validation built (2026-09-15);** capacity math, the
+algorithms, allocation and naming are still to build. Gate 0d did not cut `balanced`; it gates it
+behind a per-source cell ceiling (see `partitioning-spec.md`, the marked note under sorting). The
+manifest and receipt models already exist from gate 0c; `resolved_config` is a JSON object there
+until `ExportConfig` replaces it. `pqx_plan.config` holds the models, `pqx_plan.semantics` the
+rules JSON Schema cannot state, and `pqx_plan.corpus` the 94-case shared corpus — exported to
+`docs/export-config-corpus.json` by `tools/build_config_corpus.py` for the web editor. Still to
+build: `resolved_config_hash` (stable across key reordering and formatting), the receipt, capacity
 math with per-source `C_s`, the algorithms, allocation, naming and collisions.
+
+**Three findings from the corpus, already paid for.** It caught the models accepting
+`year_split_months` values and duplicates the schema refuses. It caught `format: date-time` being
+annotation-only in `jsonschema` unless `rfc3339-validator` is installed — so a stock validator
+accepts `"config_modified_utc": "last Tuesday"`, and **any consumer of this schema, the web editor
+included, needs the equivalent**. And it caught the identifier pattern reading three ways: ECMA-262
+(what JSON Schema specifies, and what a browser editor runs) and Pydantic's `rust-regex` both
+refuse the alias `"sales\n"`, while Python's `jsonschema` accepts it, because it implements
+`pattern` with Python's `re` whose `$` also matches before a trailing newline. This project takes
+the strict reading everywhere; the corpus records the divergence rather than hiding it.
 
 **Keeping the JSON Schema and the Pydantic models in step.** Both discriminate on the same field
 and carry one shape per kind, so they can be compared directly. Do not compare them by generating

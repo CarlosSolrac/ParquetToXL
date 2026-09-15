@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Planning models: the run manifest a write produces and the receipt a run leaves behind."
 requires-python = ">=3.13"
 dependencies = [
+    "pqx-calendar",
+    "pqx-common",
     "pqx-frame",
     "pydantic>=2.13.5",
 ]
@@ -11,9 +13,21 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8,<9",
+    # Test-only. The corpus check runs the documented JSON Schema and the Pydantic models over
+    # the same fragments and requires identical verdicts; nothing at runtime reads the schema.
+    "jsonschema>=4.25",
+    # Without this, jsonschema's `format: date-time` is ANNOTATION ONLY: a stock validator
+    # accepts "config_modified_utc": "not-a-date". The models refuse it, so the corpus would
+    # report a divergence that is really a missing optional dependency. Any consumer of the
+    # schema -- the web editor included -- needs the equivalent.
+    "rfc3339-validator>=0.1.4",
+    # jsonschema ships no py.typed, so both checkers treat it as untyped without these.
+    "types-jsonschema>=4.25",
 ]
 
 [tool.uv.sources]
+pqx-calendar = { workspace = true }
+pqx-common = { workspace = true }
 pqx-frame = { workspace = true }
 
 [build-system]
