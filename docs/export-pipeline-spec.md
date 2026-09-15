@@ -422,7 +422,11 @@ Per source, arithmetic only:
 
 `combine` is a new classmethod on `DataFrameHasherBinaryAggregateHash` — a property of the hasher,
 so it belongs with the hasher. It refuses fragments whose `identifier`, `version` or `scope`
-differ.
+differ. **Built (2026-09-15)**, with gate 0b's inline arithmetic turned into a call: the identity
+is tested for contiguous and scattered partitions, at every split count from two to one-per-row,
+and in both directions on `digest_hex` and `row_digest_hex`. It also refuses a set where some
+records carry a row digest and others do not, because a partial sum would silently describe fewer
+rows than it claims.
 
 The existing error-boundary rules carry over unchanged: reading, converting and hashing are all
 inside the boundary, because a cell can be readable and still unusable; judgements about a workbook

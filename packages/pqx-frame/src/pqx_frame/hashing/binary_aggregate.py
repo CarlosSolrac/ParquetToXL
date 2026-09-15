@@ -11,6 +11,8 @@ from pqx_frame.hashing.base import DataFrameHasherBaseClass, HashedDataframeBase
 from pqx_frame.hashing.canonical import encode_series
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     import polars as pl
 
 MODULUS: int = 1 << 128
@@ -121,3 +123,54 @@ class DataFrameHasherBinaryAggregateHash(DataFrameHasherBaseClass):
         columns: tuple[BinaryAggregateHashedDataframe, ...] = tuple(BinaryAggregateHashedDataframe(scope="column", digest_hex=f"{total:032x}") for total in totals)
         combined: int = (sum(totals) + row_total) % MODULUS
         return columns, BinaryAggregateHashedDataframe(scope="dataframe", digest_hex=f"{combined:032x}", row_digest_hex=f"{row_total:032x}")
+
+    @classmethod
+    def combine(cls, records: Sequence[BinaryAggregateHashedDataframe]) -> BinaryAggregateHashedDataframe:
+        """Return the digest of the whole from the digests of its disjoint parts.
+
+        The property gate 0b measured and this method turns into a call: because every aggregate
+        here is a modular sum over cells and rows, hashing a frame is the same as hashing its
+        pieces and adding the results. Verification can therefore read back N fragments, digest
+        each, and check the source as a whole -- **without reassembling the frame in memory**, and
+        without opening the Parquet the sidecar exists to avoid re-reading.
+
+        Only sound for parts that are **total and disjoint**: every row in exactly one fragment.
+        That is a property of the plan, not of these records, so the caller is what must establish
+        it -- ``SourceFragments.total_and_disjoint`` is where the manifest records it, and the
+        comparison is skipped when it is false.
+
+        Args:
+            records: The parts' records. Must agree on ``identifier``, ``version`` and ``scope``,
+                because an aggregate produced by a different hasher, a different version of this
+                one, or at a different scope is not a term in the same sum. Version skew is a live
+                failure mode here, which is why it is a refusal rather than a mismatched digest
+                somewhere downstream.
+
+        Returns:
+            One record of the same identifier, version and scope, holding the modular sums.
+            ``row_digest_hex`` is present when every part carries one, and ``None`` when none does
+            -- which is what column-scope records look like.
+
+        Raises:
+            ValueError: ``records`` is empty, the parts disagree on identifier, version or scope,
+                or some carry a row digest and others do not.
+        """
+        if not records:
+            empty_message: str = "combine needs at least one record; the digest of nothing is not the identity of a hasher whose parameters are unknown"
+            raise ValueError(empty_message)
+        first: BinaryAggregateHashedDataframe = records[0]
+        record: BinaryAggregateHashedDataframe
+        for record in records[1:]:
+            if (record.identifier, record.version, record.scope) != (first.identifier, first.version, first.scope):
+                skew_message: str = (
+                    f"cannot combine {record.identifier!r} v{record.version} {record.scope!r} with {first.identifier!r} v{first.version} {first.scope!r}; "
+                    f"aggregates from different hashers, versions or scopes are not terms in one sum"
+                )
+                raise ValueError(skew_message)
+        with_rows: int = sum(record.row_digest_hex is not None for record in records)
+        if with_rows not in {0, len(records)}:
+            partial_message: str = f"{with_rows} of {len(records)} records carry a row digest; a partial sum would silently describe fewer rows than it claims"
+            raise ValueError(partial_message)
+        total: int = sum(int(record.digest_hex, 16) for record in records) % MODULUS
+        row_total: str | None = f"{sum(int(record.row_digest_hex or '0', 16) for record in records) % MODULUS:032x}" if with_rows else None
+        return BinaryAggregateHashedDataframe(scope=first.scope, digest_hex=f"{total:032x}", row_digest_hex=row_total)
