@@ -33,10 +33,10 @@ uv run pqx --config export.json status
 ```
 
 A configuration names where output goes, where sidecars live, the Parquet sources, and one or more
-*profiles* describing how to slice them into workbooks. [docs/export-config.schema.json](docs/export-config.schema.json) is
-the authority on its shape; [docs/export-config-corpus.json](docs/export-config-corpus.json)
-holds worked examples that the test suite
-asserts the models still accept.
+*profiles* describing how to slice them into workbooks.
+[docs/export-config.schema.json](docs/export-config.schema.json) is the authority on its shape, and
+[docs/export-config-corpus.json](docs/export-config-corpus.json) holds worked examples that the
+test suite asserts the models still accept.
 
 ## The eight verbs
 
@@ -125,7 +125,7 @@ say so rather than editing it.
 
 ## Status
 
-Every phase of [docs/export-pipeline-spec.md](docs/export-pipeline-spec.md) is built: 1,725 tests at 100% statement and branch
-coverage, CI green. It has never been run against a real SMB share, blob container, or Spark image
-— see [docs/backlog.md](docs/backlog.md) items 6 and 7, which are the honest gap between "tested" and "proven in
-place".
+Every phase of [docs/export-pipeline-spec.md](docs/export-pipeline-spec.md) is built: 1,725 tests
+at 100% statement and branch coverage, CI green. It has never been run against a real SMB share,
+blob container, or Spark image — see [docs/backlog.md](docs/backlog.md) items 6 and 7, which are
+the honest gap between "tested" and "proven in place".
