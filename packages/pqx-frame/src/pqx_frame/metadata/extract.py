@@ -115,6 +115,12 @@ def extract_metadata_from_dataframe(
     same conversions either way; one that wants a frame back should call that instead rather than
     converting a second time.
 
+    ⚠️ **No caller in this workspace uses it any more.** ``pqx-pipeline`` moved to
+    :func:`describe_dataframe` so it could keep the conversion it had already paid for. This stays
+    because ``pqx-frame`` is a library and this is its documented entry point: a caller wanting a
+    description and nothing else should not have to unpack a frame in order to drop it. The tests
+    against it cover both functions, the other being a thin wrapper over the same work.
+
     Args:
         df: The frame to describe.
         path: Where the data came from. Read for its name and modification time only.

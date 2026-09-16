@@ -649,7 +649,9 @@ cannot leave a half-written workbook at the destination.
 **Phase E — `pqx-pipeline` ingest and write. Built (2026-09-15)**, except for the orchestration
 that chains the stages, which is Phase H's. `pqx_pipeline.staleness` holds `sidecar_stale` and
 `excel_stale`; `pqx_pipeline.ingest` holds `read_parquet` and `build_sidecar`, treating a `None`
-return as a failure rather than a crash, plus `observe` producing `SourceShape`;
+return as a failure rather than a crash, plus `observe` producing `SourceShape`. **`build_sidecar`
+returns the ToExcel conversion it performed**, because describing a source converts it in full and
+dropping that frame made the writer convert the same rows a second time;
 `pqx_pipeline.write` holds `write_profile`, producing the workbooks and the manifest with a digest
 per fragment; `pqx_pipeline.locations` holds where the bookkeeping lives and the keep-set; and
 `pqx_pipeline.bucketing` is the link between a date column and a plan — it derives a partition key
@@ -662,10 +664,22 @@ contiguous and in order — so one key serves both the fine counts the planner a
 arrangement the writer slices. A coarser key would make a subdivided year's months arrive
 interleaved.
 
-⚠️ **`bucketing` is where the deferred vectorised decoder becomes load-bearing.** Decoding is scalar,
-so a forty-million-row source pays forty million Python calls. It is the single call site, so the
-replacement — a Polars expression built in `pqx-calendar` beside the scalar path and property-tested
-against it — is a local swap.
+**Built.** `bucketing` decodes a column's **distinct values**, not its rows. A date column repeats —
+forty million rows hold a few hundred distinct months — so the scalar decoder runs once per value
+and the answers are mapped back onto the frame. That leaves `pqx-calendar`'s decoder the only
+statement of the century-window rule anywhere, which is what `2026-09-15-phase-b.md` §4 asked for;
+the Polars expression that section proposed was not built, because it would have been the second
+statement §4 warned about. Measured at 50x–80x over two million rows.
+
+A *wall-clock* timestamp column is first collapsed to its calendar day, since it can otherwise be
+distinct in every row. A column read against a **named zone is not collapsed**: the decoder converts
+through this machine's timezone database, Polars would convert through its own bundled one, and the
+two disagree often enough to move a row to the wrong day in silence. See
+`2026-09-15-distinct-value-bucketing.md` §3 for the reproduction.
+
+`bucketing` returns an **arrangement** rather than an arranged frame, so the order can be decided
+over the source's own values and applied to the converted copy. The two are not interchangeable to
+sort over: ToExcel writes `True` as `-1.0`.
 
 **The trap gets its own test**, as this document asks:
 `test_the_original_path_supplies_the_modification_time` stages a copy, backdates the original by a

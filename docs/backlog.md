@@ -1,7 +1,8 @@
 # Backlog — what is left, and what has already been decided about it
 
-As of 2026-09-15, `main` at `bdb5fbd`. Every phase of `docs/export-pipeline-spec.md` is built:
-1,676 tests, 100% statement and branch coverage over 3,208 statements, CI green.
+As of 2026-09-16. Every phase of `docs/export-pipeline-spec.md` is built. On `main` at `bdb5fbd`
+that was 1,676 tests over 3,208 statements; on the `vectorised-bucketing` branch it is 1,714 over
+3,263, both at 100% statement and branch coverage.
 
 Nothing here is a defect. Each item is either a deliberate debt with a recorded reason, a decision
 nobody has made yet, or a gate that needs infrastructure. Read the linked decision record before
@@ -9,30 +10,28 @@ starting one — the alternatives have usually been weighed already.
 
 ---
 
-## 1. The vectorised date decoder — the only item that bites at production scale
+## 1. The per-row date decode — ~~pending~~ **done on `vectorised-bucketing`, not yet merged**
 
-**Priority: highest.** `packages/pqx-pipeline/src/pqx_pipeline/bucketing.py` decodes one value at a
-time, so a forty-million-row source pays forty million Python calls. It was a tolerable debt while
-it sat in a leaf; it now sits on the run's critical path, between reading a source and planning it.
+Bucketing decoded one value at a time, so a forty-million-row source paid forty million Python
+calls on the run's critical path.
 
-**Where the replacement goes: `pqx-calendar`, beside the scalar path, property-tested against it.**
-Not in `pqx-pipeline`, where it would become a second statement of the two-digit-year century
-window — and two statements of that rule is exactly the bug the property test exists to catch.
-`ordered_by_bucket` is the single call site, so the swap is local.
+**It was not solved the way this entry proposed.** The entry called for a Polars expression built
+in `pqx-calendar` beside the scalar path. What shipped instead decodes the column's **distinct
+values** through the existing scalar decoder — a date column repeats, so forty million rows hold a
+few hundred distinct months. That satisfies the *intent* of `2026-09-15-phase-b.md` §4, one
+statement of the century-window rule, more completely than the expression would have: there is no
+second implementation at all, and no Polars dependency in `pqx-calendar`. Measured at 50x–80x over
+two million rows.
 
-Shape of the work:
+The same work removed a defect found beside it: a source was converted for Excel **twice** per run,
+once to describe it and once to hand the writer a frame, with the first conversion's frame thrown
+away.
 
-1. Add `decode_expression(column: DateColumn) -> pl.Expr` (or similar) in `pqx_calendar.decoding`,
-   one branch per `DateColumn` variant, returning an expression that yields the same
-   `CalendarPoint` fields the scalar path does.
-2. Property-test it against `decode_cell` over generated inputs — every dtype, nulls, the two-digit
-   window boundaries (`resolve_two_digit_year` is the subtle one: the window is inclusive, so under
-   a 1970 start, `99` is **1999**, not 2099).
-3. Swap the list comprehension in `ordered_by_bucket` for the expression. Keep the scalar path: it
-   is the oracle.
+Full reasoning, including the reproduction of the Polars/`zoneinfo` disagreement that decides which
+timestamp columns may be collapsed, is in `docs/decisions/2026-09-15-distinct-value-bucketing.md`.
 
-Recorded in `docs/decisions/2026-09-15-phase-b.md` §"scalar now, vectorised later", and flagged in
-the spec at the `bucketing` paragraph.
+**What is left on that branch:** staging the converted frame to Parquet and slicing it from disk
+(which is what bounds item 3's memory ceiling), and item 4's help-text half.
 
 ---
 
@@ -98,6 +97,15 @@ and subtract, which gives the same answer without changing what a documented swi
 second is recommended. Today the workaround is `pqx plan`, which names every workbook a run would
 produce — anything in the destination not in that list and not bookkeeping is what would go.
 
+**A third option surfaced while working on item 1, and it is cheaper than either.**
+`plan_calendar_sheets(shape, counts, partitioning, limits)` takes **no frame** — bucket counts plus
+`SourceShape` are the entire input to planning. Both are small: a few hundred dict entries and four
+numbers. Persisting them beside the export would let `plan` and `--dry-run` produce a full plan, and
+therefore a delete set, **without reading a single source**. That removes the premise this item
+rests on rather than working around it. Nobody has costed the staleness question it raises: a
+persisted count set describes the sources as they were at some T2, so it needs the same freshness
+rule the sidecars have.
+
 Recorded in `docs/decisions/2026-09-15-phases-e-h.md`.
 
 ---
@@ -133,6 +141,11 @@ checks each now have a verb — see the table at the end of
   nothing prunes it, and nothing warns.
 - There is no `README.md`. `CLAUDE.md` covers the working rules; a human arriving at the repository
   still has to start from `docs/export-pipeline-spec.md`.
+- On `vectorised-bucketing`, `ordered_by_bucket` and `extract_metadata_from_dataframe` have no
+  caller left in the workspace — the run moved to `bucket_arrangement` and `describe_dataframe`.
+  Both are kept and both say so in their own docstrings, because the fifty frozen tests written
+  against them read as statements of behaviour, and rewriting those to gather and unpack by hand
+  would bury that behind mechanism. Worth revisiting if a third entry point ever appears.
 
 ---
 

@@ -317,6 +317,13 @@ def ordered_by_bucket(
 
     :func:`bucket_arrangement` applied to the frame it was computed over.
 
+    ⚠️ **Nothing in the pipeline calls this.** The run computes an arrangement over the source as
+    read and applies it to a *converted* copy, so no stage arranges a frame in place any more. It
+    is kept because this module's tests are written against it: they read as statements about which
+    rows come out where, which is the behaviour :func:`bucket_arrangement` is responsible for, and
+    rewriting fifty of them to gather by hand would bury that behind mechanism. Delete it only
+    together with them -- and if a caller for it ever appears, delete this paragraph instead.
+
     Args:
         frame: The source's rows, as read.
         column: The registered date column named by ``column_name``.
