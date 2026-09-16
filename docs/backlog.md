@@ -30,8 +30,9 @@ away.
 Full reasoning, including the reproduction of the Polars/`zoneinfo` disagreement that decides which
 timestamp columns may be collapsed, is in `docs/decisions/2026-09-15-distinct-value-bucketing.md`.
 
-**What is left on that branch:** staging the converted frame to Parquet and slicing it from disk
-(which is what bounds item 3's memory ceiling), and item 4's help-text half.
+**What is left on that branch:** item 4's help-text half. Staging the converted frame to Parquet
+was investigated and deliberately not built — see item 3 for the measurements and the scope
+question it ran into.
 
 ---
 
@@ -69,6 +70,43 @@ survives 16 GB; 800M is OOM-killed).
 
 The number itself is a judgement, not a measurement — it is the one item on this list worth
 confirming with a human before coding.
+
+### Staging the converted frame was investigated and not built
+
+The obvious way to bound residency is to write each source's converted frame to Parquet in scratch
+and have `_slices` read each sheet back, instead of holding `Observation.frame` from planning until
+the last workbook is written. It was taken far enough to measure and to prove the properties it
+needs, then stopped for two reasons.
+
+**It bounds the write phase, not the peak.** The conversion *produces* the whole converted frame in
+memory; staging happens after that. So the peak is unchanged, and what staging removes is holding
+the frame *while also* building workbooks, across the long part of the run. Worth having, but it is
+not what makes the ceiling reachable — bounding the peak needs a streaming conversion.
+
+**Reading a sheet back by offset needs `pl.scan_parquet(...).slice(...)`, a lazy frame**, and
+`library-spec.md`'s out-of-scope list names "streaming/lazy frames", which
+`export-pipeline-spec.md` inherits unchanged. The adjacent note there is about the *sort*
+specifically, so the exclusion may be aimed at the library's frame API rather than at reading back
+a scratch file the pipeline itself wrote — **that reading is a decision nobody has made**, and it
+is the first thing to settle before this is picked up again.
+
+Measured resident cost of a converted frame, which is what any of this is trading against:
+
+| Shape | bytes/cell | 150M cells | 400M cells |
+| --- | --- | --- | --- |
+| Narrow: 4 numeric-ish columns | 7.00 | 0.98 GiB | 2.61 GiB |
+| Wide: 20 columns, 11 of free text | 25.40 | 3.55 GiB | 9.46 GiB |
+
+The second row reproduces gate 0d's recorded "150M cells ≈ 3.5 GiB on the measured mix" almost
+exactly, which is worth knowing: **the ceiling is a property of the column mix, not of the cell
+count.** A narrow source is nowhere near it at 150M cells; a text-heavy one passes it well before.
+A single number cannot express that, so a ceiling expressed in cells will be wrong in one direction
+for most sources.
+
+`packages/pqx-pipeline/tests/test_staged_parquet.py` already proves what the approach would need:
+Parquet round-trips every dtype ToExcel emits, preserves row order, preserves the digest of each
+positional slice, and `DataFrameHasherBinaryAggregateHash.combine` lets `expected_whole` be taken
+over chunks so the whole frame is never resident for it. Those tests stand on their own.
 
 ---
 
