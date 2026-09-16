@@ -84,11 +84,15 @@ the frame *while also* building workbooks, across the long part of the run. Wort
 not what makes the ceiling reachable — bounding the peak needs a streaming conversion.
 
 **Reading a sheet back by offset needs `pl.scan_parquet(...).slice(...)`, a lazy frame**, and
-`library-spec.md`'s out-of-scope list names "streaming/lazy frames", which
-`export-pipeline-spec.md` inherits unchanged. The adjacent note there is about the *sort*
-specifically, so the exclusion may be aimed at the library's frame API rather than at reading back
-a scratch file the pipeline itself wrote — **that reading is a decision nobody has made**, and it
-is the first thing to settle before this is picked up again.
+`docs/decisions/2026-09-16-lazy-frames.md` settled that the exclusion stands — on grounds that have
+nothing to do with sorting, so the ambiguity that raised this twice is closed. Read it before
+proposing a lazy read anywhere.
+
+That record also names the eager alternative for this case: the plan, and therefore every sheet's
+row count, is known before the writer needs a slice, so a staged file whose row groups are aligned
+to planned sheets can be read a row group at a time with no lazy frame at all. `pyarrow` is already
+in `uv.lock`. Unbuilt and unmeasured, and `row_group_size` in Polars is a single integer, so
+per-sheet groups would likely need pyarrow's writer.
 
 Measured resident cost of a converted frame, which is what any of this is trading against:
 
