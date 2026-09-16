@@ -25,7 +25,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import resource
 import subprocess
 import sys
 import tempfile
@@ -196,9 +195,27 @@ def run_case(case: Case, destination: Path) -> tuple[float, float]:
     return _peak_mib(), time.monotonic() - started
 
 
-def _peak_mib() -> float:
-    """Return this process's peak resident set size in mebibytes."""
-    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / KIBIBYTES_PER_MEBIBYTE
+if sys.platform == "win32":
+
+    def _peak_mib() -> float:
+        """Refuse, because Windows has no ``resource`` module to read peak RSS from.
+
+        These harnesses measure the Linux image the pipeline runs on. A Windows figure would not
+        be comparable to the numbers already recorded in the decision records, so this refuses
+        rather than quietly substituting a different measurement.
+
+        Raises:
+            RuntimeError: Always.
+        """
+        message: str = "peak RSS is read through resource.getrusage; run this harness on the Linux image it measures"
+        raise RuntimeError(message)
+
+else:
+    import resource
+
+    def _peak_mib() -> float:
+        """Return this process's peak resident set size in mebibytes."""
+        return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / KIBIBYTES_PER_MEBIBYTE
 
 
 def _child(argument: str) -> int:

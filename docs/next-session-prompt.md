@@ -55,13 +55,10 @@ House rules that no linter will tell you, all of them in CLAUDE.md: every variab
 annotated before its first binding, Literal and never Enum, Pydantic config in class
 keywords repeated on every subclass, \A and \Z instead of ^ and $, injected clocks,
 220-column lines, and 100% branch coverage as a merge gate. Run the three CI commands in
-CLAUDE.md before telling me anything is done -- reproduce them, do not predict them. Note
-that `pre-commit run --all-files` fails on Windows for a reason that predates this work:
-gates/gate_0a_sheet_memory.py and gates/gate_0d_sort_memory.py use resource.getrusage,
-which is POSIX-only, and BOTH type checkers report it -- 12 errors from pyright and 6
-from mypy, all in gates/. `uv run pyright packages tools` and `uv run mypy packages tools`
-are both clean. Confirm that against a clean tree rather than taking my word for it, read
-the hook status lines rather than the tail of their output, and do not fix gates/.
+CLAUDE.md before telling me anything is done -- reproduce them, do not predict them, and
+read the hook status lines rather than the tail of their output. All three are green on
+Windows and on Linux; if pre-commit fails for you on a clean tree, say so rather than
+working around it.
 
 Commit in the repository's prose style, explaining why. Do not open a pull request unless
 I ask. If a test proves the specification wrong, tell me rather than editing either.
