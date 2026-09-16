@@ -109,6 +109,13 @@ on which day an instant falls in, and it is the right price.
 The collapse is a **grouping key and nothing more**: the scalar decoder still runs, on a real
 value drawn out of each group, and still authors every answer and every refusal.
 
+⚠️ **The call must be `replace_time_zone(None)`, never `convert_time_zone`.** Replacing strips the
+zone and leaves the hours untouched, which is the reading wall-clock mode is defined by.
+Converting shifts the hours first, so the day would come from somewhere other than the reading
+the decoder sees. Polars 1.44.1 happens to reject `convert_time_zone(None)` with a `TypeError`
+rather than doing it silently, but the distinction is the whole basis of this collapse being
+sound and should not rest on that.
+
 **Wall-clock mode on a tz-aware column therefore depends on Polars' timezone database rather
 than this machine's.** That is pre-existing behaviour, not introduced here, but it is surprising
 next to how carefully zone mode is specified, and nothing else says it.

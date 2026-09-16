@@ -174,8 +174,10 @@ def _grouping(column: DateColumn, dtype: pl.DataType, partition: cs.Selector) ->
         return partition.as_expr()
     if not isinstance(column.calendar_timezone, SourceWallClockTimezone):
         return partition.as_expr()
-    # Discarding the zone rather than converting through it: wall-clock mode wants the reading, not
-    # the instant, and on a naive column this is a no-op.
+    # ``replace_time_zone(None)`` strips the zone and leaves the hours alone, which is what
+    # wall-clock mode means: the reading is the answer, the instant is not. On a naive column it is
+    # a no-op. **Never ``convert_time_zone`` here** -- converting shifts the hours before dropping
+    # the zone, so the day would come from somewhere other than the reading the decoder sees.
     return partition.as_expr().dt.replace_time_zone(None).dt.date()
 
 
