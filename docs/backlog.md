@@ -170,6 +170,19 @@ Recorded in `docs/decisions/2026-09-15-phases-e-h.md`.
 `st_mtime`; if it does not, `sidecar_stale` needs a different source of truth and that is a design
 change, not a fix. Nothing built so far assumes an answer from either gate.
 
+**The 0f harness is written and waiting for credentials**:
+`gates/gate_0f_azure_round_trip.py`. It reports rather than asserts — no check says what `adlfs`
+*should* return — and it exercises the production helpers (`zpath`, `copy_file`, `list_names`,
+`delete_names`, `truncate_to_second`) rather than raw `adlfs`, so it answers the question the
+pipeline actually asks. It refuses a destination that is not empty and deletes only the two probe
+objects it creates, and it never prints a credential value, only which variables are set.
+
+Run it with `--destination abfs://container/gate-0f`. It has been run against a local destination,
+where all twelve asserted properties hold; that verifies the harness, not Azure. Note the local run
+reports *sub-second* mtime resolution, which is the contrast `truncate_to_second` exists for.
+
+0e still needs writing, and needs the Spark image to answer anything.
+
 `gates/` holds the harnesses for 0a and 0d as a pattern to copy.
 
 ---
