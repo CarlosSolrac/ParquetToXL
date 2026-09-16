@@ -27,28 +27,23 @@ its bundled database and decode_cell converts through this machine's, and they d
 And the row arrangement is computed over the source's values, never the converted ones,
 because ToExcel writes True as -1.0 and would reverse a boolean sort key.
 
-What is left on the branch, in order:
+The branch is finished and green: six commits, 1,725 tests, 100% statement and branch
+coverage. Nothing is half-done on it. Ask me whether to merge it before starting
+anything new.
 
-1. Stage the converted frame to Parquet per source in scratch and have _slices read each
-   sheet back instead of slicing a resident frame. Observation.frame is held through
-   planning and the whole write phase, which is the residency backlog item 3's ceiling
-   is about. Two things must be tested BEFORE _slices is rewired, and if either fails,
-   stop and report rather than working around it: that a Parquet round trip preserves
-   every dtype ToExcel emits, and that it preserves row order exactly -- _slices cuts
-   with a positional cursor, so order is load-bearing. Also check first whether
-   DataFrameHasherBinaryAggregateHash can be fed in chunks; expected_whole hashes the
-   entire frame, and if it cannot stream, say so rather than inventing an incremental
-   hasher. Do NOT derive expected_whole by summing the fragment digests: it is a
-   cross-check on them, and deriving it from them would make it always agree.
+One decision is waiting for me rather than for code, and it is written up in backlog
+item 3. Staging each source's converted frame to Parquet -- so the write phase slices
+it from disk instead of holding the whole thing -- was investigated, measured, and
+deliberately not built. Two reasons: it bounds the write phase but not the peak, since
+the conversion produces the whole frame in memory before staging could happen; and
+reading a sheet back by offset needs a lazy scan, which library-spec.md's out-of-scope
+list names and export-pipeline-spec.md inherits. Whether that exclusion is aimed at the
+library's frame API or at any lazy read at all is a reading nobody has made. Do not make
+it by writing code. packages/pqx-pipeline/tests/test_staged_parquet.py already proves
+every property the approach would need, so the decision is all that is missing.
 
-2. Backlog item 4's second half. `pqx verify` works against a local or SMB-mounted
-   destination and fails against abfs://, and nothing says so. cli.py uses argparse with
-   no subparsers -- the verb is one positional constrained by choices -- so the text goes
-   in an epilog rather than per-verb help. fast_excel_reader's docstring should say it
-   too; CLAUDE.md already claims it does and it does not.
-
-Items 2 and 3 are blocked on decisions rather than on code -- bring me the options rather
-than choosing for me. Item 6 needs infrastructure neither of us has here.
+Backlog items 2 and 3 are blocked on decisions rather than on code -- bring me the
+options rather than choosing for me. Item 6 needs infrastructure neither of us has here.
 
 House rules that no linter will tell you, all of them in CLAUDE.md: every variable
 annotated before its first binding, Literal and never Enum, Pydantic config in class
@@ -70,8 +65,11 @@ I ask. If a test proves the specification wrong, tell me rather than editing eit
 
 Swap the numbered list for one of these:
 
-- **Merge what is there** — "The branch is at a sensible stopping point. Run the three CI commands,
-  show me the diff against main, and tell me what you would want reviewed before it merges."
+- **Merge it** — "Run the three CI commands, show me the diff against main, and tell me what you
+  would want a reviewer to look at hardest before it merges."
+- **Settle the staging question** — "Read backlog item 3 and tell me whether `scan_parquet` counts
+  as the lazy frames the library spec excludes. Give me the argument both ways and a
+  recommendation; do not write any code until I answer."
 - **Decisions first** — "Start with backlog items 2 and 3. Do not write the wiring; put the two
   naming and ordering questions to me with your recommendation, and the 150M-cell ceiling with the
   measurement behind it."
