@@ -1,8 +1,7 @@
 # Backlog — what is left, and what has already been decided about it
 
-As of 2026-09-16. Every phase of `docs/export-pipeline-spec.md` is built. On `main` at `bdb5fbd`
-that was 1,676 tests over 3,208 statements; on the `vectorised-bucketing` branch it is 1,714 over
-3,263, both at 100% statement and branch coverage.
+As of 2026-09-16. Every phase of `docs/export-pipeline-spec.md` is built: 1,725 tests over 3,263
+statements at 100% statement and branch coverage, CI green on `main`.
 
 Nothing here is a defect. Each item is either a deliberate debt with a recorded reason, a decision
 nobody has made yet, or a gate that needs infrastructure. Read the linked decision record before
@@ -10,7 +9,7 @@ starting one — the alternatives have usually been weighed already.
 
 ---
 
-## 1. The per-row date decode — ~~pending~~ **done on `vectorised-bucketing`, not yet merged**
+## 1. The per-row date decode — **done and merged**
 
 Bucketing decoded one value at a time, so a forty-million-row source paid forty million Python
 calls on the run's critical path.
@@ -30,9 +29,9 @@ away.
 Full reasoning, including the reproduction of the Polars/`zoneinfo` disagreement that decides which
 timestamp columns may be collapsed, is in `docs/decisions/2026-09-15-distinct-value-bucketing.md`.
 
-**What is left on that branch:** item 4's help-text half. Staging the converted frame to Parquet
-was investigated and deliberately not built — see item 3 for the measurements and the scope
-question it ran into.
+Staging the converted frame to Parquet was investigated and deliberately not built — see item 3
+for the measurements, and `docs/decisions/2026-09-16-lazy-frames.md` for the scope question it ran
+into, which is now settled.
 
 ---
 
@@ -189,8 +188,8 @@ checks each now have a verb — see the table at the end of
 - Every package is at `0.1.0`. No tags, no release process, no CHANGELOG.
 - `reports/` accumulates one set per run forever. Documented as the operator's to manage, but
   nothing prunes it, and nothing warns.
-- There is no `README.md`. `CLAUDE.md` covers the working rules; a human arriving at the repository
-  still has to start from `docs/export-pipeline-spec.md`.
+- ~~There is no `README.md`.~~ Written. `CLAUDE.md` remains the working rules; the README is the
+  front door for a human, and points at the specs, the decision records and this file.
 - On `vectorised-bucketing`, `ordered_by_bucket` and `extract_metadata_from_dataframe` have no
   caller left in the workspace — the run moved to `bucket_arrangement` and `describe_dataframe`.
   Both are kept and both say so in their own docstrings, because the fifty frozen tests written
