@@ -76,7 +76,7 @@ the day depends on a timezone conversion, and there are two databases in play.
 
 The disagreement, reproduced on the installed Polars 1.44.1 and tzdata 2026.3:
 
-```
+```text
 Two UTC instants one hour apart, read as Africa/Casablanca
 
   Python zoneinfo (what decode_cell uses)
