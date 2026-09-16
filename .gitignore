@@ -15,3 +15,8 @@ build/
 # byte-identical on regeneration, so the 8 parquet and xlsx files are rebuilt
 # rather than tracked.
 packages/pqx-testing/data/
+
+# The end-to-end exercise tree, rebuilt by tools/e2e_exercise.py on demand. Parquet,
+# xlsx and bookkeeping, none of it worth tracking.
+e2e/
+scratch/
