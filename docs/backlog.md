@@ -1,7 +1,8 @@
 # Backlog — what is left, and what has already been decided about it
 
-As of 2026-09-15, `main` at `bdb5fbd`. Every phase of `docs/export-pipeline-spec.md` is built:
-1,676 tests, 100% statement and branch coverage over 3,208 statements, CI green.
+As of 2026-09-16. Every phase of `docs/export-pipeline-spec.md` is built. On `main` at `bdb5fbd`
+that was 1,676 tests over 3,208 statements; on the `vectorised-bucketing` branch it is 1,714 over
+3,263, both at 100% statement and branch coverage.
 
 Nothing here is a defect. Each item is either a deliberate debt with a recorded reason, a decision
 nobody has made yet, or a gate that needs infrastructure. Read the linked decision record before
@@ -9,30 +10,29 @@ starting one — the alternatives have usually been weighed already.
 
 ---
 
-## 1. The vectorised date decoder — the only item that bites at production scale
+## 1. The per-row date decode — ~~pending~~ **done on `vectorised-bucketing`, not yet merged**
 
-**Priority: highest.** `packages/pqx-pipeline/src/pqx_pipeline/bucketing.py` decodes one value at a
-time, so a forty-million-row source pays forty million Python calls. It was a tolerable debt while
-it sat in a leaf; it now sits on the run's critical path, between reading a source and planning it.
+Bucketing decoded one value at a time, so a forty-million-row source paid forty million Python
+calls on the run's critical path.
 
-**Where the replacement goes: `pqx-calendar`, beside the scalar path, property-tested against it.**
-Not in `pqx-pipeline`, where it would become a second statement of the two-digit-year century
-window — and two statements of that rule is exactly the bug the property test exists to catch.
-`ordered_by_bucket` is the single call site, so the swap is local.
+**It was not solved the way this entry proposed.** The entry called for a Polars expression built
+in `pqx-calendar` beside the scalar path. What shipped instead decodes the column's **distinct
+values** through the existing scalar decoder — a date column repeats, so forty million rows hold a
+few hundred distinct months. That satisfies the *intent* of `2026-09-15-phase-b.md` §4, one
+statement of the century-window rule, more completely than the expression would have: there is no
+second implementation at all, and no Polars dependency in `pqx-calendar`. Measured at 50x–80x over
+two million rows.
 
-Shape of the work:
+The same work removed a defect found beside it: a source was converted for Excel **twice** per run,
+once to describe it and once to hand the writer a frame, with the first conversion's frame thrown
+away.
 
-1. Add `decode_expression(column: DateColumn) -> pl.Expr` (or similar) in `pqx_calendar.decoding`,
-   one branch per `DateColumn` variant, returning an expression that yields the same
-   `CalendarPoint` fields the scalar path does.
-2. Property-test it against `decode_cell` over generated inputs — every dtype, nulls, the two-digit
-   window boundaries (`resolve_two_digit_year` is the subtle one: the window is inclusive, so under
-   a 1970 start, `99` is **1999**, not 2099).
-3. Swap the list comprehension in `ordered_by_bucket` for the expression. Keep the scalar path: it
-   is the oracle.
+Full reasoning, including the reproduction of the Polars/`zoneinfo` disagreement that decides which
+timestamp columns may be collapsed, is in `docs/decisions/2026-09-15-distinct-value-bucketing.md`.
 
-Recorded in `docs/decisions/2026-09-15-phase-b.md` §"scalar now, vectorised later", and flagged in
-the spec at the `bucketing` paragraph.
+**What is left on that branch:** item 4's help-text half. Staging the converted frame to Parquet
+was investigated and deliberately not built — see item 3 for the measurements and the scope
+question it ran into.
 
 ---
 
@@ -71,6 +71,43 @@ survives 16 GB; 800M is OOM-killed).
 The number itself is a judgement, not a measurement — it is the one item on this list worth
 confirming with a human before coding.
 
+### Staging the converted frame was investigated and not built
+
+The obvious way to bound residency is to write each source's converted frame to Parquet in scratch
+and have `_slices` read each sheet back, instead of holding `Observation.frame` from planning until
+the last workbook is written. It was taken far enough to measure and to prove the properties it
+needs, then stopped for two reasons.
+
+**It bounds the write phase, not the peak.** The conversion *produces* the whole converted frame in
+memory; staging happens after that. So the peak is unchanged, and what staging removes is holding
+the frame *while also* building workbooks, across the long part of the run. Worth having, but it is
+not what makes the ceiling reachable — bounding the peak needs a streaming conversion.
+
+**Reading a sheet back by offset needs `pl.scan_parquet(...).slice(...)`, a lazy frame**, and
+`library-spec.md`'s out-of-scope list names "streaming/lazy frames", which
+`export-pipeline-spec.md` inherits unchanged. The adjacent note there is about the *sort*
+specifically, so the exclusion may be aimed at the library's frame API rather than at reading back
+a scratch file the pipeline itself wrote — **that reading is a decision nobody has made**, and it
+is the first thing to settle before this is picked up again.
+
+Measured resident cost of a converted frame, which is what any of this is trading against:
+
+| Shape | bytes/cell | 150M cells | 400M cells |
+| --- | --- | --- | --- |
+| Narrow: 4 numeric-ish columns | 7.00 | 0.98 GiB | 2.61 GiB |
+| Wide: 20 columns, 11 of free text | 25.40 | 3.55 GiB | 9.46 GiB |
+
+The second row reproduces gate 0d's recorded "150M cells ≈ 3.5 GiB on the measured mix" almost
+exactly, which is worth knowing: **the ceiling is a property of the column mix, not of the cell
+count.** A narrow source is nowhere near it at 150M cells; a text-heavy one passes it well before.
+A single number cannot express that, so a ceiling expressed in cells will be wrong in one direction
+for most sources.
+
+`packages/pqx-pipeline/tests/test_staged_parquet.py` already proves what the approach would need:
+Parquet round-trips every dtype ToExcel emits, preserves row order, preserves the digest of each
+positional slice, and `DataFrameHasherBinaryAggregateHash.combine` lets `expected_whole` be taken
+over chunks so the whole frame is never resident for it. Those tests stand on their own.
+
 ---
 
 ## 4. `pqx verify` cannot reach an Azure destination
@@ -80,10 +117,18 @@ filenames**. So `pqx verify` works against a local or SMB-mounted destination an
 `abfs://`. The spec already lists "re-verifying after publish" as out of scope for this reason; the
 verb partially closes it, but only for filesystem destinations.
 
-Two ways forward, neither started: give `fast_excel_reader` a remote read path (download to scratch
-and read, or a real remote reader), or document the constraint in the verb's help text. **Do the
-second now regardless** — a verb that silently only works on some destinations is worse than one
-that says which.
+Two ways forward: give `fast_excel_reader` a remote read path (download to scratch and read, or a
+real remote reader), or document the constraint in the verb's help text.
+
+**The second is done** on `vectorised-bucketing`. `pqx --help` ends with an epilog naming it, which
+is where it had to go: `cli.py` uses argparse with no subparsers, so the verb is one positional
+constrained by `choices` and there is no per-verb help to hang it from. A test asserts the text is
+there — the first in the repository to assert on help output.
+
+While doing it: `CLAUDE.md` claimed "the Excel writers and `fast_excel_reader` ... say so", and
+none of the three did. All three now carry the constraint in their own docstrings.
+
+**The remote read path is untouched**, so the constraint is now stated rather than removed.
 
 ---
 
@@ -97,6 +142,15 @@ Options: let `--dry-run` stage and say so in its help; or have `plan` read the p
 and subtract, which gives the same answer without changing what a documented switch means. The
 second is recommended. Today the workaround is `pqx plan`, which names every workbook a run would
 produce — anything in the destination not in that list and not bookkeeping is what would go.
+
+**A third option surfaced while working on item 1, and it is cheaper than either.**
+`plan_calendar_sheets(shape, counts, partitioning, limits)` takes **no frame** — bucket counts plus
+`SourceShape` are the entire input to planning. Both are small: a few hundred dict entries and four
+numbers. Persisting them beside the export would let `plan` and `--dry-run` produce a full plan, and
+therefore a delete set, **without reading a single source**. That removes the premise this item
+rests on rather than working around it. Nobody has costed the staleness question it raises: a
+persisted count set describes the sources as they were at some T2, so it needs the same freshness
+rule the sidecars have.
 
 Recorded in `docs/decisions/2026-09-15-phases-e-h.md`.
 
@@ -133,6 +187,11 @@ checks each now have a verb — see the table at the end of
   nothing prunes it, and nothing warns.
 - There is no `README.md`. `CLAUDE.md` covers the working rules; a human arriving at the repository
   still has to start from `docs/export-pipeline-spec.md`.
+- On `vectorised-bucketing`, `ordered_by_bucket` and `extract_metadata_from_dataframe` have no
+  caller left in the workspace — the run moved to `bucket_arrangement` and `describe_dataframe`.
+  Both are kept and both say so in their own docstrings, because the fifty frozen tests written
+  against them read as statements of behaviour, and rewriting those to gather and unpack by hand
+  would bury that behind mechanism. Worth revisiting if a third entry point ever appears.
 
 ---
 

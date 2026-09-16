@@ -297,6 +297,13 @@ def fast_excel_reader(
     headers ``*`` and ``b`` fails, and so does ``^a$`` beside ``a``. ``fastexcel`` returns
     both correctly, because it never treats a header as an expression.
 
+    ⚠️ **Local paths only.** ``path`` is handed to ``fastexcel`` as ``str(path)``, and that
+    library opens a local filename rather than going through ``UPath``. So this reads from a
+    local or SMB-mounted destination and **not** from ``abfs://``, which is why ``pqx verify``
+    says the same in its help and why re-verifying after publish is out of scope for a remote
+    destination. Closing it needs a download-to-scratch step or a real remote reader; neither
+    exists.
+
     Args:
         path: The workbook to read.
         sheet_names: Sheets to read, in the order given. All sheets in workbook order when

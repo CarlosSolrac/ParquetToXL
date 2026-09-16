@@ -380,7 +380,13 @@ def build_parser() -> argparse.ArgumentParser:
         reported rather than silently ignored -- ``--force`` under ``plan`` still changes what
         selection is asked, which is worth showing.
     """
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(prog="pqx", description="Convert Parquet sources into verified Excel workbooks.")
+    # The constraint goes in the epilog rather than on the verb, because there are no
+    # subparsers to hang per-verb help from: the verb is one positional constrained by choices.
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        prog="pqx",
+        description="Convert Parquet sources into verified Excel workbooks.",
+        epilog="verify reads published workbooks through a library that opens local filenames, so it reaches a local or SMB-mounted destination and not an abfs:// one.",
+    )
     parser.add_argument("--config", required=True, help="the export configuration to read")
     parser.add_argument("--profile", action="append", default=None, metavar="NAME", help="act on this profile only; repeatable, and every profile by default")
     parser.add_argument("--force", action="store_true", help="treat the profile as stale regardless of what selection says")

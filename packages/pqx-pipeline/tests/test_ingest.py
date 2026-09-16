@@ -17,6 +17,7 @@ from pqx_pipeline.ingest import IngestError, Observation, build_sidecar, observe
 from pqx_sidecar.store import get_sidecar_store, sidecar_path
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from upath import UPath
@@ -87,7 +88,9 @@ def test_the_original_path_supplies_the_modification_time(tmp_path: Path) -> Non
     old: float = source.stat().st_mtime - 7 * 24 * 3600
     os.utime(str(source), (old, old))
 
-    recorded: DataframeMetadata = build_sidecar(read_parquet(staged), original_path=source, created_utc=CREATED)
+    recorded: DataframeMetadata
+    _: pl.DataFrame
+    recorded, _ = build_sidecar(read_parquet(staged), original_path=source, created_utc=CREATED)
     assert recorded.modified_utc == dt.datetime.fromtimestamp(old, tz=dt.UTC)
     assert recorded.modified_utc != dt.datetime.fromtimestamp(staged.stat().st_mtime, tz=dt.UTC)
     assert str(source) in str(recorded.full_path)
@@ -95,7 +98,7 @@ def test_the_original_path_supplies_the_modification_time(tmp_path: Path) -> Non
 
 
 def test_extraction_returning_nothing_becomes_a_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    # extract_metadata_from_dataframe returns None rather than raising, because it is a per-file
+    # describe_dataframe returns None rather than raising, because it is a per-file
     # boundary for batch jobs. Here the run IS the file, so a None must not become a silently
     # empty description.
     import pqx_pipeline.ingest as ingest_module
@@ -104,7 +107,7 @@ def test_extraction_returning_nothing_becomes_a_failure(tmp_path: Path, monkeypa
         """Stand in for an extraction that logged its reason and gave up."""
         return
 
-    monkeypatch.setattr(ingest_module, "extract_metadata_from_dataframe", describe_nothing)
+    monkeypatch.setattr(ingest_module, "describe_dataframe", describe_nothing)
     source: UPath = _written(tmp_path, "sales.parquet")
     with pytest.raises(IngestError, match="could not describe"):
         build_sidecar(_frame(), original_path=source, created_utc=CREATED)
@@ -115,8 +118,10 @@ def test_observing_measures_the_converted_frame(tmp_path: Path) -> None:
     # against a shape that is never written.
     source: UPath = _written(tmp_path, "sales.parquet", rows=9)
     frame: pl.DataFrame = read_parquet(source)
-    recorded: DataframeMetadata = build_sidecar(frame, original_path=source, created_utc=CREATED)
-    seen: Observation = observe("sales", frame, original_path=source, metadata=recorded)
+    recorded: DataframeMetadata
+    converted: pl.DataFrame
+    recorded, converted = build_sidecar(frame, original_path=source, created_utc=CREATED)
+    seen: Observation = observe("sales", converted, original_path=source, metadata=recorded)
     assert seen.shape.alias == "sales"
     assert seen.shape.stem == "sales"
     assert seen.shape.rows == 9
@@ -125,22 +130,27 @@ def test_observing_measures_the_converted_frame(tmp_path: Path) -> None:
 
 
 def test_an_observation_carries_the_frame_the_digest_will_be_taken_over(tmp_path: Path) -> None:
-    # Converted here, before planning, so the digest recorded per fragment is taken over a frame
-    # already in memory rather than by converting twice.
+    # The frame the fragment digests are taken over is the one describing the source already
+    # produced, not a second conversion of the same rows.
     from pqx_frame.conversion.to_excel import DataframeConversionToExcel
 
     source: UPath = _written(tmp_path, "sales.parquet")
     frame: pl.DataFrame = read_parquet(source)
-    recorded: DataframeMetadata = build_sidecar(frame, original_path=source, created_utc=CREATED)
+    recorded: DataframeMetadata
+    converted: pl.DataFrame
+    recorded, converted = build_sidecar(frame, original_path=source, created_utc=CREATED)
     expected: pl.DataFrame = DataframeConversionToExcel().metadata_of_converted_dataframe(frame, []).converted_dataframe
-    assert observe("sales", frame, original_path=source, metadata=recorded).frame.equals(expected)
+    assert converted.equals(expected)
+    assert observe("sales", converted, original_path=source, metadata=recorded).frame.equals(expected)
 
 
 def test_an_empty_source_observes_as_zero_rows(tmp_path: Path) -> None:
     source: UPath = _written(tmp_path, "sales.parquet", rows=0)
     frame: pl.DataFrame = read_parquet(source)
-    recorded: DataframeMetadata = build_sidecar(frame, original_path=source, created_utc=CREATED)
-    seen: Observation = observe("sales", frame, original_path=source, metadata=recorded)
+    recorded: DataframeMetadata
+    converted: pl.DataFrame
+    recorded, converted = build_sidecar(frame, original_path=source, created_utc=CREATED)
+    seen: Observation = observe("sales", converted, original_path=source, metadata=recorded)
     assert seen.shape.rows == 0
     assert seen.shape.is_empty
     assert seen.shape.columns > 0
@@ -153,9 +163,36 @@ def test_a_sidecar_can_be_written_somewhere_other_than_beside_its_source(tmp_pat
     source: UPath = _written(tmp_path, "sales.parquet")
     elsewhere: UPath = ZPath(str(tmp_path / "sidecars"))
     elsewhere.mkdir(parents=True)
-    recorded: DataframeMetadata = build_sidecar(read_parquet(source), original_path=source, created_utc=CREATED, sidecar_directory=elsewhere)
+    recorded: DataframeMetadata
+    _: pl.DataFrame
+    recorded, _ = build_sidecar(read_parquet(source), original_path=source, created_utc=CREATED, sidecar_directory=elsewhere)
     assert sidecar_path(elsewhere / "sales.parquet").exists()
     assert not sidecar_path(source).exists()
     # Still describing the source, not the place the sidecar landed.
     assert str(source) in str(recorded.full_path)
     assert "sidecars" not in str(recorded.full_path)
+
+
+def test_a_source_is_converted_for_excel_exactly_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Converting a forty-million-row frame twice per source is a whole wasted pass over it. The
+    # digests the sidecar records and the frame the writer slices come from the same conversion,
+    # so the conversion runs once and both halves of its result are kept.
+    from pqx_frame.conversion.base import ConvertedDataframe
+    from pqx_frame.conversion.to_excel import DataframeConversionToExcel
+    from pqx_frame.hashing.base import DataFrameHasherBaseClass
+
+    calls: list[str] = []
+    original: object = DataframeConversionToExcel.metadata_of_converted_dataframe
+
+    def counting(self: DataframeConversionToExcel, df: pl.DataFrame, hashers: Sequence[DataFrameHasherBaseClass]) -> ConvertedDataframe:
+        calls.append("converted")
+        return original(self, df, hashers)  # type: ignore[operator, no-any-return]
+
+    monkeypatch.setattr(DataframeConversionToExcel, "metadata_of_converted_dataframe", counting)
+    source: UPath = _written(tmp_path, "sales.parquet", rows=9)
+    frame: pl.DataFrame = read_parquet(source)
+    recorded: DataframeMetadata
+    converted: pl.DataFrame
+    recorded, converted = build_sidecar(frame, original_path=source, created_utc=CREATED)
+    observe("sales", converted, original_path=source, metadata=recorded)
+    assert calls == ["converted"]

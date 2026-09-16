@@ -44,7 +44,7 @@ from pqx_staging.scratch import DEFAULT_OUTPUT_ALLOWANCE, require_free_space, re
 from pqx_staging.transfer import copy_file, delete_names, list_names, publish_files
 from pqx_verify.fragments import ManifestVerdict, verify_manifest
 
-from pqx_pipeline.bucketing import ordered_by_bucket
+from pqx_pipeline.bucketing import bucket_arrangement
 from pqx_pipeline.ingest import Observation, build_sidecar, observe, read_parquet
 from pqx_pipeline.locations import REPORTS_DIRECTORY, keep_set, manifest_path, receipt_path
 from pqx_pipeline.staleness import ProfileStaleness, SourceStaleness, excel_stale, read_receipt, sidecar_stale
@@ -252,15 +252,24 @@ def observe_sources(
     for sheet in profile.sheets:
         original: UPath = ZPath(config.sources[sheet.source].path)
         frame: pl.DataFrame = read_parquet(staged[sheet.source])
-        metadata: DataframeMetadata = build_sidecar(frame, original_path=original, created_utc=instants.described, sidecar_directory=directory)
+        # Describing the source converts it for Excel, so the converted frame comes back here
+        # rather than being rebuilt later from the same rows.
+        metadata: DataframeMetadata
+        converted: pl.DataFrame
+        metadata, converted = build_sidecar(frame, original_path=original, created_utc=instants.described, sidecar_directory=directory)
         sidecars[sheet.source] = sidecar_path(original if directory is None else directory / original.name)
 
         bucket_counts: dict[Bucket, int] = {}
         if isinstance(profile.partitioning, CalendarPartitioning) and sheet.partition_column is not None:
             column: DateColumn = config.sources[sheet.source].date_columns[sheet.partition_column]
-            frame, bucket_counts = ordered_by_bucket(frame, column, profile.partitioning, column_name=sheet.partition_column, sort=sheet.sort)
+            # Decided over the frame as read and applied to the converted one. Conversion is a
+            # per-value cast and cannot reorder rows, but it does change what some of them sort
+            # like -- see bucket_arrangement -- so the source's own values choose the order.
+            order: pl.Series
+            order, bucket_counts = bucket_arrangement(frame, column, profile.partitioning, column_name=sheet.partition_column, sort=sheet.sort)
+            converted = converted[order]
         counts[sheet.source] = bucket_counts
-        observations[sheet.source] = observe(sheet.source, frame, original_path=original, metadata=metadata)
+        observations[sheet.source] = observe(sheet.source, converted, original_path=original, metadata=metadata)
     return observations, counts, sidecars
 
 

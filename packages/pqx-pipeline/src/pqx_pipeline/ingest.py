@@ -1,6 +1,6 @@
 """Reading a staged Parquet file and describing it, with the original path attached.
 
-**The trap this module exists to not fall into.** ``extract_metadata_from_dataframe`` stats whatever
+**The trap this module exists to not fall into.** ``describe_dataframe`` stats whatever
 path it is handed, and its docstring is explicit that "the pairing is the caller's responsibility"
 -- frame and path are never checked against each other. That is exactly what lets the pipeline pass
 a frame read from **scratch** together with the **original remote path**, giving ``full_path`` the
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 from pqx_frame.conversion.to_excel import DataframeConversionToExcel
 from pqx_frame.hashing.binary_aggregate import DataFrameHasherBinaryAggregateHash
-from pqx_frame.metadata.extract import extract_metadata_from_dataframe
+from pqx_frame.metadata.extract import DescribedDataframe, describe_dataframe
 from pqx_plan.capacity import SourceShape
 from pqx_sidecar.store import get_sidecar_store
 
@@ -91,7 +91,7 @@ def build_sidecar(
     sidecar_directory: UPath | None = None,
     timezones: Sequence[str] = (),
     store: str = "json",
-) -> DataframeMetadata:
+) -> tuple[DataframeMetadata, pl.DataFrame]:
     """Describe a staged frame as coming from its original source, and persist the sidecar.
 
     ``original_path`` rather than the staged copy, and named so it cannot be passed positionally
@@ -112,27 +112,30 @@ def build_sidecar(
         store: Identifier of the sidecar store to write through.
 
     Returns:
-        The metadata recorded.
+        The metadata recorded, and the ToExcel conversion of ``frame`` that describing it
+        produced. **The conversion is returned rather than discarded** because describing a source
+        already converts it in full: dropping the frame here would make the writer convert the same
+        forty million rows a second time to get back what this call had in hand.
 
     Raises:
-        IngestError: Extraction failed. ``extract_metadata_from_dataframe`` returns ``None`` rather
-            than raising -- it is a per-file boundary for batch jobs, and one unreadable file
-            should cost that file's metadata rather than the whole run. Here the run *is* the file,
-            so a ``None`` becomes a failure rather than a silently empty description.
+        IngestError: Extraction failed. ``describe_dataframe`` returns ``None`` rather than raising
+            -- it is a per-file boundary for batch jobs, and one unreadable file should cost that
+            file's metadata rather than the whole run. Here the run *is* the file, so a ``None``
+            becomes a failure rather than a silently empty description.
     """
-    metadata: DataframeMetadata | None = extract_metadata_from_dataframe(
+    described: DescribedDataframe | None = describe_dataframe(
         frame,
         original_path,
         timezones,
         [DataFrameHasherBinaryAggregateHash()],
         [DataframeConversionToExcel()],
     )
-    if metadata is None:
+    if described is None:
         message: str = f"could not describe the frame read for {original_path}; extraction logged the reason and returned nothing"
         raise IngestError(message)
     located: UPath = original_path if sidecar_directory is None else sidecar_directory / original_path.name
-    get_sidecar_store(store).write(metadata, located, created_utc=created_utc)
-    return metadata
+    get_sidecar_store(store).write(described.metadata, located, created_utc=created_utc)
+    return described.metadata, described.converted[0]
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,25 +153,23 @@ class Observation:
     metadata: DataframeMetadata
 
 
-def observe(alias: str, frame: pl.DataFrame, *, original_path: UPath, metadata: DataframeMetadata) -> Observation:
-    """Convert a source's frame for Excel and measure what the planner needs to know about it.
+def observe(alias: str, converted: pl.DataFrame, *, original_path: UPath, metadata: DataframeMetadata) -> Observation:
+    """Measure what the planner needs to know about a source's converted frame.
 
-    The conversion happens **here**, before planning, for two reasons. The exported column count
-    ``C_s`` is the *converted* frame's width, so measuring the unconverted one would size every
-    sheet against a shape that is never written. And the digest recorded per fragment is taken over
-    the converted frame, which is already in memory at this point -- so taking it later would mean
-    converting twice.
+    The conversion happens in :func:`build_sidecar`, which has to perform it anyway to describe the
+    source, and arrives here already done. The exported column count ``C_s`` is the *converted*
+    frame's width, so measuring an unconverted one would size every sheet against a shape that is
+    never written.
 
     Args:
         alias: The source alias.
-        frame: The frame as read from the staged Parquet.
+        converted: The frame as ToExcel leaves it, already arranged into output order.
         original_path: The source's location, for ``{source_stem}``.
         metadata: The description already recorded for this source.
 
     Returns:
         The observation.
     """
-    converted: pl.DataFrame = DataframeConversionToExcel().metadata_of_converted_dataframe(frame, []).converted_dataframe
     return Observation(
         shape=SourceShape(alias=alias, stem=source_stem(original_path), columns=converted.width, rows=converted.height),
         frame=converted,

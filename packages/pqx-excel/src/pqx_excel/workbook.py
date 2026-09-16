@@ -10,6 +10,11 @@ What gate 0a's harness did *not* show, because it generated rows synthetically, 
 ``test_multi_sheet_workbook`` and stated on :func:`write_workbook`: deferring consumption to
 ``save()`` means every sheet's frame stays reachable until then. The writer adds nothing per
 row, but it does not let a caller hold less than the data it hands over.
+
+⚠️ **Local paths only.** The destination is handed to ``rustpy-xlsxwriter`` as ``str(path)``,
+which opens a local filename rather than going through ``UPath``. Workbooks are therefore
+written into scratch and copied to the destination afterwards, never written to ``abfs://``
+directly.
 """
 
 from __future__ import annotations
