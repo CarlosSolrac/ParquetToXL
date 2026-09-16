@@ -32,16 +32,21 @@ The branch is finished and green: six commits, 1,725 tests, 100% statement and b
 coverage. Nothing is half-done on it. Ask me whether to merge it before starting
 anything new.
 
-One decision is waiting for me rather than for code, and it is written up in backlog
-item 3. Staging each source's converted frame to Parquet -- so the write phase slices
-it from disk instead of holding the whole thing -- was investigated, measured, and
-deliberately not built. Two reasons: it bounds the write phase but not the peak, since
-the conversion produces the whole frame in memory before staging could happen; and
-reading a sheet back by offset needs a lazy scan, which library-spec.md's out-of-scope
-list names and export-pipeline-spec.md inherits. Whether that exclusion is aimed at the
-library's frame API or at any lazy read at all is a reading nobody has made. Do not make
-it by writing code. packages/pqx-pipeline/tests/test_staged_parquet.py already proves
-every property the approach would need, so the decision is all that is missing.
+Before proposing any lazy frame -- scan_parquet, .lazy(), the streaming engine --
+read docs/decisions/2026-09-16-lazy-frames.md. The pipeline is eager everywhere on
+purpose, and the reasons are not the ones the specs give: the additive identity makes
+predicate and projection pushdown unavailable, so a lazy plan here has almost nothing
+to optimise, and lazy execution surfaces failures at collect() rather than at the row
+that caused them, which is what the refusal messages are for. That record lists what
+would properly reopen it, and none of the conditions is "an implementer found a use".
+
+Backlog item 3 carries the related work: staging each source's converted frame to
+Parquet so the write phase slices it from disk. Investigated, measured, deliberately
+not built -- it bounds the write phase but not the peak, since the conversion produces
+the whole frame in memory before staging could happen. An eager row-group alternative
+is described there and is unbuilt.
+packages/pqx-pipeline/tests/test_staged_parquet.py already proves every property the
+approach would need.
 
 Backlog items 2 and 3 are blocked on decisions rather than on code -- bring me the
 options rather than choosing for me. Item 6 needs infrastructure neither of us has here.
@@ -70,9 +75,9 @@ Swap the numbered list for one of these:
 
 - **Merge it** — "Run the three CI commands, show me the diff against main, and tell me what you
   would want a reviewer to look at hardest before it merges."
-- **Settle the staging question** — "Read backlog item 3 and tell me whether `scan_parquet` counts
-  as the lazy frames the library spec excludes. Give me the argument both ways and a
-  recommendation; do not write any code until I answer."
+- **Cost the eager staging path** — "Read backlog item 3 and 2026-09-16-lazy-frames.md §5, then
+  tell me what aligning a staged file's row groups to planned sheets would actually take, and what
+  it would save. Measure before proposing; do not write the wiring."
 - **Decisions first** — "Start with backlog items 2 and 3. Do not write the wiring; put the two
   naming and ordering questions to me with your recommendation, and the 150M-cell ceiling with the
   measurement behind it."

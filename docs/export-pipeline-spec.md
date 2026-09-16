@@ -828,3 +828,9 @@ Negative checks, each exercising a guard that is expensive to get wrong:
   `library-spec.md`, unchanged. Gate 0d measured the streaming sort as well and it does not
   change the answer: it peaks at 70-80% of the eager sort on large inputs, so it would buy a
   quarter more headroom, not a different design.
+  **The full reasoning for staying eager is in `docs/decisions/2026-09-16-lazy-frames.md`**, which
+  matters because the rationale above is about sorting while the rule is not: the decisive
+  arguments are that the additive identity makes predicate and projection pushdown unavailable, so
+  a lazy plan here has almost nothing to optimise, and that lazy execution surfaces failures at
+  `collect()` rather than at the row that caused them. That record also lists what would properly
+  reopen the question, and an eager alternative for the one case that keeps raising it.
