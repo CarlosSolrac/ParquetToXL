@@ -117,10 +117,18 @@ filenames**. So `pqx verify` works against a local or SMB-mounted destination an
 `abfs://`. The spec already lists "re-verifying after publish" as out of scope for this reason; the
 verb partially closes it, but only for filesystem destinations.
 
-Two ways forward, neither started: give `fast_excel_reader` a remote read path (download to scratch
-and read, or a real remote reader), or document the constraint in the verb's help text. **Do the
-second now regardless** — a verb that silently only works on some destinations is worse than one
-that says which.
+Two ways forward: give `fast_excel_reader` a remote read path (download to scratch and read, or a
+real remote reader), or document the constraint in the verb's help text.
+
+**The second is done** on `vectorised-bucketing`. `pqx --help` ends with an epilog naming it, which
+is where it had to go: `cli.py` uses argparse with no subparsers, so the verb is one positional
+constrained by `choices` and there is no per-verb help to hang it from. A test asserts the text is
+there — the first in the repository to assert on help output.
+
+While doing it: `CLAUDE.md` claimed "the Excel writers and `fast_excel_reader` ... say so", and
+none of the three did. All three now carry the constraint in their own docstrings.
+
+**The remote read path is untouched**, so the constraint is now stated rather than removed.
 
 ---
 

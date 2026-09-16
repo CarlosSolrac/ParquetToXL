@@ -618,3 +618,12 @@ def test_verify_reports_a_source_whose_fragments_no_longer_add_up(tmp_path: Path
     invoked: _Invoked = _invoke(tmp_path, "verify", config=config)
     assert invoked.code == EXIT_BAD
     assert "do not reassemble" in invoked.output
+
+
+def test_the_help_says_which_destinations_verify_can_reach() -> None:
+    # A verb that silently works on some destinations and not others is worse than one that says
+    # which. verify reads workbooks through a library that opens local filenames, so it cannot
+    # reach an abfs:// destination, and nothing anywhere told an operator that.
+    help_text: str = build_parser().format_help()
+    assert "abfs://" in help_text
+    assert "verify" in help_text.lower()

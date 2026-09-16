@@ -1,4 +1,10 @@
-"""The Excel writer registry, and the two writers registered in it."""
+"""The Excel writer registry, and the two writers registered in it.
+
+⚠️ **Local paths only.** Both writers hand the destination to their library as ``str(path)``,
+and both libraries open a local filename rather than going through ``UPath``. Workbooks are
+therefore written into scratch and copied to the destination afterwards, never written to
+``abfs://`` directly.
+"""
 
 from __future__ import annotations
 
