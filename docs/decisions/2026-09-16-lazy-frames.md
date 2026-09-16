@@ -17,7 +17,7 @@ engine — in any form?
 
 | Option | Consequence |
 | --- | --- |
-| **Stay eager everywhere (chosen)** | A hard ceiling on source size, and `balanced` keeps a cell ceiling that refuses some sources which would in fact have completed. |
+| **Stay eager everywhere (chosen)** | A hard ceiling on source size, and the proposed `balanced` cell ceiling stays where gate 0d put it. |
 | Go lazy where it helps | Two execution engines to keep correct against a 100% branch gate, and refusal messages that no longer name a row. Buys 20-30% on the one case that applies. |
 | Go lazy end to end | The only path to sources larger than memory. A different pipeline, and every existing memory measurement invalidated. |
 
@@ -94,8 +94,10 @@ It is not free, and pretending otherwise would make this record useless.
 
 - Peak memory is bounded by the whole source plus its conversion. Gate 0d: **~400M cells is the
   last shape that survives 16 GB; 800M is OOM-killed.**
-- `balanced` ships behind a 150M-cell ceiling that cuts sources between 150M and ~400M cells
-  which would have completed on an idle machine.
+- The 150M-cell ceiling gate 0d proposed for `balanced` stays where it is. Note that **neither is
+  live**: `ProfileLimits` has no such field, and `run_profile` refuses a `balanced` profile by name
+  because the path is not wired into a run at all (backlog items 2 and 3). So this cost is
+  prospective — it is what staying eager will cost when `balanced` ships, not what it costs today.
 - The write phase holds each source's converted frame while also building workbooks.
 - There is no answer at all if sources outgrow memory.
 
@@ -111,12 +113,14 @@ writer.
 
 In order, cheapest first. **None of these is "an implementer found a use for `scan_parquet`."**
 
-1. **Raise the cell ceiling on evidence.** It is one number, and the constraint it stands in for
-   is not the one it measures. Measured on 2026-09-16: a converted frame costs **7.00 bytes per
-   cell** on a narrow numeric mix and **25.40** on a wide one with free text — 0.98 GiB against
-   3.55 GiB at the same 150M cells. The second reproduces gate 0d's figure almost exactly, and
-   together they say the ceiling is a property of the **column mix**, not the cell count. A narrow
-   source is nowhere near trouble where a text-heavy one is already past it.
+1. **Set the cell ceiling on evidence, whenever it does get set.** Cheapest in the most literal
+   sense: the field does not exist yet, so nothing has to be unpicked. And the number gate 0d
+   proposed stands in for a constraint it does not measure. Measured on 2026-09-16, a converted
+   frame costs **7.00 bytes per cell** on a narrow numeric mix and **25.40** on a wide one with
+   free text — 0.98 GiB against 3.55 GiB at the same 150M cells. The second reproduces gate 0d's
+   figure almost exactly, and together they say the ceiling is a property of the **column mix**,
+   not the cell count. A narrow source is nowhere near trouble where a text-heavy one is already
+   past it. A limit expressed in cells alone will be wrong in one direction for most sources.
 2. **Eager row-group staging**, per §5, evaluated on its own merits rather than as a workaround.
 3. **Lazy at one named site, with its own decision record** — not a general lifting of the
    exclusion.
