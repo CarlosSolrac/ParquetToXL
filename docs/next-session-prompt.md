@@ -8,17 +8,18 @@ pipeline — `CLAUDE.md` and `docs/backlog.md` carry everything it needs.
 ```
 Read CLAUDE.md and docs/backlog.md before doing anything.
 
-Every phase of docs/export-pipeline-spec.md is built and merged to main. Work is in
-progress on the branch `vectorised-bucketing`, which has two commits on it and is not
-merged. Read docs/decisions/2026-09-15-distinct-value-bucketing.md before touching
-either area it covers -- it records six decisions with their alternatives, and two of
-them look wrong until you read why.
+Every phase of docs/export-pipeline-spec.md is built and merged to main. The branch
+`vectorised-bucketing` is finished, green and NOT merged. Read
+docs/decisions/2026-09-15-distinct-value-bucketing.md before touching either area it
+covers -- it records six decisions with their alternatives, and two of them look wrong
+until you read why.
 
-What those two commits did: bucketing decodes a date column's DISTINCT values through
-the existing scalar decoder rather than calling it once per row, which is 50x-80x over
-two million rows and leaves pqx-calendar's decoder the only statement of the
-century-window rule. And a source is now converted for Excel once per run instead of
-twice -- describing it converted the whole frame and threw the result away.
+What the branch did: bucketing decodes a date column's DISTINCT values through the
+existing scalar decoder rather than calling it once per row, which is 50x-80x over two
+million rows and leaves pqx-calendar's decoder the only statement of the century-window
+rule. A source is now converted for Excel once per run instead of twice -- describing it
+converted the whole frame and threw the result away. And `pqx --help` finally says that
+verify cannot reach an abfs:// destination.
 
 Two traps are written down there and are easy to reintroduce. Zoned timestamp columns
 are deliberately NOT collapsed to their day, because Polars converts timezones through
@@ -52,8 +53,10 @@ keywords repeated on every subclass, \A and \Z instead of ^ and $, injected cloc
 CLAUDE.md before telling me anything is done -- reproduce them, do not predict them. Note
 that `pre-commit run --all-files` fails on Windows for a reason that predates this work:
 gates/gate_0a_sheet_memory.py and gates/gate_0d_sort_memory.py use resource.getrusage,
-which is POSIX-only. Confirm it against a clean tree rather than assuming, and do not fix
-it.
+which is POSIX-only, and BOTH type checkers report it -- 12 errors from pyright and 6
+from mypy, all in gates/. `uv run pyright packages tools` and `uv run mypy packages tools`
+are both clean. Confirm that against a clean tree rather than taking my word for it, read
+the hook status lines rather than the tail of their output, and do not fix gates/.
 
 Commit in the repository's prose style, explaining why. Do not open a pull request unless
 I ask. If a test proves the specification wrong, tell me rather than editing either.
