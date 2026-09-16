@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     from pqx_calendar.periods import BasePeriod
     from pqx_plan.config import CalendarPartitioning, SortKey
 
-__all__ = ["BUCKET_KEY_COLUMN", "SOURCE_ORDINAL_COLUMN", "BucketingError", "bucket_of_key", "bucket_of_row", "key_of_bucket", "ordered_by_bucket"]
+__all__ = ["BUCKET_KEY_COLUMN", "SOURCE_ORDINAL_COLUMN", "BucketingError", "bucket_arrangement", "bucket_of_key", "bucket_of_row", "key_of_bucket", "ordered_by_bucket"]
 
 BUCKET_KEY_COLUMN: Final[str] = "__pqx_bucket_key"
 SOURCE_ORDINAL_COLUMN: Final[str] = "__pqx_source_ordinal"
@@ -189,15 +189,22 @@ def _free_name(frame: pl.DataFrame, wanted: str) -> str:
     return name
 
 
-def ordered_by_bucket(
+def bucket_arrangement(
     frame: pl.DataFrame,
     column: DateColumn,
     partitioning: CalendarPartitioning,
     *,
     column_name: str,
     sort: Sequence[SortKey] = (),
-) -> tuple[pl.DataFrame, dict[Bucket, int]]:
-    """Return the frame in final output order, and how many rows fall in each bucket.
+) -> tuple[pl.Series, dict[Bucket, int]]:
+    """Return the source row positions in final output order, and the count per bucket.
+
+    The arrangement rather than the arranged frame, so that it can be **computed over the source's
+    own values and applied to a converted copy of it**. The two are not interchangeable to sort
+    over: ToExcel writes ``True`` as ``-1.0``, which reverses a boolean sort key, turns an empty
+    binary value into a null, which moves under ``nulls_last``, and collapses the largest integers
+    onto one float, which makes distinct values tie. Deciding the order here and gathering there
+    keeps every one of those reading as it does in the source.
 
     Args:
         frame: The source's rows, as read.
@@ -207,9 +214,8 @@ def ordered_by_bucket(
         sort: The sheet's requested sort, applied *within* each bucket.
 
     Returns:
-        The frame arranged so consecutive slices are consecutive buckets, carrying exactly the
-        columns it arrived with; and the row count per bucket, keyed at the precision
-        ``plan_calendar_sheets`` expects.
+        The source row positions, in the order the output wants them; and the row count per
+        bucket, keyed at the precision ``plan_calendar_sheets`` expects.
 
     Raises:
         BucketingError: The partition column is not in the frame, or a null was found under
@@ -296,4 +302,33 @@ def ordered_by_bucket(
     for key_value, count in working.group_by(key_column).len().iter_rows():
         counts[UNDATED if key_value is None else bucket_of_key(key_value)] = count
     ordered: tuple[Bucket, ...] = order_buckets(counts, partitioning.period_order)
-    return working.drop(key_column, ordinal_column, grouping_column), {bucket: counts[bucket] for bucket in ordered}
+    return working[ordinal_column], {bucket: counts[bucket] for bucket in ordered}
+
+
+def ordered_by_bucket(
+    frame: pl.DataFrame,
+    column: DateColumn,
+    partitioning: CalendarPartitioning,
+    *,
+    column_name: str,
+    sort: Sequence[SortKey] = (),
+) -> tuple[pl.DataFrame, dict[Bucket, int]]:
+    """Return the frame in final output order, and how many rows fall in each bucket.
+
+    :func:`bucket_arrangement` applied to the frame it was computed over.
+
+    Args:
+        frame: The source's rows, as read.
+        column: The registered date column named by ``column_name``.
+        partitioning: The profile's calendar settings.
+        column_name: The partition column.
+        sort: The sheet's requested sort, applied *within* each bucket.
+
+    Returns:
+        The frame arranged so consecutive slices are consecutive buckets, carrying exactly the
+        columns it arrived with; and the row count per bucket.
+    """
+    order: pl.Series
+    counts: dict[Bucket, int]
+    order, counts = bucket_arrangement(frame, column, partitioning, column_name=column_name, sort=sort)
+    return frame[order], counts

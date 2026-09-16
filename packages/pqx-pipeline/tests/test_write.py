@@ -14,6 +14,7 @@ import polars as pl
 import pytest
 from pqx_calendar.periods import UNDATED, Bucket, PeriodKey
 from pqx_common.paths import ZPath
+from pqx_frame.metadata.dataframe import DataframeMetadata
 from pqx_pipeline.ingest import Observation, build_sidecar, observe, read_parquet
 from pqx_pipeline.locations import keep_set, manifest_path, receipt_path
 from pqx_pipeline.write import WrittenWorkbook, conversion_identity, write_profile
@@ -73,7 +74,10 @@ def _source(tmp_path: Path, alias: str, rows: int) -> Observation:
         },
     ).write_parquet(str(path))
     frame: pl.DataFrame = read_parquet(path)
-    return observe(alias, frame, original_path=path, metadata=build_sidecar(frame, original_path=path, created_utc=CREATED))
+    recorded: DataframeMetadata
+    converted: pl.DataFrame
+    recorded, converted = build_sidecar(frame, original_path=path, created_utc=CREATED)
+    return observe(alias, converted, original_path=path, metadata=recorded)
 
 
 def _plan(observations: Mapping[str, Observation], counts: Mapping[str, dict[Bucket, int]], limits: ProfileLimits, naming: NamingSettings) -> tuple[NamedWorkbook, ...]:
