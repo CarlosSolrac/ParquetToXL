@@ -1,0 +1,190 @@
+{
+  "schema_version": 3,
+  "created_utc": "2026-09-16T12:00:00Z",
+  "metadata": {
+    "file_name": "int_yymm.parquet",
+    "full_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yymm.parquet",
+    "modified_utc": "2026-09-16T08:35:41.536857Z",
+    "modified_in_timezones": {},
+    "source_columns_metadata": {
+      "columns": [
+        {
+          "name": "id",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "a1a7640e025c26d442e000d5b18d477f",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 6,
+          "null_count": 0
+        },
+        {
+          "name": "note",
+          "dtype": {
+            "kind": "string"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": true,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "2586bcc28f60ae77d76b791b8bbb4f9e",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 6,
+          "null_count": 0
+        },
+        {
+          "name": "period",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "d5a1ce0f30ca8d06f927a7e3e9d2bafe",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 6,
+          "null_count": 0
+        }
+      ],
+      "dataframe_hashes": [
+        {
+          "identifier": "binary-aggregate-xxh3-128",
+          "version": 2,
+          "scope": "dataframe",
+          "bit_width": 128,
+          "digest_hex": "528a1d3e0ccb491b17bcc327082e2d3c",
+          "row_digest_hex": "b5ba2e5e4a43e6c80449a151e112db21"
+        }
+      ],
+      "conversion": null
+    },
+    "column_metadata_of_conversions": [
+      {
+        "columns": [
+          {
+            "name": "id",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "9ce5f6cfd4f8878d2e97cbdc9cfb7e59",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 6,
+            "null_count": 0
+          },
+          {
+            "name": "note",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "2586bcc28f60ae77d76b791b8bbb4f9e",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 6,
+            "null_count": 0
+          },
+          {
+            "name": "period",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "c4695da63c46376e14de11f7d94fb925",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 6,
+            "null_count": 0
+          }
+        ],
+        "dataframe_hashes": [
+          {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "c33e92fd651ca874f0be66387f6985e8",
+            "row_digest_hex": "3c6881c4c47d3b01d5dd0f487d62fecc"
+          }
+        ],
+        "conversion": {
+          "identifier": "to-excel",
+          "version": "4.0",
+          "version_number": 4
+        }
+      }
+    ]
+  }
+}

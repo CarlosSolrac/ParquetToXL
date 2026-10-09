@@ -1,0 +1,190 @@
+{
+  "schema_version": 3,
+  "created_utc": "2026-09-16T12:00:00Z",
+  "metadata": {
+    "file_name": "empty.parquet",
+    "full_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\empty.parquet",
+    "modified_utc": "2026-09-16T08:35:41.401805Z",
+    "modified_in_timezones": {},
+    "source_columns_metadata": {
+      "columns": [
+        {
+          "name": "id",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "00000000000000000000000000000000",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 0,
+          "null_count": 0
+        },
+        {
+          "name": "customer",
+          "dtype": {
+            "kind": "string"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": true,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "00000000000000000000000000000000",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 0,
+          "null_count": 0
+        },
+        {
+          "name": "booked",
+          "dtype": {
+            "kind": "date"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "00000000000000000000000000000000",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 0,
+          "null_count": 0
+        }
+      ],
+      "dataframe_hashes": [
+        {
+          "identifier": "binary-aggregate-xxh3-128",
+          "version": 2,
+          "scope": "dataframe",
+          "bit_width": 128,
+          "digest_hex": "00000000000000000000000000000000",
+          "row_digest_hex": "00000000000000000000000000000000"
+        }
+      ],
+      "conversion": null
+    },
+    "column_metadata_of_conversions": [
+      {
+        "columns": [
+          {
+            "name": "id",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "00000000000000000000000000000000",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 0,
+            "null_count": 0
+          },
+          {
+            "name": "customer",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "00000000000000000000000000000000",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 0,
+            "null_count": 0
+          },
+          {
+            "name": "booked",
+            "dtype": {
+              "kind": "date"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "00000000000000000000000000000000",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 0,
+            "null_count": 0
+          }
+        ],
+        "dataframe_hashes": [
+          {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "00000000000000000000000000000000",
+            "row_digest_hex": "00000000000000000000000000000000"
+          }
+        ],
+        "conversion": {
+          "identifier": "to-excel",
+          "version": "4.0",
+          "version_number": 4
+        }
+      }
+    ]
+  }
+}

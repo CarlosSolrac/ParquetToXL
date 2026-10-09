@@ -1,0 +1,71 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "fan_in",
+  "run_id": "2026-09-16T12-00-00Z-fan_in",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "c20fa423-494e-5faf-8b95-e0df13c9a23a",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\fan_in",
+  "planner_version": "1",
+  "resolved_config_hash": "f4dfddea93eb901682454f1609153229c0142e66d75dcd24603680c4ddaf16fb",
+  "sources": [
+    {
+      "alias": "tiny",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\tiny.parquet",
+      "rows": 3,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "fan_in_Data_001.xlsx",
+          "sheet_name": "tiny Data",
+          "rows": 3,
+          "period_label": null,
+          "verdict": "valid",
+          "detail": "fan_in_Data_001.xlsx!tiny Data holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 3,
+      "rows_found": 3,
+      "reassembled": true
+    },
+    {
+      "alias": "odd_names",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\odd_names.parquet",
+      "rows": 3,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "fan_in_Data_001.xlsx",
+          "sheet_name": "odd_names Data",
+          "rows": 3,
+          "period_label": null,
+          "verdict": "valid",
+          "detail": "fan_in_Data_001.xlsx!odd_names Data holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 3,
+      "rows_found": 3,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "fan_in_Data_001.xlsx",
+      "sheets": 2,
+      "rows": 6,
+      "cells": 32
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}

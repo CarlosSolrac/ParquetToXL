@@ -1,0 +1,194 @@
+{
+  "schema_version": 3,
+  "created_utc": "2026-09-16T12:00:00Z",
+  "metadata": {
+    "file_name": "zoned.parquet",
+    "full_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\zoned.parquet",
+    "modified_utc": "2026-09-16T08:35:41.578399Z",
+    "modified_in_timezones": {},
+    "source_columns_metadata": {
+      "columns": [
+        {
+          "name": "id",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "b4d719f2d9878c6d78997800a11a0e5b",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 3,
+          "null_count": 0
+        },
+        {
+          "name": "note",
+          "dtype": {
+            "kind": "string"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": true,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "d2e07cba91100e228de103f601cebfa9",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 3,
+          "null_count": 0
+        },
+        {
+          "name": "moment",
+          "dtype": {
+            "kind": "datetime",
+            "time_unit": "us",
+            "time_zone": "UTC"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "27f2045de8aa720c0764a06cf30a2b3d",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 3,
+          "null_count": 0
+        }
+      ],
+      "dataframe_hashes": [
+        {
+          "identifier": "binary-aggregate-xxh3-128",
+          "version": 2,
+          "scope": "dataframe",
+          "bit_width": 128,
+          "digest_hex": "dac44b4447796d7dd2e2fa99f4520a4c",
+          "row_digest_hex": "2b1ab038f43760e1c503de365e5f110b"
+        }
+      ],
+      "conversion": null
+    },
+    "column_metadata_of_conversions": [
+      {
+        "columns": [
+          {
+            "name": "id",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "4e55e85ccd548638865c6fa9f0a22be7",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 3,
+            "null_count": 0
+          },
+          {
+            "name": "note",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "d2e07cba91100e228de103f601cebfa9",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 3,
+            "null_count": 0
+          },
+          {
+            "name": "moment",
+            "dtype": {
+              "kind": "datetime",
+              "time_unit": "us",
+              "time_zone": null
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "27f2045de8aa720c0764a06cf30a2b3d",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 3,
+            "null_count": 0
+          }
+        ],
+        "dataframe_hashes": [
+          {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "9790e29819d5dc66600487aa4135fdc6",
+            "row_digest_hex": "4e687922d2c6d5ff4462739d5bbae6f9"
+          }
+        ],
+        "conversion": {
+          "identifier": "to-excel",
+          "version": "4.0",
+          "version_number": 4
+        }
+      }
+    ]
+  }
+}

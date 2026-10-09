@@ -1,0 +1,306 @@
+{
+  "manifest_version": 1,
+  "run_id": "2026-09-16T12-00-00Z-int_and_zoned_dates",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "profile": "int_and_zoned_dates",
+  "planner_version": "1",
+  "resolved_config": {
+    "config_version": 1,
+    "config_id": "ee0ed1e3-9135-5e50-b5da-920118a4c271",
+    "config_modified_utc": "2026-09-16T11:00:00Z",
+    "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+    "sidecar_location": {
+      "kind": "directory",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\int_and_zoned_dates"
+    },
+    "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+    "excel": {
+      "writer": "rustpy-xlsxwriter",
+      "options": {}
+    },
+    "sources": {
+      "int_yymm": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yymm.parquet",
+        "date_columns": {
+          "period": {
+            "type": "int",
+            "format": "YYMM",
+            "two_digit_year_window_start": 1970
+          }
+        }
+      },
+      "int_yyyymmdd": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yyyymmdd.parquet",
+        "date_columns": {
+          "period": {
+            "type": "int",
+            "format": "YYYYMMDD"
+          }
+        }
+      },
+      "zoned": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\zoned.parquet",
+        "date_columns": {
+          "moment": {
+            "type": "datetime",
+            "calendar_timezone": {
+              "mode": "zone",
+              "zone": "America/Mexico_City"
+            }
+          }
+        }
+      },
+      "wall_clock": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\wall_clock.parquet",
+        "date_columns": {
+          "moment": {
+            "type": "datetime",
+            "calendar_timezone": {
+              "mode": "source_wall_clock"
+            }
+          }
+        }
+      }
+    },
+    "profiles": [
+      {
+        "name": "int_and_zoned_dates",
+        "output_subdirectory": "int_and_zoned_dates",
+        "sheets": [
+          {
+            "source": "int_yymm",
+            "partition_column": "period",
+            "sort": []
+          },
+          {
+            "source": "int_yyyymmdd",
+            "partition_column": "period",
+            "sort": []
+          },
+          {
+            "source": "zoned",
+            "partition_column": "moment",
+            "sort": []
+          },
+          {
+            "source": "wall_clock",
+            "partition_column": "moment",
+            "sort": []
+          }
+        ],
+        "limits": {
+          "max_data_rows_per_worksheet": 1048575,
+          "max_cells_per_workbook": 40
+        },
+        "partitioning": {
+          "algorithm": "calendar_greedy",
+          "base_period": "year",
+          "period_order": "ascending",
+          "year_split_months": [
+            6,
+            4,
+            3,
+            2,
+            1
+          ],
+          "oversized_period": "balanced_rows",
+          "null_dates": "separate"
+        },
+        "naming": {
+          "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+          "single_worksheet": "{source} Data",
+          "worksheet": "{source} {period_label}",
+          "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+          "month_format": "numeric",
+          "worksheet_prefix": "",
+          "sheet_collision": "error"
+        }
+      }
+    ]
+  },
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination\\int_and_zoned_dates",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "sources": [
+    {
+      "source_alias": "int_yymm",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yymm.parquet",
+      "sidecar_path": "int_yymm.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "c33e92fd651ca874f0be66387f6985e8",
+        "row_digest_hex": "3c6881c4c47d3b01d5dd0f487d62fecc"
+      },
+      "expected_row_count": 6,
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_1970~2069_001.xlsx",
+          "sheet_name": "int_yymm 1970~2069",
+          "source_alias": "int_yymm",
+          "period_label": "1970~2069",
+          "part_index": null,
+          "row_count": 6,
+          "column_names": [
+            "id",
+            "note",
+            "period"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "c33e92fd651ca874f0be66387f6985e8",
+            "row_digest_hex": "3c6881c4c47d3b01d5dd0f487d62fecc"
+          }
+        }
+      ]
+    },
+    {
+      "source_alias": "int_yyyymmdd",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yyyymmdd.parquet",
+      "sidecar_path": "int_yyyymmdd.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "0d3a9cd2a1a9798acf52f50854c4a32f",
+        "row_digest_hex": "770c3a9f2849a0dcd7fb4f4e28ab2a3a"
+      },
+      "expected_row_count": 4,
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_1970~2069_001.xlsx",
+          "sheet_name": "int_yyyymmdd 2024~2025",
+          "source_alias": "int_yyyymmdd",
+          "period_label": "2024~2025",
+          "part_index": null,
+          "row_count": 4,
+          "column_names": [
+            "id",
+            "note",
+            "period"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "0d3a9cd2a1a9798acf52f50854c4a32f",
+            "row_digest_hex": "770c3a9f2849a0dcd7fb4f4e28ab2a3a"
+          }
+        }
+      ]
+    },
+    {
+      "source_alias": "zoned",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\zoned.parquet",
+      "sidecar_path": "zoned.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "9790e29819d5dc66600487aa4135fdc6",
+        "row_digest_hex": "4e687922d2c6d5ff4462739d5bbae6f9"
+      },
+      "expected_row_count": 3,
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_2025~2026_002.xlsx",
+          "sheet_name": "zoned 2025~2026",
+          "source_alias": "zoned",
+          "period_label": "2025~2026",
+          "part_index": null,
+          "row_count": 3,
+          "column_names": [
+            "id",
+            "note",
+            "moment"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "9790e29819d5dc66600487aa4135fdc6",
+            "row_digest_hex": "4e687922d2c6d5ff4462739d5bbae6f9"
+          }
+        }
+      ]
+    },
+    {
+      "source_alias": "wall_clock",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\wall_clock.parquet",
+      "sidecar_path": "wall_clock.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "db4197db2b3f658fb061f4ed3d46e1a4",
+        "row_digest_hex": "fb23134a4bba8d84456271bd2ea1d0c4"
+      },
+      "expected_row_count": 6,
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_2025~2026_002.xlsx",
+          "sheet_name": "wall_clock 2025",
+          "source_alias": "wall_clock",
+          "period_label": "2025",
+          "part_index": null,
+          "row_count": 6,
+          "column_names": [
+            "id",
+            "moment"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "db4197db2b3f658fb061f4ed3d46e1a4",
+            "row_digest_hex": "fb23134a4bba8d84456271bd2ea1d0c4"
+          }
+        }
+      ]
+    }
+  ],
+  "workbooks": [
+    "int_and_zoned_dates_1970~2069_001.xlsx",
+    "int_and_zoned_dates_2025~2026_002.xlsx"
+  ],
+  "sidecars": [
+    "int_yymm.parquet.json",
+    "int_yyyymmdd.parquet.json",
+    "zoned.parquet.json",
+    "wall_clock.parquet.json"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "config_version": 1,
+  "config_id": "e261cfb0-77b8-5801-8b8d-5e84c509a430",
+  "config_modified_utc": "2026-09-16T11:00:00Z",
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "sidecar_location": {
+    "kind": "directory",
+    "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\tight_limits"
+  },
+  "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+  "excel": {
+    "writer": "rustpy-xlsxwriter",
+    "options": {}
+  },
+  "sources": {
+    "overflow": {
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\overflow.parquet",
+      "date_columns": {
+        "booked": {
+          "type": "date"
+        }
+      }
+    }
+  },
+  "profiles": [
+    {
+      "name": "tight_limits",
+      "output_subdirectory": "tight_limits",
+      "limits": {
+        "max_data_rows_per_worksheet": 400,
+        "max_cells_per_workbook": 4000
+      },
+      "partitioning": {
+        "algorithm": "calendar_greedy",
+        "base_period": "year-month",
+        "period_order": "ascending",
+        "year_split_months": [
+          6,
+          4,
+          3,
+          2,
+          1
+        ],
+        "oversized_period": "balanced_rows",
+        "null_dates": "separate"
+      },
+      "naming": {
+        "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+        "worksheet": "{source} {period_label}",
+        "single_worksheet": "{source} Data",
+        "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+        "month_format": "numeric",
+        "worksheet_prefix": "",
+        "sheet_collision": "error"
+      },
+      "sheets": [
+        {
+          "source": "overflow",
+          "partition_column": "booked",
+          "sort": []
+        }
+      ]
+    }
+  ]
+}

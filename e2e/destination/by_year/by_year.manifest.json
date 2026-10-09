@@ -1,0 +1,332 @@
+{
+  "manifest_version": 1,
+  "run_id": "2026-09-16T12-00-00Z-by_year",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "profile": "by_year",
+  "planner_version": "1",
+  "resolved_config": {
+    "config_version": 1,
+    "config_id": "9b14eab8-e258-55bd-a1e2-c80bea4c6501",
+    "config_modified_utc": "2026-09-16T11:00:00Z",
+    "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+    "sidecar_location": {
+      "kind": "directory",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\by_year"
+    },
+    "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+    "excel": {
+      "writer": "rustpy-xlsxwriter",
+      "options": {}
+    },
+    "sources": {
+      "tiny": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\tiny.parquet",
+        "date_columns": {
+          "booked": {
+            "type": "date"
+          }
+        }
+      },
+      "single_row": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\single_row.parquet",
+        "date_columns": {
+          "booked": {
+            "type": "date"
+          }
+        }
+      },
+      "multi_year": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+        "date_columns": {
+          "booked": {
+            "type": "date"
+          }
+        }
+      }
+    },
+    "profiles": [
+      {
+        "name": "by_year",
+        "output_subdirectory": "by_year",
+        "sheets": [
+          {
+            "source": "tiny",
+            "partition_column": "booked",
+            "sort": []
+          },
+          {
+            "source": "single_row",
+            "partition_column": "booked",
+            "sort": []
+          },
+          {
+            "source": "multi_year",
+            "partition_column": "booked",
+            "sort": []
+          }
+        ],
+        "limits": {
+          "max_data_rows_per_worksheet": 1048575,
+          "max_cells_per_workbook": 800
+        },
+        "partitioning": {
+          "algorithm": "calendar_greedy",
+          "base_period": "year",
+          "period_order": "ascending",
+          "year_split_months": [
+            6,
+            4,
+            3,
+            2,
+            1
+          ],
+          "oversized_period": "balanced_rows",
+          "null_dates": "separate"
+        },
+        "naming": {
+          "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+          "single_worksheet": "{source} Data",
+          "worksheet": "{source} {period_label}",
+          "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+          "month_format": "numeric",
+          "worksheet_prefix": "",
+          "sheet_collision": "error"
+        }
+      }
+    ]
+  },
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination\\by_year",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "sources": [
+    {
+      "source_alias": "tiny",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\tiny.parquet",
+      "sidecar_path": "tiny.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "cb1ccb9b2f40993e26198cba083a01f3",
+        "row_digest_hex": "10a9d94103207a00f70764646d16409a"
+      },
+      "expected_row_count": 3,
+      "fragments": [
+        {
+          "workbook": "by_year_2024~2025_003.xlsx",
+          "sheet_name": "tiny 2025",
+          "source_alias": "tiny",
+          "period_label": "2025",
+          "part_index": null,
+          "row_count": 3,
+          "column_names": [
+            "id",
+            "customer",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "cb1ccb9b2f40993e26198cba083a01f3",
+            "row_digest_hex": "10a9d94103207a00f70764646d16409a"
+          }
+        }
+      ]
+    },
+    {
+      "source_alias": "single_row",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\single_row.parquet",
+      "sidecar_path": "single_row.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "7a1ceb547f63693667afbf86555c4587",
+        "row_digest_hex": "c50c65285cf842199a832c79ba754091"
+      },
+      "expected_row_count": 1,
+      "fragments": [
+        {
+          "workbook": "by_year_2024~2025_003.xlsx",
+          "sheet_name": "single_row 2025",
+          "source_alias": "single_row",
+          "period_label": "2025",
+          "part_index": null,
+          "row_count": 1,
+          "column_names": [
+            "id",
+            "customer",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "7a1ceb547f63693667afbf86555c4587",
+            "row_digest_hex": "c50c65285cf842199a832c79ba754091"
+          }
+        }
+      ]
+    },
+    {
+      "source_alias": "multi_year",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+      "sidecar_path": "multi_year.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "48dcdaae26b9c546d843108fc9f789ad",
+        "row_digest_hex": "05e979c7be76662b5fc4e43bf8773177"
+      },
+      "expected_row_count": 600,
+      "fragments": [
+        {
+          "workbook": "by_year_2022_001.xlsx",
+          "sheet_name": "multi_year 2022",
+          "source_alias": "multi_year",
+          "period_label": "2022",
+          "part_index": null,
+          "row_count": 121,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "b1c639df3f735a1c31db9831a473e7e3",
+            "row_digest_hex": "0cd802f59ea2ad8a384e08f67b05f8ce"
+          }
+        },
+        {
+          "workbook": "by_year_2023_002.xlsx",
+          "sheet_name": "multi_year 2023",
+          "source_alias": "multi_year",
+          "period_label": "2023",
+          "part_index": null,
+          "row_count": 122,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "90855cf132165a023782cadde0d0e3a4",
+            "row_digest_hex": "319c0f701305787d36e1b3e64fa6aa2e"
+          }
+        },
+        {
+          "workbook": "by_year_2024~2025_003.xlsx",
+          "sheet_name": "multi_year 2024",
+          "source_alias": "multi_year",
+          "period_label": "2024",
+          "part_index": null,
+          "row_count": 122,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "639b6d54e2822b1b01358c0ad60e7d5c",
+            "row_digest_hex": "baead70d6624c6d98dd4f513a1c4c9c6"
+          }
+        },
+        {
+          "workbook": "by_year_2025_004.xlsx",
+          "sheet_name": "multi_year 2025",
+          "source_alias": "multi_year",
+          "period_label": "2025",
+          "part_index": null,
+          "row_count": 122,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "2f2967166fda83614bd406355ee5cd76",
+            "row_digest_hex": "21c0ecb178f8f2fcbb093bb8df3b0901"
+          }
+        },
+        {
+          "workbook": "by_year_2026_005.xlsx",
+          "sheet_name": "multi_year 2026",
+          "source_alias": "multi_year",
+          "period_label": "2026",
+          "part_index": null,
+          "row_count": 113,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "73cc6f7262d362ac21db1b400fbe7354",
+            "row_digest_hex": "eac9a3a32db0864da7b6f692accabbb4"
+          }
+        }
+      ]
+    }
+  ],
+  "workbooks": [
+    "by_year_2022_001.xlsx",
+    "by_year_2023_002.xlsx",
+    "by_year_2024~2025_003.xlsx",
+    "by_year_2025_004.xlsx",
+    "by_year_2026_005.xlsx"
+  ],
+  "sidecars": [
+    "tiny.parquet.json",
+    "single_row.parquet.json",
+    "multi_year.parquet.json"
+  ]
+}

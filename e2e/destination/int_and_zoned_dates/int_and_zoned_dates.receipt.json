@@ -1,0 +1,27 @@
+{
+  "receipt_version": 1,
+  "config_id": "ee0ed1e3-9135-5e50-b5da-920118a4c271",
+  "profile": "int_and_zoned_dates",
+  "excel_created_utc": "2026-09-16T12:00:00Z",
+  "config_modified_utc": "2026-09-16T11:00:00Z",
+  "resolved_config_hash": "0d64d8900703c9be721f3534b9998e4e9ae9f5ec1eacb4b65e84bd65621d0b91",
+  "planner_version": "1",
+  "sources": {
+    "int_yymm": {
+      "source_modified_utc": "2026-09-16T08:35:41.536857Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    },
+    "int_yyyymmdd": {
+      "source_modified_utc": "2026-09-16T08:35:41.557297Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    },
+    "zoned": {
+      "source_modified_utc": "2026-09-16T08:35:41.578399Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    },
+    "wall_clock": {
+      "source_modified_utc": "2026-09-16T08:35:41.598601Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    }
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "schema_version": 3,
+  "created_utc": "2026-09-16T12:00:00Z",
+  "metadata": {
+    "file_name": "multi_year.parquet",
+    "full_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+    "modified_utc": "2026-09-16T08:35:41.474259Z",
+    "modified_in_timezones": {},
+    "source_columns_metadata": {
+      "columns": [
+        {
+          "name": "id",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "d2b256f7c87293cac3d61ca4346bd754",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 600,
+          "null_count": 0
+        },
+        {
+          "name": "customer",
+          "dtype": {
+            "kind": "string"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": true,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "358cbfb81b0349d1846f16a6c299057d",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 600,
+          "null_count": 0
+        },
+        {
+          "name": "amount",
+          "dtype": {
+            "kind": "float64"
+          },
+          "is_numeric": true,
+          "is_float": true,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "e2296fcdeae2218676c252c891cbae04",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 600,
+          "null_count": 0
+        },
+        {
+          "name": "booked",
+          "dtype": {
+            "kind": "date"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "c451f7ab1bc72830f486d214e798b9d2",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 600,
+          "null_count": 0
+        }
+      ],
+      "dataframe_hashes": [
+        {
+          "identifier": "binary-aggregate-xxh3-128",
+          "version": 2,
+          "scope": "dataframe",
+          "bit_width": 128,
+          "digest_hex": "e58e411512c0a718a559ded9cfd4709c",
+          "row_digest_hex": "36d3c2ec28a17fc4f1cb86b15f6b2bf5"
+        }
+      ],
+      "conversion": null
+    },
+    "column_metadata_of_conversions": [
+      {
+        "columns": [
+          {
+            "name": "id",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "66eb39b54696cb9288c5f0cf9582eae3",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 600,
+            "null_count": 0
+          },
+          {
+            "name": "customer",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "358cbfb81b0349d1846f16a6c299057d",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 600,
+            "null_count": 0
+          },
+          {
+            "name": "amount",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "e2296fcdeae2218676c252c891cbae04",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 600,
+            "null_count": 0
+          },
+          {
+            "name": "booked",
+            "dtype": {
+              "kind": "date"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "c451f7ab1bc72830f486d214e798b9d2",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 600,
+            "null_count": 0
+          }
+        ],
+        "dataframe_hashes": [
+          {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "48dcdaae26b9c546d843108fc9f789ad",
+            "row_digest_hex": "05e979c7be76662b5fc4e43bf8773177"
+          }
+        ],
+        "conversion": {
+          "identifier": "to-excel",
+          "version": "4.0",
+          "version_number": 4
+        }
+      }
+    ]
+  }
+}

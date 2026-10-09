@@ -1,0 +1,199 @@
+{
+  "run_instant": "2026-09-16T12:00:00+00:00",
+  "sources": [
+    {
+      "name": "tiny",
+      "rows": 3,
+      "columns": 3,
+      "covers": "the simplest possible export: three rows, one month, one sheet"
+    },
+    {
+      "name": "empty",
+      "rows": 0,
+      "columns": 3,
+      "covers": "zero rows: is_empty on the shape, and what a plan does with nothing to place"
+    },
+    {
+      "name": "single_row",
+      "rows": 1,
+      "columns": 3,
+      "covers": "one row: a header plus a single data row, the smallest non-empty sheet"
+    },
+    {
+      "name": "multi_year",
+      "rows": 600,
+      "columns": 4,
+      "covers": "about five years at three-day spacing: one sheet per year, and period ordering"
+    },
+    {
+      "name": "undated",
+      "rows": 30,
+      "columns": 3,
+      "covers": "a third of the rows undated: the UNDATED bucket, which must come last under BOTH period orders"
+    },
+    {
+      "name": "all_undated",
+      "rows": 12,
+      "columns": 3,
+      "covers": "every row undated: an export with no dated bucket at all"
+    },
+    {
+      "name": "int_yymm",
+      "rows": 6,
+      "columns": 3,
+      "covers": "the two-digit-year window at its boundaries, and leading zeros that are not truncation"
+    },
+    {
+      "name": "int_yyyymmdd",
+      "rows": 4,
+      "columns": 3,
+      "covers": "a leap day, and the two days a year boundary is made of"
+    },
+    {
+      "name": "zoned",
+      "rows": 3,
+      "columns": 3,
+      "covers": "a named zone moving a row into the previous YEAR: rows 1 and 2 are the same UTC day and belong in different workbooks"
+    },
+    {
+      "name": "wall_clock",
+      "rows": 6,
+      "columns": 2,
+      "covers": "naive timestamps read as a wall clock, with no zone consulted"
+    },
+    {
+      "name": "overflow",
+      "rows": 2500,
+      "columns": 4,
+      "covers": "one period with more rows than the tight profile allows per worksheet: overflow fragments and part_index"
+    },
+    {
+      "name": "dtypes",
+      "rows": 4,
+      "columns": 13,
+      "covers": "every scalar dtype at its boundary values: what the ToExcel conversion does to each, which is the thing worth eyeballing"
+    },
+    {
+      "name": "odd_names",
+      "rows": 3,
+      "columns": 5,
+      "covers": "column names Polars would read as a wildcard and a regex, plus a non-ASCII header; all legal in Parquet"
+    }
+  ],
+  "profiles": [
+    {
+      "name": "by_year",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "by_year_2022_001.xlsx",
+        "by_year_2023_002.xlsx",
+        "by_year_2024~2025_003.xlsx",
+        "by_year_2025_004.xlsx",
+        "by_year_2026_005.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'by_year' -> E:\\_src\\ParquetToXL\\e2e\\destination\\by_year\n  outcome: published\n  published tiny.parquet.json\n  published single_row.parquet.json\n  published multi_year.parquet.json\n  published by_year_2022_001.xlsx\n  published by_year_2023_002.xlsx\n  published by_year_2024~2025_003.xlsx\n  published by_year_2025_004.xlsx\n  published by_year_2026_005.xlsx\n  published by_year.manifest.json\n  published by_year.receipt.json\n  published reports/by_year-20260916T120000Z.report.json\n  published reports/by_year-20260916T120000Z.report.md\n  published reports/by_year-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "by_month_descending",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "by_month_descending_2022-01~08_007.xlsx",
+        "by_month_descending_2022-09~2023-05_006.xlsx",
+        "by_month_descending_2023-06~2024-02_005.xlsx",
+        "by_month_descending_2024-03~10_004.xlsx",
+        "by_month_descending_2024-11~2025-07_003.xlsx",
+        "by_month_descending_2025-08~2026-03_002.xlsx",
+        "by_month_descending_2026-04~12_001.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'by_month_descending' -> E:\\_src\\ParquetToXL\\e2e\\destination\\by_month_descending\n  outcome: published\n  published multi_year.parquet.json\n  published by_month_descending_2026-04~12_001.xlsx\n  published by_month_descending_2025-08~2026-03_002.xlsx\n  published by_month_descending_2024-11~2025-07_003.xlsx\n  published by_month_descending_2024-03~10_004.xlsx\n  published by_month_descending_2023-06~2024-02_005.xlsx\n  published by_month_descending_2022-09~2023-05_006.xlsx\n  published by_month_descending_2022-01~08_007.xlsx\n  published by_month_descending.manifest.json\n  published by_month_descending.receipt.json\n  published reports/by_month_descending-20260916T120000Z.report.json\n  published reports/by_month_descending-20260916T120000Z.report.md\n  published reports/by_month_descending-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "fan_in",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "fan_in_Data_001.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'fan_in' -> E:\\_src\\ParquetToXL\\e2e\\destination\\fan_in\n  outcome: published\n  published tiny.parquet.json\n  published odd_names.parquet.json\n  published fan_in_Data_001.xlsx\n  published fan_in.manifest.json\n  published fan_in.receipt.json\n  published reports/fan_in-20260916T120000Z.report.json\n  published reports/fan_in-20260916T120000Z.report.md\n  published reports/fan_in-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "undated_last",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "undated_last_2025-01~06_002.xlsx",
+        "undated_last_2025-07~12_001.xlsx",
+        "undated_last_Undated_003.xlsx",
+        "undated_last_Undated_004.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'undated_last' -> E:\\_src\\ParquetToXL\\e2e\\destination\\undated_last\n  outcome: published\n  published undated.parquet.json\n  published all_undated.parquet.json\n  published undated_last_2025-07~12_001.xlsx\n  published undated_last_2025-01~06_002.xlsx\n  published undated_last_Undated_003.xlsx\n  published undated_last_Undated_004.xlsx\n  published undated_last.manifest.json\n  published undated_last.receipt.json\n  published reports/undated_last-20260916T120000Z.report.json\n  published reports/undated_last-20260916T120000Z.report.md\n  published reports/undated_last-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "tight_limits",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "tight_limits_2025-05_001.xlsx",
+        "tight_limits_2025-05_002.xlsx",
+        "tight_limits_2025-05_003.xlsx",
+        "tight_limits_2025-05_004.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'tight_limits' -> E:\\_src\\ParquetToXL\\e2e\\destination\\tight_limits\n  outcome: published\n  published overflow.parquet.json\n  published tight_limits_2025-05_001.xlsx\n  published tight_limits_2025-05_002.xlsx\n  published tight_limits_2025-05_003.xlsx\n  published tight_limits_2025-05_004.xlsx\n  published tight_limits.manifest.json\n  published tight_limits.receipt.json\n  published reports/tight_limits-20260916T120000Z.report.json\n  published reports/tight_limits-20260916T120000Z.report.md\n  published reports/tight_limits-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "dtypes_showcase",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "dtypes_showcase_Data_001.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'dtypes_showcase' -> E:\\_src\\ParquetToXL\\e2e\\destination\\dtypes_showcase\n  outcome: published\n  published dtypes.parquet.json\n  published dtypes_showcase_Data_001.xlsx\n  published dtypes_showcase.manifest.json\n  published dtypes_showcase.receipt.json\n  published reports/dtypes_showcase-20260916T120000Z.report.json\n  published reports/dtypes_showcase-20260916T120000Z.report.md\n  published reports/dtypes_showcase-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "int_and_zoned_dates",
+      "exit_code": 0,
+      "expected": "export",
+      "surprising": false,
+      "workbooks": [
+        "int_and_zoned_dates_1970~2069_001.xlsx",
+        "int_and_zoned_dates_2025~2026_002.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'int_and_zoned_dates' -> E:\\_src\\ParquetToXL\\e2e\\destination\\int_and_zoned_dates\n  outcome: published\n  published int_yymm.parquet.json\n  published int_yyyymmdd.parquet.json\n  published zoned.parquet.json\n  published wall_clock.parquet.json\n  published int_and_zoned_dates_1970~2069_001.xlsx\n  published int_and_zoned_dates_2025~2026_002.xlsx\n  published int_and_zoned_dates.manifest.json\n  published int_and_zoned_dates.receipt.json\n  published reports/int_and_zoned_dates-20260916T120000Z.report.json\n  published reports/int_and_zoned_dates-20260916T120000Z.report.md\n  published reports/int_and_zoned_dates-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "empty_source",
+      "exit_code": 0,
+      "expected": "either",
+      "surprising": false,
+      "workbooks": [
+        "empty_source_Data_001.xlsx"
+      ],
+      "escaped": "",
+      "output": "profile 'empty_source' -> E:\\_src\\ParquetToXL\\e2e\\destination\\empty_source\n  outcome: published\n  published empty.parquet.json\n  published empty_source_Data_001.xlsx\n  published empty_source.manifest.json\n  published empty_source.receipt.json\n  published reports/empty_source-20260916T120000Z.report.json\n  published reports/empty_source-20260916T120000Z.report.md\n  published reports/empty_source-20260916T120000Z.report.html\n"
+    },
+    {
+      "name": "null_dates_refused",
+      "exit_code": -1,
+      "expected": "refusal",
+      "surprising": false,
+      "workbooks": [],
+      "escaped": "BucketingError: row 0 has no 'booked', and null_dates is 'error'",
+      "output": ""
+    }
+  ]
+}

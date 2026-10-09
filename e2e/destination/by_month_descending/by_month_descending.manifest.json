@@ -1,0 +1,1430 @@
+{
+  "manifest_version": 1,
+  "run_id": "2026-09-16T12-00-00Z-by_month_descending",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "profile": "by_month_descending",
+  "planner_version": "1",
+  "resolved_config": {
+    "config_version": 1,
+    "config_id": "be3d978a-b843-5928-8dc5-a5df64da41cc",
+    "config_modified_utc": "2026-09-16T11:00:00Z",
+    "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+    "sidecar_location": {
+      "kind": "directory",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\by_month_descending"
+    },
+    "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+    "excel": {
+      "writer": "rustpy-xlsxwriter",
+      "options": {}
+    },
+    "sources": {
+      "multi_year": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+        "date_columns": {
+          "booked": {
+            "type": "date"
+          }
+        }
+      }
+    },
+    "profiles": [
+      {
+        "name": "by_month_descending",
+        "output_subdirectory": "by_month_descending",
+        "sheets": [
+          {
+            "source": "multi_year",
+            "partition_column": "booked",
+            "sort": []
+          }
+        ],
+        "limits": {
+          "max_data_rows_per_worksheet": 1048575,
+          "max_cells_per_workbook": 400
+        },
+        "partitioning": {
+          "algorithm": "calendar_periods",
+          "base_period": "year-month",
+          "period_order": "descending",
+          "year_split_months": [
+            6,
+            4,
+            3,
+            2,
+            1
+          ],
+          "oversized_period": "balanced_rows",
+          "null_dates": "separate"
+        },
+        "naming": {
+          "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+          "single_worksheet": "{source} Data",
+          "worksheet": "{source} {period_label}",
+          "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+          "month_format": "numeric",
+          "worksheet_prefix": "",
+          "sheet_collision": "error"
+        }
+      }
+    ]
+  },
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination\\by_month_descending",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "sources": [
+    {
+      "source_alias": "multi_year",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+      "sidecar_path": "multi_year.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "48dcdaae26b9c546d843108fc9f789ad",
+        "row_digest_hex": "05e979c7be76662b5fc4e43bf8773177"
+      },
+      "expected_row_count": 600,
+      "fragments": [
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-12",
+          "source_alias": "multi_year",
+          "period_label": "2026-12",
+          "part_index": null,
+          "row_count": 2,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "74db1b12c42ef087f73ef11fddba6b54",
+            "row_digest_hex": "eba275441e9273d8f2a1ccae2baed32b"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-11",
+          "source_alias": "multi_year",
+          "period_label": "2026-11",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "5148b09d3d2bbd08c609311f5bd5f425",
+            "row_digest_hex": "64142158010126327f7782d1d3526c77"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-10",
+          "source_alias": "multi_year",
+          "period_label": "2026-10",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "1293b0637b54b0f77bee550aaf3c1fe9",
+            "row_digest_hex": "61b0c89c33cf615e2e908250c9286f35"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-09",
+          "source_alias": "multi_year",
+          "period_label": "2026-09",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "7e06925aaac14b8673f89a754fe76bbc",
+            "row_digest_hex": "e0a8bb3eaab4d0a7ab11ed3375c3b0cc"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-08",
+          "source_alias": "multi_year",
+          "period_label": "2026-08",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "2b3b0590ddfafe36929214b0f17a8166",
+            "row_digest_hex": "488a6ec4c1fa491dbed2ae30957faf36"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-07",
+          "source_alias": "multi_year",
+          "period_label": "2026-07",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "8ae4bf9499cda8bed4cff8c35ca9b944",
+            "row_digest_hex": "3be6492b7065cd8b34f5b638c0404d71"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-06",
+          "source_alias": "multi_year",
+          "period_label": "2026-06",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "1c4294160a4eaf791e1fac6e77ea6132",
+            "row_digest_hex": "3a90a492c3c1de361d8c38c7289e7ebe"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-05",
+          "source_alias": "multi_year",
+          "period_label": "2026-05",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "988e9e057db7e67275ce2edfc290114c",
+            "row_digest_hex": "5ff4f9376bbbf38f00d1f518801f5ac0"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2026-04~12_001.xlsx",
+          "sheet_name": "multi_year 2026-04",
+          "source_alias": "multi_year",
+          "period_label": "2026-04",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "8ee3d037471b8a9b9dcf9cd1b6507e96",
+            "row_digest_hex": "3ce23b0b1aecc9f74d4b8f9d1f366d8b"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2026-03",
+          "source_alias": "multi_year",
+          "period_label": "2026-03",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "85c3bcf996e9db8bdc0b023218d08393",
+            "row_digest_hex": "46424c84f860d8686a5285152ce8ff05"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2026-02",
+          "source_alias": "multi_year",
+          "period_label": "2026-02",
+          "part_index": null,
+          "row_count": 9,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "a2956a6ebc5da3319099e248581495eb",
+            "row_digest_hex": "7d70ca9a08c17fd2d6523160f2395cfb"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2026-01",
+          "source_alias": "multi_year",
+          "period_label": "2026-01",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "fae07223a13072636ee79f72273642fa",
+            "row_digest_hex": "392de147b1abaf9bbbe45f323206bc61"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2025-12",
+          "source_alias": "multi_year",
+          "period_label": "2025-12",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "0182ce63db0e5cc6310b35b4f2a2594c",
+            "row_digest_hex": "8823e5c971f6eba5aaae6f35de02f563"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2025-11",
+          "source_alias": "multi_year",
+          "period_label": "2025-11",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "1627a63134f91547d5a4eddf0229c2a2",
+            "row_digest_hex": "d0bbd394e0cb99589f36433e0eac22b5"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2025-10",
+          "source_alias": "multi_year",
+          "period_label": "2025-10",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "cdbe342d7be38f9d607b3b618b7395a8",
+            "row_digest_hex": "f08844858e90aa6578cd7b1badcae356"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2025-09",
+          "source_alias": "multi_year",
+          "period_label": "2025-09",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "bff6c780ca65b2ad1ecb065d5dcf27b4",
+            "row_digest_hex": "4d213e8ab87367ff855ed7742a94842c"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2025-08~2026-03_002.xlsx",
+          "sheet_name": "multi_year 2025-08",
+          "source_alias": "multi_year",
+          "period_label": "2025-08",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "57a2358146f76789ecd498c0624b8183",
+            "row_digest_hex": "2bc891744e109eaa4e83c9e5acbc3580"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-07",
+          "source_alias": "multi_year",
+          "period_label": "2025-07",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "157f2384648c8fd71ce3d61305687300",
+            "row_digest_hex": "32491e2d4d7860f70a7f505877c16667"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-06",
+          "source_alias": "multi_year",
+          "period_label": "2025-06",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "d270468278abbb0e7ab99a746d9c9d2c",
+            "row_digest_hex": "2006f87a6c4f0c955d3fda54b464eb29"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-05",
+          "source_alias": "multi_year",
+          "period_label": "2025-05",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "f79182a2f4fc10c145f382b25e03ec5b",
+            "row_digest_hex": "3a7917dffeb323c0e6a9d9963676e14b"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-04",
+          "source_alias": "multi_year",
+          "period_label": "2025-04",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "a2b6579bd050cba14cf0dca607c3f8cc",
+            "row_digest_hex": "485c4c21f7c6e5fdb0e3b5b1550e136c"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-03",
+          "source_alias": "multi_year",
+          "period_label": "2025-03",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "aebf196d420fc740d4da433c416ebf18",
+            "row_digest_hex": "9d8954db8ce21bed6741f4f9aec12f11"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-02",
+          "source_alias": "multi_year",
+          "period_label": "2025-02",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "fc4c74e78c52a263e0241bf8eab0d99f",
+            "row_digest_hex": "4f43900892f8d8b62ba742ea399d419c"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2025-01",
+          "source_alias": "multi_year",
+          "period_label": "2025-01",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "04e4eeb761aad691f988d90d199ee49f",
+            "row_digest_hex": "9d7cbf40c1055100923e7af6cd669cf3"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2024-12",
+          "source_alias": "multi_year",
+          "period_label": "2024-12",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "e8acb98e27bf71c3276478bfca82b05c",
+            "row_digest_hex": "6f029733e19298ee6b6565f3ebf446e7"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-11~2025-07_003.xlsx",
+          "sheet_name": "multi_year 2024-11",
+          "source_alias": "multi_year",
+          "period_label": "2024-11",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "c8c0b5403890953ab8dda78e385ad0d0",
+            "row_digest_hex": "4cd5cbdc7efb808b907e0dacc7f77169"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-10",
+          "source_alias": "multi_year",
+          "period_label": "2024-10",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "c5299ba1134268fa720c5edf1dbf83a1",
+            "row_digest_hex": "4e8f592ec6fb7993659e75122a3c4d70"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-09",
+          "source_alias": "multi_year",
+          "period_label": "2024-09",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "76916edb57cbbca78a91f1c1da067f62",
+            "row_digest_hex": "60203c064b54745eea95899d75387c39"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-08",
+          "source_alias": "multi_year",
+          "period_label": "2024-08",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "216036401502b80f6d3d274912047212",
+            "row_digest_hex": "091a56e9f5e826a90b878eee8e73ddaa"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-07",
+          "source_alias": "multi_year",
+          "period_label": "2024-07",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "94275549a4231f63ddb554d1c7197a63",
+            "row_digest_hex": "fe0d001fdf0f82f5903657fa33c35493"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-06",
+          "source_alias": "multi_year",
+          "period_label": "2024-06",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "b5fe6fe022027a7c501d75e9cca21c19",
+            "row_digest_hex": "77ae5a2a0596d02fd974a5bea2d01c35"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-05",
+          "source_alias": "multi_year",
+          "period_label": "2024-05",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "4708d173e57dbb5d09984052366f4090",
+            "row_digest_hex": "fa92e62dfd1bb99d556cc354b574098f"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-04",
+          "source_alias": "multi_year",
+          "period_label": "2024-04",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "23fb35bb4b064d1e0064984afc1aca53",
+            "row_digest_hex": "bfaafe478489a64cd0279d07403eba10"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2024-03~10_004.xlsx",
+          "sheet_name": "multi_year 2024-03",
+          "source_alias": "multi_year",
+          "period_label": "2024-03",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "9912413cbd1240687b6d674d6e190e78",
+            "row_digest_hex": "b81bb4c89b42132e07444c80ee9a8fe6"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2024-02",
+          "source_alias": "multi_year",
+          "period_label": "2024-02",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "8dccfd666d5ded5bf7fffe4dcf987aea",
+            "row_digest_hex": "de699689ceb5258b87fca19694ac0595"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2024-01",
+          "source_alias": "multi_year",
+          "period_label": "2024-01",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "7909b2cde107764c0bdaeadec56f5c5a",
+            "row_digest_hex": "80c9fdcc2d1bacfb17b5a7a87063a041"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-12",
+          "source_alias": "multi_year",
+          "period_label": "2023-12",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "1f5e5997e8f9e02eea4707084cc6cfd0",
+            "row_digest_hex": "65f33319c4027589a9b3f384f139bad7"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-11",
+          "source_alias": "multi_year",
+          "period_label": "2023-11",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "57557af208a35552b6449981663a950c",
+            "row_digest_hex": "450e6abc88ee0c3c5aa3c3118026134d"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-10",
+          "source_alias": "multi_year",
+          "period_label": "2023-10",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "232f6a65a4e675d256648eda90e0ae77",
+            "row_digest_hex": "51385f2721c1f47d8797122bb17ec639"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-09",
+          "source_alias": "multi_year",
+          "period_label": "2023-09",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "e98d445b68e77552acf8d59f309e4cdb",
+            "row_digest_hex": "74e70550a142f4cc3cf89412cccee32c"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-08",
+          "source_alias": "multi_year",
+          "period_label": "2023-08",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "9d0ed1631b705d41beb5110dfe6280d6",
+            "row_digest_hex": "6f6b255b5d30b6cb39995862343183ff"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-07",
+          "source_alias": "multi_year",
+          "period_label": "2023-07",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "05b5c2bddb3143e06b7e26b09f6cca32",
+            "row_digest_hex": "de321b667e3caa205c382e886f9103ae"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2023-06~2024-02_005.xlsx",
+          "sheet_name": "multi_year 2023-06",
+          "source_alias": "multi_year",
+          "period_label": "2023-06",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "a73964c101202d4825a1563b0e050cd0",
+            "row_digest_hex": "8de56e30964ce1747d7d30c85403994e"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2023-05",
+          "source_alias": "multi_year",
+          "period_label": "2023-05",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "fb0b3195a0929fa49153a6deba34b89d",
+            "row_digest_hex": "62e247c418a31214aa7fb8c172d06987"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2023-04",
+          "source_alias": "multi_year",
+          "period_label": "2023-04",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "fba3d0d61d4a5b69982c68d30939e70f",
+            "row_digest_hex": "97042a1a52bd1e55851a38e53bd85eaf"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2023-03",
+          "source_alias": "multi_year",
+          "period_label": "2023-03",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "53e2663b9fe4ef2a99b6b3c185b54bb4",
+            "row_digest_hex": "455f8a979eb3abd860304374ecef035d"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2023-02",
+          "source_alias": "multi_year",
+          "period_label": "2023-02",
+          "part_index": null,
+          "row_count": 9,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "50a1b9e645f7e061f899065819e40737",
+            "row_digest_hex": "b6332fee354bb1bd2f4ce0980ed0b848"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2023-01",
+          "source_alias": "multi_year",
+          "period_label": "2023-01",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "27e3be36972fa05687f56e155d743907",
+            "row_digest_hex": "ef7f31cb51f63d0d9b9489aabdca8dcf"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2022-12",
+          "source_alias": "multi_year",
+          "period_label": "2022-12",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "dafc13413b451728c1f9e5a7c98a38ac",
+            "row_digest_hex": "9a2f86c4a1cae3b29fe64e0c83139865"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2022-11",
+          "source_alias": "multi_year",
+          "period_label": "2022-11",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "470c0bfb54fc907e8c770dc8e9e95d0b",
+            "row_digest_hex": "f15fd041f730c0c5a4724c625e04f6d3"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2022-10",
+          "source_alias": "multi_year",
+          "period_label": "2022-10",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "abe2f9de4e9f0fbd3fdd6dee2dd337da",
+            "row_digest_hex": "22e45063f6a6dd68497dba94b7135646"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-09~2023-05_006.xlsx",
+          "sheet_name": "multi_year 2022-09",
+          "source_alias": "multi_year",
+          "period_label": "2022-09",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "19e074eae509ee8be9ce7dffd78bf01b",
+            "row_digest_hex": "478842ef1065413ec010a00368e6d25d"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-08",
+          "source_alias": "multi_year",
+          "period_label": "2022-08",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "34ddc88b6bbdd6fc51b1378281021dae",
+            "row_digest_hex": "8f6150956da8ddc20ee28718a4a0d86a"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-07",
+          "source_alias": "multi_year",
+          "period_label": "2022-07",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "6f97e957821b3af4bced318aaa97f946",
+            "row_digest_hex": "075ceadef6a167bede303ed050eb022a"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-06",
+          "source_alias": "multi_year",
+          "period_label": "2022-06",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "b5bebf474553a09b73707a0df9e01e72",
+            "row_digest_hex": "8c84caff2ded66d4f5a903bed1304637"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-05",
+          "source_alias": "multi_year",
+          "period_label": "2022-05",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "3e5c2b1e55513de959fee7beee77ffb1",
+            "row_digest_hex": "659489beb846e96dd1850595707e08ce"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-04",
+          "source_alias": "multi_year",
+          "period_label": "2022-04",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "b93a18d48f74359a6d0c0a01cfd0d958",
+            "row_digest_hex": "b6c8ac27fce032ac06d71f838bc7e3dd"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-03",
+          "source_alias": "multi_year",
+          "period_label": "2022-03",
+          "part_index": null,
+          "row_count": 11,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "6c969c7bd96ca967314f69d960ea99d7",
+            "row_digest_hex": "d2569df484a3edf42a39914659590b96"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-02",
+          "source_alias": "multi_year",
+          "period_label": "2022-02",
+          "part_index": null,
+          "row_count": 9,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "d4d41c9c17157edd47dbc8a47ef3c2fb",
+            "row_digest_hex": "88e83087ce539ab500f7f8f06a7b9e0a"
+          }
+        },
+        {
+          "workbook": "by_month_descending_2022-01~08_007.xlsx",
+          "sheet_name": "multi_year 2022-01",
+          "source_alias": "multi_year",
+          "period_label": "2022-01",
+          "part_index": null,
+          "row_count": 10,
+          "column_names": [
+            "id",
+            "customer",
+            "amount",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "36c53da4731465d6f779b17927ffbef6",
+            "row_digest_hex": "7bfd0dc564449952041d9af7f31c89dd"
+          }
+        }
+      ]
+    }
+  ],
+  "workbooks": [
+    "by_month_descending_2026-04~12_001.xlsx",
+    "by_month_descending_2025-08~2026-03_002.xlsx",
+    "by_month_descending_2024-11~2025-07_003.xlsx",
+    "by_month_descending_2024-03~10_004.xlsx",
+    "by_month_descending_2023-06~2024-02_005.xlsx",
+    "by_month_descending_2022-09~2023-05_006.xlsx",
+    "by_month_descending_2022-01~08_007.xlsx"
+  ],
+  "sidecars": [
+    "multi_year.parquet.json"
+  ]
+}

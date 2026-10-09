@@ -1,0 +1,411 @@
+Date : 2026-09-23 15:20:29
+Directory : e:\_src\ParquetToXL
+Total : 266 files,  41890 codes, 8204 comments, 6128 blanks, all 56222 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| JSON       |         70 |     21,642 |          0 |         28 |     21,670 |
+| Python     |        142 |     12,638 |      8,119 |      4,551 |     25,308 |
+| Markdown   |         30 |      4,764 |          0 |      1,340 |      6,104 |
+| TOML       |         13 |      2,637 |         63 |        192 |      2,892 |
+| HTML       |          8 |        160 |          0 |          8 |        168 |
+| YAML       |          2 |         47 |         22 |          8 |         77 |
+| JSON Lines |          1 |          2 |          0 |          1 |          3 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                             | files      | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                                |        266 |     41,890 |      8,204 |      6,128 |     56,222 |
+| . (Files)                                                                                                        |          5 |      2,611 |         46 |        214 |      2,871 |
+| .claude                                                                                                          |          1 |          8 |          0 |          0 |          8 |
+| .github                                                                                                          |          1 |         20 |         12 |          7 |         39 |
+| .github\workflows                                                                                                |          1 |         20 |         12 |          7 |         39 |
+| .tickets                                                                                                         |          5 |        474 |          0 |        147 |        621 |
+| docs                                                                                                             |         20 |     13,025 |          0 |      1,059 |     14,084 |
+| docs (Files)                                                                                                     |          9 |     11,558 |          0 |        568 |     12,126 |
+| docs\decisions                                                                                                   |          8 |      1,231 |          0 |        428 |      1,659 |
+| docs\tickets                                                                                                     |          3 |        236 |          0 |         63 |        299 |
+| e2e                                                                                                              |         81 |     12,831 |          0 |         96 |     12,927 |
+| e2e (Files)                                                                                                      |          1 |        199 |          0 |          0 |        199 |
+| e2e\config                                                                                                       |          9 |        686 |          0 |          0 |        686 |
+| e2e\destination                                                                                                  |         55 |      8,220 |          0 |         96 |      8,316 |
+| e2e\destination\by_month_descending                                                                              |          6 |      2,283 |          0 |         12 |      2,295 |
+| e2e\destination\by_month_descending (Files)                                                                      |          3 |      1,683 |          0 |          2 |      1,685 |
+| e2e\destination\by_month_descending\reports                                                                      |          3 |        600 |          0 |         10 |        610 |
+| e2e\destination\by_year                                                                                          |          8 |      1,165 |          0 |         12 |      1,177 |
+| e2e\destination\by_year (Files)                                                                                  |          5 |        973 |          0 |          2 |        975 |
+| e2e\destination\by_year\reports                                                                                  |          3 |        192 |          0 |         10 |        202 |
+| e2e\destination\dtypes_showcase                                                                                  |          6 |        912 |          0 |         12 |        924 |
+| e2e\destination\dtypes_showcase (Files)                                                                          |          3 |        826 |          0 |          2 |        828 |
+| e2e\destination\dtypes_showcase\reports                                                                          |          3 |         86 |          0 |         10 |         96 |
+| e2e\destination\empty_source                                                                                     |          6 |        416 |          0 |         12 |        428 |
+| e2e\destination\empty_source (Files)                                                                             |          3 |        330 |          0 |          2 |        332 |
+| e2e\destination\empty_source\reports                                                                             |          3 |         86 |          0 |         10 |         96 |
+| e2e\destination\fan_in                                                                                           |          7 |        788 |          0 |         12 |        800 |
+| e2e\destination\fan_in (Files)                                                                                   |          4 |        679 |          0 |          2 |        681 |
+| e2e\destination\fan_in\reports                                                                                   |          3 |        109 |          0 |         10 |        119 |
+| e2e\destination\int_and_zoned_dates                                                                              |          9 |      1,215 |          0 |         12 |      1,227 |
+| e2e\destination\int_and_zoned_dates (Files)                                                                      |          6 |      1,053 |          0 |          2 |      1,055 |
+| e2e\destination\int_and_zoned_dates\reports                                                                      |          3 |        162 |          0 |         10 |        172 |
+| e2e\destination\tight_limits                                                                                     |          6 |        669 |          0 |         12 |        681 |
+| e2e\destination\tight_limits (Files)                                                                             |          3 |        514 |          0 |          2 |        516 |
+| e2e\destination\tight_limits\reports                                                                             |          3 |        155 |          0 |         10 |        165 |
+| e2e\destination\undated_last                                                                                     |          7 |        772 |          0 |         12 |        784 |
+| e2e\destination\undated_last (Files)                                                                             |          4 |        626 |          0 |          2 |        628 |
+| e2e\destination\undated_last\reports                                                                             |          3 |        146 |          0 |         10 |        156 |
+| e2e\sidecars                                                                                                     |         16 |      3,726 |          0 |          0 |      3,726 |
+| e2e\sidecars\by_month_descending                                                                                 |          1 |        238 |          0 |          0 |        238 |
+| e2e\sidecars\by_year                                                                                             |          3 |        618 |          0 |          0 |        618 |
+| e2e\sidecars\dtypes_showcase                                                                                     |          1 |        676 |          0 |          0 |        676 |
+| e2e\sidecars\empty_source                                                                                        |          1 |        190 |          0 |          0 |        190 |
+| e2e\sidecars\fan_in                                                                                              |          2 |        476 |          0 |          0 |        476 |
+| e2e\sidecars\int_and_zoned_dates                                                                                 |          4 |        720 |          0 |          0 |        720 |
+| e2e\sidecars\null_dates_refused                                                                                  |          1 |        190 |          0 |          0 |        190 |
+| e2e\sidecars\tight_limits                                                                                        |          1 |        238 |          0 |          0 |        238 |
+| e2e\sidecars\undated_last                                                                                        |          2 |        380 |          0 |          0 |        380 |
+| gates                                                                                                            |          3 |        372 |        328 |         97 |        797 |
+| packages                                                                                                         |        136 |     11,797 |      7,452 |      4,267 |     23,516 |
+| packages\pqx-calendar                                                                                            |         16 |        908 |        761 |        445 |      2,114 |
+| packages\pqx-calendar (Files)                                                                                    |          1 |         18 |          5 |          4 |         27 |
+| packages\pqx-calendar\src                                                                                        |          9 |        350 |        653 |        167 |      1,170 |
+| packages\pqx-calendar\src\pqx_calendar                                                                           |          9 |        350 |        653 |        167 |      1,170 |
+| packages\pqx-calendar\tests                                                                                      |          6 |        540 |        103 |        274 |        917 |
+| packages\pqx-common                                                                                              |          8 |        508 |        366 |        221 |      1,095 |
+| packages\pqx-common (Files)                                                                                      |          1 |         22 |          0 |          5 |         27 |
+| packages\pqx-common\src                                                                                          |          4 |        183 |        299 |         65 |        547 |
+| packages\pqx-common\src\pqx_common                                                                               |          4 |        183 |        299 |         65 |        547 |
+| packages\pqx-common\tests                                                                                        |          3 |        303 |         67 |        151 |        521 |
+| packages\pqx-excel                                                                                               |          8 |        839 |        689 |        276 |      1,804 |
+| packages\pqx-excel (Files)                                                                                       |          1 |         29 |          3 |          5 |         37 |
+| packages\pqx-excel\src                                                                                           |          4 |        270 |        549 |         85 |        904 |
+| packages\pqx-excel\src\pqx_excel                                                                                 |          4 |        270 |        549 |         85 |        904 |
+| packages\pqx-excel\tests                                                                                         |          3 |        540 |        137 |        186 |        863 |
+| packages\pqx-frame                                                                                               |         35 |      2,295 |      1,318 |        823 |      4,436 |
+| packages\pqx-frame (Files)                                                                                       |          1 |         27 |          0 |          5 |         32 |
+| packages\pqx-frame\src                                                                                           |         18 |        589 |        813 |        249 |      1,651 |
+| packages\pqx-frame\src\pqx_frame                                                                                 |         18 |        589 |        813 |        249 |      1,651 |
+| packages\pqx-frame\src\pqx_frame (Files)                                                                         |          2 |         10 |         42 |          9 |         61 |
+| packages\pqx-frame\src\pqx_frame\conversion                                                                      |          4 |         98 |        191 |         42 |        331 |
+| packages\pqx-frame\src\pqx_frame\hashing                                                                         |          4 |        213 |        228 |         72 |        513 |
+| packages\pqx-frame\src\pqx_frame\metadata                                                                        |          8 |        268 |        352 |        126 |        746 |
+| packages\pqx-frame\tests                                                                                         |         16 |      1,679 |        505 |        569 |      2,753 |
+| packages\pqx-pipeline                                                                                            |         16 |      2,707 |      1,316 |        843 |      4,866 |
+| packages\pqx-pipeline (Files)                                                                                    |          1 |         41 |          4 |          6 |         51 |
+| packages\pqx-pipeline\src                                                                                        |          8 |      1,074 |        939 |        249 |      2,262 |
+| packages\pqx-pipeline\src\pqx_pipeline                                                                           |          8 |      1,074 |        939 |        249 |      2,262 |
+| packages\pqx-pipeline\tests                                                                                      |          7 |      1,592 |        373 |        588 |      2,553 |
+| packages\pqx-plan                                                                                                |         22 |      2,152 |      1,528 |        849 |      4,529 |
+| packages\pqx-plan (Files)                                                                                        |          1 |         27 |          7 |          5 |         39 |
+| packages\pqx-plan\src                                                                                            |         12 |      1,095 |      1,172 |        335 |      2,602 |
+| packages\pqx-plan\src\pqx_plan                                                                                   |         12 |      1,095 |      1,172 |        335 |      2,602 |
+| packages\pqx-plan\tests                                                                                          |          9 |      1,030 |        349 |        509 |      1,888 |
+| packages\pqx-report                                                                                              |          5 |        412 |        182 |        166 |        760 |
+| packages\pqx-report (Files)                                                                                      |          1 |         22 |          2 |          5 |         29 |
+| packages\pqx-report\src                                                                                          |          3 |        200 |        149 |         62 |        411 |
+| packages\pqx-report\src\pqx_report                                                                               |          3 |        200 |        149 |         62 |        411 |
+| packages\pqx-report\tests                                                                                        |          1 |        190 |         31 |         99 |        320 |
+| packages\pqx-sidecar                                                                                             |          5 |        239 |        169 |         95 |        503 |
+| packages\pqx-sidecar (Files)                                                                                     |          1 |         25 |          0 |          5 |         30 |
+| packages\pqx-sidecar\src                                                                                         |          3 |         66 |        141 |         35 |        242 |
+| packages\pqx-sidecar\src\pqx_sidecar                                                                             |          3 |         66 |        141 |         35 |        242 |
+| packages\pqx-sidecar\tests                                                                                       |          1 |        148 |         28 |         55 |        231 |
+| packages\pqx-staging                                                                                             |          9 |        572 |        431 |        249 |      1,252 |
+| packages\pqx-staging (Files)                                                                                     |          1 |         21 |          3 |          5 |         29 |
+| packages\pqx-staging\src                                                                                         |          5 |        186 |        346 |         75 |        607 |
+| packages\pqx-staging\src\pqx_staging                                                                             |          5 |        186 |        346 |         75 |        607 |
+| packages\pqx-staging\tests                                                                                       |          3 |        365 |         82 |        169 |        616 |
+| packages\pqx-testing                                                                                             |          5 |        300 |        294 |         61 |        655 |
+| packages\pqx-testing (Files)                                                                                     |          1 |         19 |          0 |          4 |         23 |
+| packages\pqx-testing\src                                                                                         |          4 |        281 |        294 |         57 |        632 |
+| packages\pqx-testing\src\pqx_testing                                                                             |          4 |        281 |        294 |         57 |        632 |
+| packages\pqx-verify                                                                                              |          7 |        865 |        398 |        239 |      1,502 |
+| packages\pqx-verify (Files)                                                                                      |          1 |         32 |          3 |          5 |         40 |
+| packages\pqx-verify\src                                                                                          |          3 |        211 |        220 |         59 |        490 |
+| packages\pqx-verify\src\pqx_verify                                                                               |          3 |        211 |        220 |         59 |        490 |
+| packages\pqx-verify\tests                                                                                        |          3 |        622 |        175 |        175 |        972 |
+| stubs                                                                                                            |          3 |         72 |         91 |         23 |        186 |
+| stubs\fastexcel                                                                                                  |          1 |         45 |         30 |         12 |         87 |
+| stubs\rustpy_xlsxwriter                                                                                          |          1 |         18 |         35 |          7 |         60 |
+| stubs\xlsxwriter                                                                                                 |          1 |          9 |         26 |          4 |         39 |
+| tests                                                                                                            |          8 |        404 |        151 |        145 |        700 |
+| tests (Files)                                                                                                    |          3 |        136 |         69 |         55 |        260 |
+| tests\integration                                                                                                |          5 |        268 |         82 |         90 |        440 |
+| tools                                                                                                            |          3 |        276 |        124 |         73 |        473 |
++------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                                                                         | language   | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| e:\_src\ParquetToXL\.claude\settings.local.json                                                                  | JSON       |          8 |          0 |          0 |          8 |
+| e:\_src\ParquetToXL\.github\workflows\ci.yml                                                                     | YAML       |         20 |         12 |          7 |         39 |
+| e:\_src\ParquetToXL\.pre-commit-config.yaml                                                                      | YAML       |         27 |         10 |          1 |         38 |
+| e:\_src\ParquetToXL\.tickets\T-001.attempt-1.in.md                                                               | Markdown   |        173 |          0 |         57 |        230 |
+| e:\_src\ParquetToXL\.tickets\T-001.attempt-1.out.md                                                              | Markdown   |         51 |          0 |         12 |         63 |
+| e:\_src\ParquetToXL\.tickets\T-001.attempt-2.out.md                                                              | Markdown   |         52 |          0 |         12 |         64 |
+| e:\_src\ParquetToXL\.tickets\T-001.md                                                                            | Markdown   |        196 |          0 |         65 |        261 |
+| e:\_src\ParquetToXL\.tickets\attempts.jsonl                                                                      | JSON Lines |          2 |          0 |          1 |          3 |
+| e:\_src\ParquetToXL\CLAUDE.md                                                                                    | Markdown   |        128 |          0 |         45 |        173 |
+| e:\_src\ParquetToXL\README.md                                                                                    | Markdown   |        102 |          0 |         30 |        132 |
+| e:\_src\ParquetToXL\docs\backlog.md                                                                              | Markdown   |        151 |          0 |         57 |        208 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-14-phase-a.md                                                         | Markdown   |        119 |          0 |         56 |        175 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-15-distinct-value-bucketing.md                                        | Markdown   |        142 |          0 |         47 |        189 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-15-phase-0.md                                                         | Markdown   |        334 |          0 |         94 |        428 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-15-phase-b.md                                                         | Markdown   |        119 |          0 |         50 |        169 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-15-phases-e-h.md                                                      | Markdown   |        146 |          0 |         53 |        199 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-15-phases-f-g-staging.md                                              | Markdown   |        110 |          0 |         44 |        154 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-15-phases-n-d-c.md                                                    | Markdown   |        146 |          0 |         44 |        190 |
+| e:\_src\ParquetToXL\docs\decisions\2026-09-16-lazy-frames.md                                                     | Markdown   |        115 |          0 |         40 |        155 |
+| e:\_src\ParquetToXL\docs\excel-round-trip-findings.md                                                            | Markdown   |        343 |          0 |        100 |        443 |
+| e:\_src\ParquetToXL\docs\export-config-corpus.json                                                               | JSON       |      8,693 |          0 |          1 |      8,694 |
+| e:\_src\ParquetToXL\docs\export-config.example.json                                                              | JSON       |        102 |          0 |          1 |        103 |
+| e:\_src\ParquetToXL\docs\export-config.schema.json                                                               | JSON       |        298 |          0 |          1 |        299 |
+| e:\_src\ParquetToXL\docs\export-pipeline-spec.md                                                                 | Markdown   |        691 |          0 |        146 |        837 |
+| e:\_src\ParquetToXL\docs\library-spec.md                                                                         | Markdown   |        795 |          0 |        154 |        949 |
+| e:\_src\ParquetToXL\docs\next-session-prompt.md                                                                  | Markdown   |         70 |          0 |         17 |         87 |
+| e:\_src\ParquetToXL\docs\partitioning-spec.md                                                                    | Markdown   |        415 |          0 |         91 |        506 |
+| e:\_src\ParquetToXL\docs\tickets\SCHEMA.md                                                                       | Markdown   |         58 |          0 |         16 |         74 |
+| e:\_src\ParquetToXL\docs\tickets\WORKFLOW.md                                                                     | Markdown   |        148 |          0 |         46 |        194 |
+| e:\_src\ParquetToXL\docs\tickets\calibration-2026-09-08.json                                                     | JSON       |         30 |          0 |          1 |         31 |
+| e:\_src\ParquetToXL\e2e\RESULTS.json                                                                             | JSON       |        199 |          0 |          0 |        199 |
+| e:\_src\ParquetToXL\e2e\config\by_month_descending.json                                                          | JSON       |         65 |          0 |          0 |         65 |
+| e:\_src\ParquetToXL\e2e\config\by_year.json                                                                      | JSON       |         91 |          0 |          0 |         91 |
+| e:\_src\ParquetToXL\e2e\config\dtypes_showcase.json                                                              | JSON       |         65 |          0 |          0 |         65 |
+| e:\_src\ParquetToXL\e2e\config\empty_source.json                                                                 | JSON       |         65 |          0 |          0 |         65 |
+| e:\_src\ParquetToXL\e2e\config\fan_in.json                                                                       | JSON       |         78 |          0 |          0 |         78 |
+| e:\_src\ParquetToXL\e2e\config\int_and_zoned_dates.json                                                          | JSON       |        114 |          0 |          0 |        114 |
+| e:\_src\ParquetToXL\e2e\config\null_dates_refused.json                                                           | JSON       |         65 |          0 |          0 |         65 |
+| e:\_src\ParquetToXL\e2e\config\tight_limits.json                                                                 | JSON       |         65 |          0 |          0 |         65 |
+| e:\_src\ParquetToXL\e2e\config\undated_last.json                                                                 | JSON       |         78 |          0 |          0 |         78 |
+| e:\_src\ParquetToXL\e2e\destination\by_month_descending\by_month_descending.manifest.json                        | JSON       |      1,430 |          0 |          1 |      1,431 |
+| e:\_src\ParquetToXL\e2e\destination\by_month_descending\by_month_descending.receipt.json                         | JSON       |         15 |          0 |          1 |         16 |
+| e:\_src\ParquetToXL\e2e\destination\by_month_descending\multi_year.parquet.json                                  | JSON       |        238 |          0 |          0 |        238 |
+| e:\_src\ParquetToXL\e2e\destination\by_month_descending\reports\by_month_descending-20260916T120000Z.report.html | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\by_month_descending\reports\by_month_descending-20260916T120000Z.report.json | JSON       |        557 |          0 |          1 |        558 |
+| e:\_src\ParquetToXL\e2e\destination\by_month_descending\reports\by_month_descending-20260916T120000Z.report.md   | Markdown   |         23 |          0 |          8 |         31 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\by_year.manifest.json                                                | JSON       |        332 |          0 |          1 |        333 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\by_year.receipt.json                                                 | JSON       |         23 |          0 |          1 |         24 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\multi_year.parquet.json                                              | JSON       |        238 |          0 |          0 |        238 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\reports\by_year-20260916T120000Z.report.html                         | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\reports\by_year-20260916T120000Z.report.json                         | JSON       |        149 |          0 |          1 |        150 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\reports\by_year-20260916T120000Z.report.md                           | Markdown   |         23 |          0 |          8 |         31 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\single_row.parquet.json                                              | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\by_year\tiny.parquet.json                                                    | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\dtypes_showcase\dtypes.parquet.json                                          | JSON       |        676 |          0 |          0 |        676 |
+| e:\_src\ParquetToXL\e2e\destination\dtypes_showcase\dtypes_showcase.manifest.json                                | JSON       |        135 |          0 |          1 |        136 |
+| e:\_src\ParquetToXL\e2e\destination\dtypes_showcase\dtypes_showcase.receipt.json                                 | JSON       |         15 |          0 |          1 |         16 |
+| e:\_src\ParquetToXL\e2e\destination\dtypes_showcase\reports\dtypes_showcase-20260916T120000Z.report.html         | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\dtypes_showcase\reports\dtypes_showcase-20260916T120000Z.report.json         | JSON       |         49 |          0 |          1 |         50 |
+| e:\_src\ParquetToXL\e2e\destination\dtypes_showcase\reports\dtypes_showcase-20260916T120000Z.report.md           | Markdown   |         17 |          0 |          8 |         25 |
+| e:\_src\ParquetToXL\e2e\destination\empty_source\empty.parquet.json                                              | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\empty_source\empty_source.manifest.json                                      | JSON       |        125 |          0 |          1 |        126 |
+| e:\_src\ParquetToXL\e2e\destination\empty_source\empty_source.receipt.json                                       | JSON       |         15 |          0 |          1 |         16 |
+| e:\_src\ParquetToXL\e2e\destination\empty_source\reports\empty_source-20260916T120000Z.report.html               | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\empty_source\reports\empty_source-20260916T120000Z.report.json               | JSON       |         49 |          0 |          1 |         50 |
+| e:\_src\ParquetToXL\e2e\destination\empty_source\reports\empty_source-20260916T120000Z.report.md                 | Markdown   |         17 |          0 |          8 |         25 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\fan_in.manifest.json                                                  | JSON       |        184 |          0 |          1 |        185 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\fan_in.receipt.json                                                   | JSON       |         19 |          0 |          1 |         20 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\odd_names.parquet.json                                                | JSON       |        286 |          0 |          0 |        286 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\reports\fan_in-20260916T120000Z.report.html                           | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\reports\fan_in-20260916T120000Z.report.json                           | JSON       |         71 |          0 |          1 |         72 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\reports\fan_in-20260916T120000Z.report.md                             | Markdown   |         18 |          0 |          8 |         26 |
+| e:\_src\ParquetToXL\e2e\destination\fan_in\tiny.parquet.json                                                     | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\int_and_zoned_dates.manifest.json                        | JSON       |        306 |          0 |          1 |        307 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\int_and_zoned_dates.receipt.json                         | JSON       |         27 |          0 |          1 |         28 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\int_yymm.parquet.json                                    | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\int_yyyymmdd.parquet.json                                | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\reports\int_and_zoned_dates-20260916T120000Z.report.html | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\reports\int_and_zoned_dates-20260916T120000Z.report.json | JSON       |        121 |          0 |          1 |        122 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\reports\int_and_zoned_dates-20260916T120000Z.report.md   | Markdown   |         21 |          0 |          8 |         29 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\wall_clock.parquet.json                                  | JSON       |        146 |          0 |          0 |        146 |
+| e:\_src\ParquetToXL\e2e\destination\int_and_zoned_dates\zoned.parquet.json                                       | JSON       |        194 |          0 |          0 |        194 |
+| e:\_src\ParquetToXL\e2e\destination\tight_limits\overflow.parquet.json                                           | JSON       |        238 |          0 |          0 |        238 |
+| e:\_src\ParquetToXL\e2e\destination\tight_limits\reports\tight_limits-20260916T120000Z.report.html               | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\tight_limits\reports\tight_limits-20260916T120000Z.report.json               | JSON       |        115 |          0 |          1 |        116 |
+| e:\_src\ParquetToXL\e2e\destination\tight_limits\reports\tight_limits-20260916T120000Z.report.md                 | Markdown   |         20 |          0 |          8 |         28 |
+| e:\_src\ParquetToXL\e2e\destination\tight_limits\tight_limits.manifest.json                                      | JSON       |        261 |          0 |          1 |        262 |
+| e:\_src\ParquetToXL\e2e\destination\tight_limits\tight_limits.receipt.json                                       | JSON       |         15 |          0 |          1 |         16 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\all_undated.parquet.json                                        | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\reports\undated_last-20260916T120000Z.report.html               | HTML       |         20 |          0 |          1 |         21 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\reports\undated_last-20260916T120000Z.report.json               | JSON       |        105 |          0 |          1 |        106 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\reports\undated_last-20260916T120000Z.report.md                 | Markdown   |         21 |          0 |          8 |         29 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\undated.parquet.json                                            | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\undated_last.manifest.json                                      | JSON       |        227 |          0 |          1 |        228 |
+| e:\_src\ParquetToXL\e2e\destination\undated_last\undated_last.receipt.json                                       | JSON       |         19 |          0 |          1 |         20 |
+| e:\_src\ParquetToXL\e2e\sidecars\by_month_descending\multi_year.parquet.json                                     | JSON       |        238 |          0 |          0 |        238 |
+| e:\_src\ParquetToXL\e2e\sidecars\by_year\multi_year.parquet.json                                                 | JSON       |        238 |          0 |          0 |        238 |
+| e:\_src\ParquetToXL\e2e\sidecars\by_year\single_row.parquet.json                                                 | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\by_year\tiny.parquet.json                                                       | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\dtypes_showcase\dtypes.parquet.json                                             | JSON       |        676 |          0 |          0 |        676 |
+| e:\_src\ParquetToXL\e2e\sidecars\empty_source\empty.parquet.json                                                 | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\fan_in\odd_names.parquet.json                                                   | JSON       |        286 |          0 |          0 |        286 |
+| e:\_src\ParquetToXL\e2e\sidecars\fan_in\tiny.parquet.json                                                        | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\int_and_zoned_dates\int_yymm.parquet.json                                       | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\int_and_zoned_dates\int_yyyymmdd.parquet.json                                   | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\int_and_zoned_dates\wall_clock.parquet.json                                     | JSON       |        146 |          0 |          0 |        146 |
+| e:\_src\ParquetToXL\e2e\sidecars\int_and_zoned_dates\zoned.parquet.json                                          | JSON       |        194 |          0 |          0 |        194 |
+| e:\_src\ParquetToXL\e2e\sidecars\null_dates_refused\undated.parquet.json                                         | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\tight_limits\overflow.parquet.json                                              | JSON       |        238 |          0 |          0 |        238 |
+| e:\_src\ParquetToXL\e2e\sidecars\undated_last\all_undated.parquet.json                                           | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\e2e\sidecars\undated_last\undated.parquet.json                                               | JSON       |        190 |          0 |          0 |        190 |
+| e:\_src\ParquetToXL\gates\__init__.py                                                                            | Python     |          0 |         16 |          1 |         17 |
+| e:\_src\ParquetToXL\gates\gate_0a_sheet_memory.py                                                                | Python     |        174 |        129 |         40 |        343 |
+| e:\_src\ParquetToXL\gates\gate_0d_sort_memory.py                                                                 | Python     |        198 |        183 |         56 |        437 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\pyproject.toml                                                         | TOML       |         18 |          5 |          4 |         27 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\__init__.py                                           | Python     |          0 |          8 |          1 |          9 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\columns.py                                            | Python     |         45 |         67 |         37 |        149 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\configuration.py                                      | Python     |         16 |         48 |         10 |         74 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\decoding.py                                           | Python     |         59 |        115 |         19 |        193 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\errors.py                                             | Python     |         20 |         56 |         13 |         89 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\grids.py                                              | Python     |         28 |         61 |         14 |        103 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\labels.py                                             | Python     |         78 |        135 |         32 |        245 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\periods.py                                            | Python     |         65 |         97 |         27 |        189 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\src\pqx_calendar\points.py                                             | Python     |         39 |         66 |         14 |        119 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\tests\test_columns.py                                                  | Python     |         68 |          9 |         35 |        112 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\tests\test_decoding.py                                                 | Python     |        165 |         46 |         86 |        297 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\tests\test_grids.py                                                    | Python     |         72 |          9 |         32 |        113 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\tests\test_labels.py                                                   | Python     |        109 |         24 |         56 |        189 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\tests\test_periods.py                                                  | Python     |         85 |         10 |         41 |        136 |
+| e:\_src\ParquetToXL\packages\pqx-calendar\tests\test_points.py                                                   | Python     |         41 |          5 |         24 |         70 |
+| e:\_src\ParquetToXL\packages\pqx-common\pyproject.toml                                                           | TOML       |         22 |          0 |          5 |         27 |
+| e:\_src\ParquetToXL\packages\pqx-common\src\pqx_common\__init__.py                                               | Python     |          2 |          6 |          3 |         11 |
+| e:\_src\ParquetToXL\packages\pqx-common\src\pqx_common\logging.py                                                | Python     |         24 |         27 |          9 |         60 |
+| e:\_src\ParquetToXL\packages\pqx-common\src\pqx_common\names.py                                                  | Python     |        122 |        172 |         42 |        336 |
+| e:\_src\ParquetToXL\packages\pqx-common\src\pqx_common\paths.py                                                  | Python     |         35 |         94 |         11 |        140 |
+| e:\_src\ParquetToXL\packages\pqx-common\tests\test_logging.py                                                    | Python     |         41 |          5 |         14 |         60 |
+| e:\_src\ParquetToXL\packages\pqx-common\tests\test_names.py                                                      | Python     |        161 |         42 |         85 |        288 |
+| e:\_src\ParquetToXL\packages\pqx-common\tests\test_paths.py                                                      | Python     |        101 |         20 |         52 |        173 |
+| e:\_src\ParquetToXL\packages\pqx-excel\pyproject.toml                                                            | TOML       |         29 |          3 |          5 |         37 |
+| e:\_src\ParquetToXL\packages\pqx-excel\src\pqx_excel\__init__.py                                                 | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\packages\pqx-excel\src\pqx_excel\fast_reader.py                                              | Python     |        128 |        201 |         25 |        354 |
+| e:\_src\ParquetToXL\packages\pqx-excel\src\pqx_excel\workbook.py                                                 | Python     |         44 |        113 |         20 |        177 |
+| e:\_src\ParquetToXL\packages\pqx-excel\src\pqx_excel\writer.py                                                   | Python     |         98 |        234 |         39 |        371 |
+| e:\_src\ParquetToXL\packages\pqx-excel\tests\test_excel_writer.py                                                | Python     |        224 |         63 |         77 |        364 |
+| e:\_src\ParquetToXL\packages\pqx-excel\tests\test_fast_excel_reader.py                                           | Python     |        193 |         40 |         58 |        291 |
+| e:\_src\ParquetToXL\packages\pqx-excel\tests\test_workbook.py                                                    | Python     |        123 |         34 |         51 |        208 |
+| e:\_src\ParquetToXL\packages\pqx-frame\pyproject.toml                                                            | TOML       |         27 |          0 |          5 |         32 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\__init__.py                                                 | Python     |          0 |          8 |          1 |          9 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\conversion\__init__.py                                      | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\conversion\base.py                                          | Python     |         30 |         49 |         15 |         94 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\conversion\none.py                                          | Python     |         12 |         20 |          9 |         41 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\conversion\to_excel.py                                      | Python     |         56 |        121 |         17 |        194 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\hashing\__init__.py                                         | Python     |          6 |         19 |          7 |         32 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\hashing\base.py                                             | Python     |         17 |         42 |         14 |         73 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\hashing\binary_aggregate.py                                 | Python     |         73 |         84 |         20 |        177 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\hashing\canonical.py                                        | Python     |        117 |         83 |         31 |        231 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\__init__.py                                        | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\builder.py                                         | Python     |         38 |         36 |          9 |         83 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\column.py                                          | Python     |         16 |         23 |         11 |         50 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\columns.py                                         | Python     |         12 |         24 |         12 |         48 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\dataframe.py                                       | Python     |         11 |         11 |         11 |         33 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\dtypes.py                                          | Python     |        125 |        115 |         49 |        289 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\extract.py                                         | Python     |         50 |         70 |         16 |        136 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\metadata\scalars.py                                         | Python     |         16 |         72 |         17 |        105 |
+| e:\_src\ParquetToXL\packages\pqx-frame\src\pqx_frame\timestamps.py                                               | Python     |         10 |         34 |          8 |         52 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_binary_aggregate.py                                            | Python     |        107 |         26 |         45 |        178 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_canonical.py                                                   | Python     |        126 |         34 |         62 |        222 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_combine.py                                                     | Python     |         91 |         16 |         34 |        141 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_conversion_idempotency.py                                      | Python     |        146 |         44 |         36 |        226 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_conversion_identity.py                                         | Python     |         61 |         16 |         21 |         98 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_conversion_none.py                                             | Python     |         52 |         15 |         24 |         91 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_conversion_row_order.py                                        | Python     |         61 |         31 |         19 |        111 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_conversion_to_excel.py                                         | Python     |        291 |         45 |         78 |        414 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_dtypes.py                                                      | Python     |        174 |         67 |         51 |        292 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_extract_metadata.py                                            | Python     |        136 |         16 |         51 |        203 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_metadata_builder.py                                            | Python     |        105 |         18 |         32 |        155 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_metadata_models.py                                             | Python     |         72 |          5 |         20 |         97 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_row_hashing.py                                                 | Python     |         59 |          3 |         15 |         77 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_row_partition_additivity.py                                    | Python     |        113 |        133 |         46 |        292 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_scalars.py                                                     | Python     |         59 |         20 |         18 |         97 |
+| e:\_src\ParquetToXL\packages\pqx-frame\tests\test_timestamps.py                                                  | Python     |         26 |         16 |         17 |         59 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\pyproject.toml                                                         | TOML       |         41 |          4 |          6 |         51 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\__init__.py                                           | Python     |          0 |          7 |          1 |          8 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\bucketing.py                                          | Python     |        124 |        187 |         33 |        344 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\cli.py                                                | Python     |        243 |        170 |         56 |        469 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\ingest.py                                             | Python     |         59 |         98 |         21 |        178 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\locations.py                                          | Python     |         26 |         38 |         16 |         80 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\run.py                                                | Python     |        415 |        246 |         67 |        728 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\staleness.py                                          | Python     |        114 |        137 |         36 |        287 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\src\pqx_pipeline\write.py                                              | Python     |         93 |         56 |         19 |        168 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_bucketing.py                                                | Python     |        310 |         93 |        132 |        535 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_cli.py                                                      | Python     |        401 |         80 |        149 |        630 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_ingest.py                                                   | Python     |        128 |         28 |         43 |        199 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_run.py                                                      | Python     |        311 |         47 |         94 |        452 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_staged_parquet.py                                           | Python     |         69 |         40 |         26 |        135 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_staleness.py                                                | Python     |        176 |         52 |         92 |        320 |
+| e:\_src\ParquetToXL\packages\pqx-pipeline\tests\test_write.py                                                    | Python     |        197 |         33 |         52 |        282 |
+| e:\_src\ParquetToXL\packages\pqx-plan\pyproject.toml                                                             | TOML       |         27 |          7 |          5 |         39 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\__init__.py                                                   | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\allocate.py                                                   | Python     |         51 |         71 |         14 |        136 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\capacity.py                                                   | Python     |         94 |        188 |         31 |        313 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\config.py                                                     | Python     |        128 |        130 |         61 |        319 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\corpus.py                                                     | Python     |        312 |         83 |         42 |        437 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\fingerprint.py                                                | Python     |         12 |         44 |         10 |         66 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\manifest.py                                                   | Python     |        101 |        172 |         36 |        309 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\naming.py                                                     | Python     |        112 |        132 |         33 |        277 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\partition.py                                                  | Python     |        126 |        172 |         39 |        337 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\paths.py                                                      | Python     |         24 |         39 |         11 |         74 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\receipt.py                                                    | Python     |         18 |         52 |         20 |         90 |
+| e:\_src\ParquetToXL\packages\pqx-plan\src\pqx_plan\semantics.py                                                  | Python     |        117 |         88 |         37 |        242 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_allocate.py                                                     | Python     |         90 |         22 |         48 |        160 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_capacity.py                                                     | Python     |        138 |         46 |         87 |        271 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_fingerprint.py                                                  | Python     |         67 |         16 |         28 |        111 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_manifest_paths.py                                               | Python     |         38 |         17 |         18 |         73 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_manifest_receipt_roundtrip.py                                   | Python     |        185 |         99 |         59 |        343 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_naming.py                                                       | Python     |        134 |         33 |         97 |        264 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_partition.py                                                    | Python     |        186 |         55 |        105 |        346 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_plan_end_to_end.py                                              | Python     |         94 |         12 |         19 |        125 |
+| e:\_src\ParquetToXL\packages\pqx-plan\tests\test_schema_model_agreement.py                                       | Python     |         98 |         49 |         48 |        195 |
+| e:\_src\ParquetToXL\packages\pqx-report\pyproject.toml                                                           | TOML       |         22 |          2 |          5 |         29 |
+| e:\_src\ParquetToXL\packages\pqx-report\src\pqx_report\__init__.py                                               | Python     |          0 |          7 |          1 |          8 |
+| e:\_src\ParquetToXL\packages\pqx-report\src\pqx_report\model.py                                                  | Python     |         82 |         68 |         32 |        182 |
+| e:\_src\ParquetToXL\packages\pqx-report\src\pqx_report\render.py                                                 | Python     |        118 |         74 |         29 |        221 |
+| e:\_src\ParquetToXL\packages\pqx-report\tests\test_report.py                                                     | Python     |        190 |         31 |         99 |        320 |
+| e:\_src\ParquetToXL\packages\pqx-sidecar\pyproject.toml                                                          | TOML       |         25 |          0 |          5 |         30 |
+| e:\_src\ParquetToXL\packages\pqx-sidecar\src\pqx_sidecar\__init__.py                                             | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\packages\pqx-sidecar\src\pqx_sidecar\document.py                                             | Python     |         10 |         45 |          9 |         64 |
+| e:\_src\ParquetToXL\packages\pqx-sidecar\src\pqx_sidecar\store.py                                                | Python     |         56 |         95 |         25 |        176 |
+| e:\_src\ParquetToXL\packages\pqx-sidecar\tests\test_sidecar_store.py                                             | Python     |        148 |         28 |         55 |        231 |
+| e:\_src\ParquetToXL\packages\pqx-staging\pyproject.toml                                                          | TOML       |         21 |          3 |          5 |         29 |
+| e:\_src\ParquetToXL\packages\pqx-staging\src\pqx_staging\__init__.py                                             | Python     |          0 |          7 |          1 |          8 |
+| e:\_src\ParquetToXL\packages\pqx-staging\src\pqx_staging\errors.py                                               | Python     |          6 |         20 |         12 |         38 |
+| e:\_src\ParquetToXL\packages\pqx-staging\src\pqx_staging\lease.py                                                | Python     |         67 |        113 |         23 |        203 |
+| e:\_src\ParquetToXL\packages\pqx-staging\src\pqx_staging\scratch.py                                              | Python     |         49 |        106 |         21 |        176 |
+| e:\_src\ParquetToXL\packages\pqx-staging\src\pqx_staging\transfer.py                                             | Python     |         64 |        100 |         18 |        182 |
+| e:\_src\ParquetToXL\packages\pqx-staging\tests\test_lease.py                                                     | Python     |        112 |         22 |         55 |        189 |
+| e:\_src\ParquetToXL\packages\pqx-staging\tests\test_scratch.py                                                   | Python     |        118 |         25 |         51 |        194 |
+| e:\_src\ParquetToXL\packages\pqx-staging\tests\test_transfer.py                                                  | Python     |        135 |         35 |         63 |        233 |
+| e:\_src\ParquetToXL\packages\pqx-testing\pyproject.toml                                                          | TOML       |         19 |          0 |          4 |         23 |
+| e:\_src\ParquetToXL\packages\pqx-testing\src\pqx_testing\__init__.py                                             | Python     |          0 |          6 |          1 |          7 |
+| e:\_src\ParquetToXL\packages\pqx-testing\src\pqx_testing\_style_example.py                                       | Python     |         25 |         30 |         10 |         65 |
+| e:\_src\ParquetToXL\packages\pqx-testing\src\pqx_testing\generate.py                                             | Python     |        234 |        236 |         36 |        506 |
+| e:\_src\ParquetToXL\packages\pqx-testing\src\pqx_testing\plugin.py                                               | Python     |         22 |         22 |         10 |         54 |
+| e:\_src\ParquetToXL\packages\pqx-verify\pyproject.toml                                                           | TOML       |         32 |          3 |          5 |         40 |
+| e:\_src\ParquetToXL\packages\pqx-verify\src\pqx_verify\__init__.py                                               | Python     |          0 |          7 |          1 |          8 |
+| e:\_src\ParquetToXL\packages\pqx-verify\src\pqx_verify\fragments.py                                              | Python     |        113 |        116 |         34 |        263 |
+| e:\_src\ParquetToXL\packages\pqx-verify\src\pqx_verify\validation.py                                             | Python     |         98 |         97 |         24 |        219 |
+| e:\_src\ParquetToXL\packages\pqx-verify\tests\test_fragments.py                                                  | Python     |        283 |         44 |         73 |        400 |
+| e:\_src\ParquetToXL\packages\pqx-verify\tests\test_sidecar_validation.py                                         | Python     |        118 |         75 |         45 |        238 |
+| e:\_src\ParquetToXL\packages\pqx-verify\tests\test_validate_workbook.py                                          | Python     |        221 |         56 |         57 |        334 |
+| e:\_src\ParquetToXL\pyproject.toml                                                                               | TOML       |        125 |         36 |         16 |        177 |
+| e:\_src\ParquetToXL\stubs\fastexcel\__init__.pyi                                                                 | Python     |         45 |         30 |         12 |         87 |
+| e:\_src\ParquetToXL\stubs\rustpy_xlsxwriter\__init__.pyi                                                         | Python     |         18 |         35 |          7 |         60 |
+| e:\_src\ParquetToXL\stubs\xlsxwriter\__init__.pyi                                                                | Python     |          9 |         26 |          4 |         39 |
+| e:\_src\ParquetToXL\tests\__init__.py                                                                            | Python     |          0 |         13 |          1 |         14 |
+| e:\_src\ParquetToXL\tests\integration\__init__.py                                                                | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\tests\integration\test_excel_hash_roundtrip.py                                               | Python     |         69 |         31 |         30 |        130 |
+| e:\_src\ParquetToXL\tests\integration\test_excel_roundtrip.py                                                    | Python     |         85 |         25 |         27 |        137 |
+| e:\_src\ParquetToXL\tests\integration\test_sidecar_roundtrip.py                                                  | Python     |         78 |         24 |         26 |        128 |
+| e:\_src\ParquetToXL\tests\integration\test_wall_clock_roundtrip.py                                               | Python     |         36 |          1 |          6 |         43 |
+| e:\_src\ParquetToXL\tests\test_fixtures.py                                                                       | Python     |        105 |         35 |         34 |        174 |
+| e:\_src\ParquetToXL\tests\typing_probe.py                                                                        | Python     |         31 |         21 |         20 |         72 |
+| e:\_src\ParquetToXL\tools\__init__.py                                                                            | Python     |          0 |          1 |          1 |          2 |
+| e:\_src\ParquetToXL\tools\build_config_corpus.py                                                                 | Python     |          9 |         16 |          9 |         34 |
+| e:\_src\ParquetToXL\tools\check_declarations.py                                                                  | Python     |        267 |        107 |         63 |        437 |
+| e:\_src\ParquetToXL\uv.lock                                                                                      | TOML       |      2,229 |          0 |        122 |      2,351 |
+| Total                                                                                                            |            |     41,890 |      8,204 |      6,128 |     56,222 |
++------------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+

@@ -1,0 +1,676 @@
+{
+  "schema_version": 3,
+  "created_utc": "2026-09-16T12:00:00Z",
+  "metadata": {
+    "file_name": "dtypes.parquet",
+    "full_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\dtypes.parquet",
+    "modified_utc": "2026-09-16T08:35:41.641599Z",
+    "modified_in_timezones": {},
+    "source_columns_metadata": {
+      "columns": [
+        {
+          "name": "int8",
+          "dtype": {
+            "kind": "int8"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "d62f5c960b5c3bfa09b18410e7d95dd6",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "int64_extremes",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "fd36b8171ababb62864ecebca68444ce",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "uint64_max",
+          "dtype": {
+            "kind": "uint64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "6eb1ec24590f163a0abfd1da10320d28",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "float_specials",
+          "dtype": {
+            "kind": "float64"
+          },
+          "is_numeric": true,
+          "is_float": true,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "2fc6c2f67c043ec313bb1f8ba7436b13",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 0
+        },
+        {
+          "name": "boolean",
+          "dtype": {
+            "kind": "boolean"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": true,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "d069645f02a82eb9549d6682128693c7",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "string_edges",
+          "dtype": {
+            "kind": "string"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": true,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "a4f7aadfe778f5ac23ce65273f5691d9",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "binary",
+          "dtype": {
+            "kind": "binary"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "0bb514aa60eb9115b294415df10ccb1d",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "time",
+          "dtype": {
+            "kind": "time"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "e8d9c677113964802d4f6079a9c37f41",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "duration",
+          "dtype": {
+            "kind": "duration",
+            "time_unit": "us"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "bc16d8c2d66a74b9dba33a2f3711c433",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "decimal",
+          "dtype": {
+            "kind": "decimal",
+            "precision": 18,
+            "scale": 4
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": true,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "4d0e9d4419dd2a6bc01d6f7ddbd1f037",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "categorical",
+          "dtype": {
+            "kind": "categorical",
+            "name": "",
+            "namespace": "",
+            "physical": "uint32"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": true,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "085acdc020b52a4799352ae706b35b74",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 1
+        },
+        {
+          "name": "all_null",
+          "dtype": {
+            "kind": "null"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "9b357a4e48003dab112f7fd01d3bb36c",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 4
+        },
+        {
+          "name": "booked",
+          "dtype": {
+            "kind": "date"
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "45adbff7f1d416b6d40e8cfd34c7bb82",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 4,
+          "null_count": 0
+        }
+      ],
+      "dataframe_hashes": [
+        {
+          "identifier": "binary-aggregate-xxh3-128",
+          "version": 2,
+          "scope": "dataframe",
+          "bit_width": 128,
+          "digest_hex": "378d550f81bdd3b1820ebc51f170ee88",
+          "row_digest_hex": "695b28d9df7c4f8d6110293c5355e4df"
+        }
+      ],
+      "conversion": null
+    },
+    "column_metadata_of_conversions": [
+      {
+        "columns": [
+          {
+            "name": "int8",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "5a08b419447c208042a5cc9491368b65",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "int64_extremes",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "963f6f02068e405baab8b51b6120d584",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "uint64_max",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "b332c613af9ecffd79fd98034b8fa3dc",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "float_specials",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "eea76f4d7a03b63b8f68b6ad3743ae47",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 3
+          },
+          {
+            "name": "boolean",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "e43d0ba943498b85835482491cbd9547",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "string_edges",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "708c1e761e05e0603e9e08b2a6b144b0",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 2
+          },
+          {
+            "name": "binary",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "51b41566255c62a0fd0d9acd1829c41f",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 2
+          },
+          {
+            "name": "time",
+            "dtype": {
+              "kind": "time"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "e8d9c677113964802d4f6079a9c37f41",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "duration",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "434654ba0130f3cdcd69d7e90fdfb9c6",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "decimal",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "61c46af12808410ea90ccd0c3f566892",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 1
+          },
+          {
+            "name": "categorical",
+            "dtype": {
+              "kind": "string"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": true,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "cb7d1723e79dd6f2938cdc6e6f6e6850",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 2
+          },
+          {
+            "name": "all_null",
+            "dtype": {
+              "kind": "null"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "9b357a4e48003dab112f7fd01d3bb36c",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 4
+          },
+          {
+            "name": "booked",
+            "dtype": {
+              "kind": "date"
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "45adbff7f1d416b6d40e8cfd34c7bb82",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 4,
+            "null_count": 0
+          }
+        ],
+        "dataframe_hashes": [
+          {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "98e36c369396809e40f90daad52efcec",
+            "row_digest_hex": "25fefca83c5906516ea328d6ca0032f3"
+          }
+        ],
+        "conversion": {
+          "identifier": "to-excel",
+          "version": "4.0",
+          "version_number": 4
+        }
+      }
+    ]
+  }
+}

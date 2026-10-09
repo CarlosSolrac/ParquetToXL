@@ -1,0 +1,149 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "by_year",
+  "run_id": "2026-09-16T12-00-00Z-by_year",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "9b14eab8-e258-55bd-a1e2-c80bea4c6501",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\by_year",
+  "planner_version": "1",
+  "resolved_config_hash": "81a79d70da1ec135e0e8ca875239c8ba267af861ea2fefa3b94c2c667e5381e7",
+  "sources": [
+    {
+      "alias": "tiny",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\tiny.parquet",
+      "rows": 3,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "by_year_2024~2025_003.xlsx",
+          "sheet_name": "tiny 2025",
+          "rows": 3,
+          "period_label": "2025",
+          "verdict": "valid",
+          "detail": "by_year_2024~2025_003.xlsx!tiny 2025 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 3,
+      "rows_found": 3,
+      "reassembled": true
+    },
+    {
+      "alias": "single_row",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\single_row.parquet",
+      "rows": 1,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "by_year_2024~2025_003.xlsx",
+          "sheet_name": "single_row 2025",
+          "rows": 1,
+          "period_label": "2025",
+          "verdict": "valid",
+          "detail": "by_year_2024~2025_003.xlsx!single_row 2025 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 1,
+      "rows_found": 1,
+      "reassembled": true
+    },
+    {
+      "alias": "multi_year",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+      "rows": 600,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "by_year_2022_001.xlsx",
+          "sheet_name": "multi_year 2022",
+          "rows": 121,
+          "period_label": "2022",
+          "verdict": "valid",
+          "detail": "by_year_2022_001.xlsx!multi_year 2022 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "by_year_2023_002.xlsx",
+          "sheet_name": "multi_year 2023",
+          "rows": 122,
+          "period_label": "2023",
+          "verdict": "valid",
+          "detail": "by_year_2023_002.xlsx!multi_year 2023 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "by_year_2024~2025_003.xlsx",
+          "sheet_name": "multi_year 2024",
+          "rows": 122,
+          "period_label": "2024",
+          "verdict": "valid",
+          "detail": "by_year_2024~2025_003.xlsx!multi_year 2024 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "by_year_2025_004.xlsx",
+          "sheet_name": "multi_year 2025",
+          "rows": 122,
+          "period_label": "2025",
+          "verdict": "valid",
+          "detail": "by_year_2025_004.xlsx!multi_year 2025 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "by_year_2026_005.xlsx",
+          "sheet_name": "multi_year 2026",
+          "rows": 113,
+          "period_label": "2026",
+          "verdict": "valid",
+          "detail": "by_year_2026_005.xlsx!multi_year 2026 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 600,
+      "rows_found": 600,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "by_year_2022_001.xlsx",
+      "sheets": 1,
+      "rows": 121,
+      "cells": 488
+    },
+    {
+      "filename": "by_year_2023_002.xlsx",
+      "sheets": 1,
+      "rows": 122,
+      "cells": 492
+    },
+    {
+      "filename": "by_year_2024~2025_003.xlsx",
+      "sheets": 3,
+      "rows": 126,
+      "cells": 510
+    },
+    {
+      "filename": "by_year_2025_004.xlsx",
+      "sheets": 1,
+      "rows": 122,
+      "cells": 492
+    },
+    {
+      "filename": "by_year_2026_005.xlsx",
+      "sheets": 1,
+      "rows": 113,
+      "cells": 456
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}

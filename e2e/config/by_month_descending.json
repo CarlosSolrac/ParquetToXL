@@ -1,0 +1,65 @@
+{
+  "config_version": 1,
+  "config_id": "be3d978a-b843-5928-8dc5-a5df64da41cc",
+  "config_modified_utc": "2026-09-16T11:00:00Z",
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "sidecar_location": {
+    "kind": "directory",
+    "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\by_month_descending"
+  },
+  "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+  "excel": {
+    "writer": "rustpy-xlsxwriter",
+    "options": {}
+  },
+  "sources": {
+    "multi_year": {
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\multi_year.parquet",
+      "date_columns": {
+        "booked": {
+          "type": "date"
+        }
+      }
+    }
+  },
+  "profiles": [
+    {
+      "name": "by_month_descending",
+      "output_subdirectory": "by_month_descending",
+      "limits": {
+        "max_data_rows_per_worksheet": 1048575,
+        "max_cells_per_workbook": 400
+      },
+      "partitioning": {
+        "algorithm": "calendar_periods",
+        "base_period": "year-month",
+        "period_order": "descending",
+        "year_split_months": [
+          6,
+          4,
+          3,
+          2,
+          1
+        ],
+        "oversized_period": "balanced_rows",
+        "null_dates": "separate"
+      },
+      "naming": {
+        "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+        "worksheet": "{source} {period_label}",
+        "single_worksheet": "{source} Data",
+        "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+        "month_format": "numeric",
+        "worksheet_prefix": "",
+        "sheet_collision": "error"
+      },
+      "sheets": [
+        {
+          "source": "multi_year",
+          "partition_column": "booked",
+          "sort": []
+        }
+      ]
+    }
+  ]
+}

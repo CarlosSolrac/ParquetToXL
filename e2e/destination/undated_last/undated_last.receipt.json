@@ -1,0 +1,19 @@
+{
+  "receipt_version": 1,
+  "config_id": "1fb28d35-b7c8-5d35-abd2-b3031499e4c1",
+  "profile": "undated_last",
+  "excel_created_utc": "2026-09-16T12:00:00Z",
+  "config_modified_utc": "2026-09-16T11:00:00Z",
+  "resolved_config_hash": "f9981f84e42083a0a3c8a4a3c940bcc51dd39b27dcc02ddd60d829b0144f84db",
+  "planner_version": "1",
+  "sources": {
+    "undated": {
+      "source_modified_utc": "2026-09-16T08:35:41.493474Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    },
+    "all_undated": {
+      "source_modified_utc": "2026-09-16T08:35:41.516379Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    }
+  }
+}

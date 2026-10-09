@@ -1,0 +1,49 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "dtypes_showcase",
+  "run_id": "2026-09-16T12-00-00Z-dtypes_showcase",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "d28fcdd9-0420-5d16-b938-29d8966666ec",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\dtypes_showcase",
+  "planner_version": "1",
+  "resolved_config_hash": "3a29fa076b3c561a2d23459aa531d47693b47e5871248811e3d4f1c1207c15f2",
+  "sources": [
+    {
+      "alias": "dtypes",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\dtypes.parquet",
+      "rows": 4,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "dtypes_showcase_Data_001.xlsx",
+          "sheet_name": "dtypes Data",
+          "rows": 4,
+          "period_label": null,
+          "verdict": "valid",
+          "detail": "dtypes_showcase_Data_001.xlsx!dtypes Data holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 4,
+      "rows_found": 4,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "dtypes_showcase_Data_001.xlsx",
+      "sheets": 1,
+      "rows": 4,
+      "cells": 65
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}

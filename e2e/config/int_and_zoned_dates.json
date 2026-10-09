@@ -1,0 +1,114 @@
+{
+  "config_version": 1,
+  "config_id": "ee0ed1e3-9135-5e50-b5da-920118a4c271",
+  "config_modified_utc": "2026-09-16T11:00:00Z",
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "sidecar_location": {
+    "kind": "directory",
+    "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\int_and_zoned_dates"
+  },
+  "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+  "excel": {
+    "writer": "rustpy-xlsxwriter",
+    "options": {}
+  },
+  "sources": {
+    "int_yymm": {
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yymm.parquet",
+      "date_columns": {
+        "period": {
+          "type": "int",
+          "format": "YYMM",
+          "two_digit_year_window_start": 1970
+        }
+      }
+    },
+    "int_yyyymmdd": {
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yyyymmdd.parquet",
+      "date_columns": {
+        "period": {
+          "type": "int",
+          "format": "YYYYMMDD"
+        }
+      }
+    },
+    "zoned": {
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\zoned.parquet",
+      "date_columns": {
+        "moment": {
+          "type": "datetime",
+          "calendar_timezone": {
+            "mode": "zone",
+            "zone": "America/Mexico_City"
+          }
+        }
+      }
+    },
+    "wall_clock": {
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\wall_clock.parquet",
+      "date_columns": {
+        "moment": {
+          "type": "datetime",
+          "calendar_timezone": {
+            "mode": "source_wall_clock"
+          }
+        }
+      }
+    }
+  },
+  "profiles": [
+    {
+      "name": "int_and_zoned_dates",
+      "output_subdirectory": "int_and_zoned_dates",
+      "limits": {
+        "max_data_rows_per_worksheet": 1048575,
+        "max_cells_per_workbook": 40
+      },
+      "partitioning": {
+        "algorithm": "calendar_greedy",
+        "base_period": "year",
+        "period_order": "ascending",
+        "year_split_months": [
+          6,
+          4,
+          3,
+          2,
+          1
+        ],
+        "oversized_period": "balanced_rows",
+        "null_dates": "separate"
+      },
+      "naming": {
+        "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+        "worksheet": "{source} {period_label}",
+        "single_worksheet": "{source} Data",
+        "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+        "month_format": "numeric",
+        "worksheet_prefix": "",
+        "sheet_collision": "error"
+      },
+      "sheets": [
+        {
+          "source": "int_yymm",
+          "partition_column": "period",
+          "sort": []
+        },
+        {
+          "source": "int_yyyymmdd",
+          "partition_column": "period",
+          "sort": []
+        },
+        {
+          "source": "zoned",
+          "partition_column": "moment",
+          "sort": []
+        },
+        {
+          "source": "wall_clock",
+          "partition_column": "moment",
+          "sort": []
+        }
+      ]
+    }
+  ]
+}

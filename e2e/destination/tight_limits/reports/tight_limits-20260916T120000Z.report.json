@@ -1,0 +1,115 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "tight_limits",
+  "run_id": "2026-09-16T12-00-00Z-tight_limits",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "e261cfb0-77b8-5801-8b8d-5e84c509a430",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\tight_limits",
+  "planner_version": "1",
+  "resolved_config_hash": "914d10ac005e54247ac5c35721612d635b83581babb5800e745192dc8ce63339",
+  "sources": [
+    {
+      "alias": "overflow",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\overflow.parquet",
+      "rows": 2500,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "tight_limits_2025-05_001.xlsx",
+          "sheet_name": "overflow 2025-05_p01",
+          "rows": 358,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_001.xlsx!overflow 2025-05_p01 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "tight_limits_2025-05_001.xlsx",
+          "sheet_name": "overflow 2025-05_p02",
+          "rows": 357,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_001.xlsx!overflow 2025-05_p02 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "tight_limits_2025-05_002.xlsx",
+          "sheet_name": "overflow 2025-05_p03",
+          "rows": 357,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_002.xlsx!overflow 2025-05_p03 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "tight_limits_2025-05_002.xlsx",
+          "sheet_name": "overflow 2025-05_p04",
+          "rows": 357,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_002.xlsx!overflow 2025-05_p04 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "tight_limits_2025-05_003.xlsx",
+          "sheet_name": "overflow 2025-05_p05",
+          "rows": 357,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_003.xlsx!overflow 2025-05_p05 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "tight_limits_2025-05_003.xlsx",
+          "sheet_name": "overflow 2025-05_p06",
+          "rows": 357,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_003.xlsx!overflow 2025-05_p06 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "tight_limits_2025-05_004.xlsx",
+          "sheet_name": "overflow 2025-05_p07",
+          "rows": 357,
+          "period_label": "2025-05",
+          "verdict": "valid",
+          "detail": "tight_limits_2025-05_004.xlsx!overflow 2025-05_p07 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 2500,
+      "rows_found": 2500,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "tight_limits_2025-05_001.xlsx",
+      "sheets": 2,
+      "rows": 715,
+      "cells": 2868
+    },
+    {
+      "filename": "tight_limits_2025-05_002.xlsx",
+      "sheets": 2,
+      "rows": 714,
+      "cells": 2864
+    },
+    {
+      "filename": "tight_limits_2025-05_003.xlsx",
+      "sheets": 2,
+      "rows": 714,
+      "cells": 2864
+    },
+    {
+      "filename": "tight_limits_2025-05_004.xlsx",
+      "sheets": 1,
+      "rows": 357,
+      "cells": 1432
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}

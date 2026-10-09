@@ -1,0 +1,146 @@
+{
+  "schema_version": 3,
+  "created_utc": "2026-09-16T12:00:00Z",
+  "metadata": {
+    "file_name": "wall_clock.parquet",
+    "full_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\wall_clock.parquet",
+    "modified_utc": "2026-09-16T08:35:41.598601Z",
+    "modified_in_timezones": {},
+    "source_columns_metadata": {
+      "columns": [
+        {
+          "name": "id",
+          "dtype": {
+            "kind": "int64"
+          },
+          "is_numeric": true,
+          "is_float": false,
+          "is_integer": true,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "c64855ef4281f2b072de479c1b8ba2db",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 6,
+          "null_count": 0
+        },
+        {
+          "name": "moment",
+          "dtype": {
+            "kind": "datetime",
+            "time_unit": "us",
+            "time_zone": null
+          },
+          "is_numeric": false,
+          "is_float": false,
+          "is_integer": false,
+          "is_decimal": false,
+          "is_text": false,
+          "is_boolean": false,
+          "hashes": [
+            {
+              "identifier": "binary-aggregate-xxh3-128",
+              "version": 2,
+              "scope": "column",
+              "bit_width": 128,
+              "digest_hex": "80805ec362b46b6074b86379f80e9680",
+              "row_digest_hex": null
+            }
+          ],
+          "value_count": 6,
+          "null_count": 0
+        }
+      ],
+      "dataframe_hashes": [
+        {
+          "identifier": "binary-aggregate-xxh3-128",
+          "version": 2,
+          "scope": "dataframe",
+          "bit_width": 128,
+          "digest_hex": "17af7fb592513613861f2190e4ff65fe",
+          "row_digest_hex": "d0e6cb02ed1ad8029e88767ad1652ca3"
+        }
+      ],
+      "conversion": null
+    },
+    "column_metadata_of_conversions": [
+      {
+        "columns": [
+          {
+            "name": "id",
+            "dtype": {
+              "kind": "float64"
+            },
+            "is_numeric": true,
+            "is_float": true,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "5f9e25cd7cd06caaf6471fb616967a60",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 6,
+            "null_count": 0
+          },
+          {
+            "name": "moment",
+            "dtype": {
+              "kind": "datetime",
+              "time_unit": "us",
+              "time_zone": null
+            },
+            "is_numeric": false,
+            "is_float": false,
+            "is_integer": false,
+            "is_decimal": false,
+            "is_text": false,
+            "is_boolean": false,
+            "hashes": [
+              {
+                "identifier": "binary-aggregate-xxh3-128",
+                "version": 2,
+                "scope": "column",
+                "bit_width": 128,
+                "digest_hex": "80805ec362b46b6074b86379f80e9680",
+                "row_digest_hex": null
+              }
+            ],
+            "value_count": 6,
+            "null_count": 0
+          }
+        ],
+        "dataframe_hashes": [
+          {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "db4197db2b3f658fb061f4ed3d46e1a4",
+            "row_digest_hex": "fb23134a4bba8d84456271bd2ea1d0c4"
+          }
+        ],
+        "conversion": {
+          "identifier": "to-excel",
+          "version": "4.0",
+          "version_number": 4
+        }
+      }
+    ]
+  }
+}

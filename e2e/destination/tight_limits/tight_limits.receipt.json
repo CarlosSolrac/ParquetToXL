@@ -1,0 +1,15 @@
+{
+  "receipt_version": 1,
+  "config_id": "e261cfb0-77b8-5801-8b8d-5e84c509a430",
+  "profile": "tight_limits",
+  "excel_created_utc": "2026-09-16T12:00:00Z",
+  "config_modified_utc": "2026-09-16T11:00:00Z",
+  "resolved_config_hash": "914d10ac005e54247ac5c35721612d635b83581babb5800e745192dc8ce63339",
+  "planner_version": "1",
+  "sources": {
+    "overflow": {
+      "source_modified_utc": "2026-09-16T08:35:41.622404Z",
+      "sidecar_created_utc": "2026-09-16T12:00:00Z"
+    }
+  }
+}

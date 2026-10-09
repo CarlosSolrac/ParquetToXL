@@ -1,0 +1,135 @@
+{
+  "manifest_version": 1,
+  "run_id": "2026-09-16T12-00-00Z-dtypes_showcase",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "profile": "dtypes_showcase",
+  "planner_version": "1",
+  "resolved_config": {
+    "config_version": 1,
+    "config_id": "d28fcdd9-0420-5d16-b938-29d8966666ec",
+    "config_modified_utc": "2026-09-16T11:00:00Z",
+    "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination",
+    "sidecar_location": {
+      "kind": "directory",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sidecars\\dtypes_showcase"
+    },
+    "scratch_root": "E:\\_src\\ParquetToXL\\e2e\\scratch",
+    "excel": {
+      "writer": "rustpy-xlsxwriter",
+      "options": {}
+    },
+    "sources": {
+      "dtypes": {
+        "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\dtypes.parquet",
+        "date_columns": {
+          "booked": {
+            "type": "date"
+          }
+        }
+      }
+    },
+    "profiles": [
+      {
+        "name": "dtypes_showcase",
+        "output_subdirectory": "dtypes_showcase",
+        "sheets": [
+          {
+            "source": "dtypes",
+            "partition_column": "booked",
+            "sort": []
+          }
+        ],
+        "limits": {
+          "max_data_rows_per_worksheet": 1048575,
+          "max_cells_per_workbook": 10000000
+        },
+        "partitioning": {
+          "algorithm": "calendar_greedy",
+          "base_period": "year-month",
+          "period_order": "ascending",
+          "year_split_months": [
+            6,
+            4,
+            3,
+            2,
+            1
+          ],
+          "oversized_period": "balanced_rows",
+          "null_dates": "separate"
+        },
+        "naming": {
+          "workbook": "{profile}_{period_label}_{workbook_index:03d}.xlsx",
+          "single_worksheet": "{source} Data",
+          "worksheet": "{source} {period_label}",
+          "overflow_worksheet": "{source} {period_label}_p{part_index:02d}",
+          "month_format": "numeric",
+          "worksheet_prefix": "",
+          "sheet_collision": "error"
+        }
+      }
+    ]
+  },
+  "output_directory": "E:\\_src\\ParquetToXL\\e2e\\destination\\dtypes_showcase",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "sources": [
+    {
+      "source_alias": "dtypes",
+      "source_path": "E:\\_src\\ParquetToXL\\e2e\\sources\\dtypes.parquet",
+      "sidecar_path": "dtypes.parquet.json",
+      "conversion": {
+        "identifier": "to-excel",
+        "version": "4.0",
+        "version_number": 4
+      },
+      "total_and_disjoint": true,
+      "expected_whole": {
+        "identifier": "binary-aggregate-xxh3-128",
+        "version": 2,
+        "scope": "dataframe",
+        "bit_width": 128,
+        "digest_hex": "98e36c369396809e40f90daad52efcec",
+        "row_digest_hex": "25fefca83c5906516ea328d6ca0032f3"
+      },
+      "expected_row_count": 4,
+      "fragments": [
+        {
+          "workbook": "dtypes_showcase_Data_001.xlsx",
+          "sheet_name": "dtypes Data",
+          "source_alias": "dtypes",
+          "period_label": null,
+          "part_index": null,
+          "row_count": 4,
+          "column_names": [
+            "int8",
+            "int64_extremes",
+            "uint64_max",
+            "float_specials",
+            "boolean",
+            "string_edges",
+            "binary",
+            "time",
+            "duration",
+            "decimal",
+            "categorical",
+            "all_null",
+            "booked"
+          ],
+          "expected": {
+            "identifier": "binary-aggregate-xxh3-128",
+            "version": 2,
+            "scope": "dataframe",
+            "bit_width": 128,
+            "digest_hex": "98e36c369396809e40f90daad52efcec",
+            "row_digest_hex": "25fefca83c5906516ea328d6ca0032f3"
+          }
+        }
+      ]
+    }
+  ],
+  "workbooks": [
+    "dtypes_showcase_Data_001.xlsx"
+  ],
+  "sidecars": [
+    "dtypes.parquet.json"
+  ]
+}

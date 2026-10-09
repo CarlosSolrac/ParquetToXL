@@ -1,0 +1,105 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "undated_last",
+  "run_id": "2026-09-16T12-00-00Z-undated_last",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "1fb28d35-b7c8-5d35-abd2-b3031499e4c1",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\undated_last",
+  "planner_version": "1",
+  "resolved_config_hash": "f9981f84e42083a0a3c8a4a3c940bcc51dd39b27dcc02ddd60d829b0144f84db",
+  "sources": [
+    {
+      "alias": "undated",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\undated.parquet",
+      "rows": 30,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "undated_last_2025-07~12_001.xlsx",
+          "sheet_name": "undated 2025-07~12",
+          "rows": 6,
+          "period_label": "2025-07~12",
+          "verdict": "valid",
+          "detail": "undated_last_2025-07~12_001.xlsx!undated 2025-07~12 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "undated_last_2025-01~06_002.xlsx",
+          "sheet_name": "undated 2025-01~06",
+          "rows": 14,
+          "period_label": "2025-01~06",
+          "verdict": "valid",
+          "detail": "undated_last_2025-01~06_002.xlsx!undated 2025-01~06 holds the rows the manifest records for it"
+        },
+        {
+          "workbook": "undated_last_Undated_003.xlsx",
+          "sheet_name": "undated Undated",
+          "rows": 10,
+          "period_label": "Undated",
+          "verdict": "valid",
+          "detail": "undated_last_Undated_003.xlsx!undated Undated holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 30,
+      "rows_found": 30,
+      "reassembled": true
+    },
+    {
+      "alias": "all_undated",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\all_undated.parquet",
+      "rows": 12,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "undated_last_Undated_004.xlsx",
+          "sheet_name": "all_undated Undated",
+          "rows": 12,
+          "period_label": "Undated",
+          "verdict": "valid",
+          "detail": "undated_last_Undated_004.xlsx!all_undated Undated holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 12,
+      "rows_found": 12,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "undated_last_2025-07~12_001.xlsx",
+      "sheets": 1,
+      "rows": 6,
+      "cells": 21
+    },
+    {
+      "filename": "undated_last_2025-01~06_002.xlsx",
+      "sheets": 1,
+      "rows": 14,
+      "cells": 45
+    },
+    {
+      "filename": "undated_last_Undated_003.xlsx",
+      "sheets": 1,
+      "rows": 10,
+      "cells": 33
+    },
+    {
+      "filename": "undated_last_Undated_004.xlsx",
+      "sheets": 1,
+      "rows": 12,
+      "cells": 39
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}

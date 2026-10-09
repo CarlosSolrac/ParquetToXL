@@ -1,0 +1,49 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "empty_source",
+  "run_id": "2026-09-16T12-00-00Z-empty_source",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "1770c6d2-020a-5f12-a045-d66a6cc04d82",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\empty_source",
+  "planner_version": "1",
+  "resolved_config_hash": "5eb3c3e1633661712cde30743fabd6802e2de9869a9b7e75870d7926beaf3b87",
+  "sources": [
+    {
+      "alias": "empty",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\empty.parquet",
+      "rows": 0,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "empty_source_Data_001.xlsx",
+          "sheet_name": "empty Data",
+          "rows": 0,
+          "period_label": null,
+          "verdict": "valid",
+          "detail": "empty_source_Data_001.xlsx!empty Data holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 0,
+      "rows_found": 0,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "empty_source_Data_001.xlsx",
+      "sheets": 1,
+      "rows": 0,
+      "cells": 3
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}

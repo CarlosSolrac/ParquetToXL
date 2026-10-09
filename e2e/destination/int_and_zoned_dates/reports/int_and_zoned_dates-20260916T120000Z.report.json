@@ -1,0 +1,121 @@
+{
+  "report_version": 1,
+  "outcome": "published",
+  "profile": "int_and_zoned_dates",
+  "run_id": "2026-09-16T12-00-00Z-int_and_zoned_dates",
+  "generated_utc": "2026-09-16T12:00:00Z",
+  "started_utc": "2026-09-16T12:00:00Z",
+  "finished_utc": "2026-09-16T12:00:00Z",
+  "config_id": "ee0ed1e3-9135-5e50-b5da-920118a4c271",
+  "config_path": "E:\\_src\\ParquetToXL\\e2e\\destination",
+  "destination": "E:\\_src\\ParquetToXL\\e2e\\destination\\int_and_zoned_dates",
+  "planner_version": "1",
+  "resolved_config_hash": "0d64d8900703c9be721f3534b9998e4e9ae9f5ec1eacb4b65e84bd65621d0b91",
+  "sources": [
+    {
+      "alias": "int_yymm",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yymm.parquet",
+      "rows": 6,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_1970~2069_001.xlsx",
+          "sheet_name": "int_yymm 1970~2069",
+          "rows": 6,
+          "period_label": "1970~2069",
+          "verdict": "valid",
+          "detail": "int_and_zoned_dates_1970~2069_001.xlsx!int_yymm 1970~2069 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 6,
+      "rows_found": 6,
+      "reassembled": true
+    },
+    {
+      "alias": "int_yyyymmdd",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\int_yyyymmdd.parquet",
+      "rows": 4,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_1970~2069_001.xlsx",
+          "sheet_name": "int_yyyymmdd 2024~2025",
+          "rows": 4,
+          "period_label": "2024~2025",
+          "verdict": "valid",
+          "detail": "int_and_zoned_dates_1970~2069_001.xlsx!int_yyyymmdd 2024~2025 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 4,
+      "rows_found": 4,
+      "reassembled": true
+    },
+    {
+      "alias": "zoned",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\zoned.parquet",
+      "rows": 3,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_2025~2026_002.xlsx",
+          "sheet_name": "zoned 2025~2026",
+          "rows": 3,
+          "period_label": "2025~2026",
+          "verdict": "valid",
+          "detail": "int_and_zoned_dates_2025~2026_002.xlsx!zoned 2025~2026 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 3,
+      "rows_found": 3,
+      "reassembled": true
+    },
+    {
+      "alias": "wall_clock",
+      "path": "E:\\_src\\ParquetToXL\\e2e\\sources\\wall_clock.parquet",
+      "rows": 6,
+      "rebuilt_because": [
+        "no-receipt",
+        "sidecar-missing-or-unreadable"
+      ],
+      "fragments": [
+        {
+          "workbook": "int_and_zoned_dates_2025~2026_002.xlsx",
+          "sheet_name": "wall_clock 2025",
+          "rows": 6,
+          "period_label": "2025",
+          "verdict": "valid",
+          "detail": "int_and_zoned_dates_2025~2026_002.xlsx!wall_clock 2025 holds the rows the manifest records for it"
+        }
+      ],
+      "rows_expected": 6,
+      "rows_found": 6,
+      "reassembled": true
+    }
+  ],
+  "workbooks": [
+    {
+      "filename": "int_and_zoned_dates_1970~2069_001.xlsx",
+      "sheets": 2,
+      "rows": 10,
+      "cells": 36
+    },
+    {
+      "filename": "int_and_zoned_dates_2025~2026_002.xlsx",
+      "sheets": 2,
+      "rows": 9,
+      "cells": 26
+    }
+  ],
+  "deleted": [],
+  "failure": null,
+  "notes": []
+}
