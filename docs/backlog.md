@@ -3,8 +3,9 @@
 As of 2026-09-16. Every phase of `docs/export-pipeline-spec.md` is built: 1,725 tests over 3,263
 statements at 100% statement and branch coverage, CI green on `main`.
 
-Nothing here is a defect. Each item is either a deliberate debt with a recorded reason, a decision
-nobody has made yet, or a gate that needs infrastructure. Read the linked decision record before
+Items 1–8 are not defects. Each is either a deliberate debt with a recorded reason, a decision
+nobody has made yet, or a gate that needs infrastructure. Item 9 is the exception: defects found by
+the 2026-10-08 design audit. Read the linked decision record before
 starting one — the alternatives have usually been weighed already.
 
 ---
@@ -195,6 +196,79 @@ checks each now have a verb — see the table at the end of
   Both are kept and both say so in their own docstrings, because the fifty frozen tests written
   against them read as statements of behaviour, and rewriting those to gather and unpack by hand
   would bury that behind mechanism. Worth revisiting if a third entry point ever appears.
+
+---
+
+## 9. Defects found by the 2026-10-08 design audit
+
+Two independent design audits (`docs/claude-design-evaluation-ParquetToXL.md` and
+`docs/design-evaluation-2026-10-08.md`) surfaced these while reviewing design. Each is a behaviour
+bug, not a design preference. **Confirmed** means the code was read and the claim holds at
+`533c281`; **unconfirmed** means one audit's probe or reading found it and nobody has reproduced it
+since. Each fix needs a failing test first.
+
+### 9.1 Data refusals crash `pqx` and skip the remaining profiles — confirmed
+
+The per-profile boundary at `pqx_pipeline/cli.py:461` catches
+`(OwnershipError, StagingError, NotImplementedError, ValueError)`. Eight project exceptions derive
+directly from `Exception`, so `IngestError`, `BucketingError`, `CalendarError` (and
+`DateDecodeError`), `CapacityError`, and `PortableNameError` escape `main`: no refusal is printed,
+no report is published, and the profiles after it never run. This contradicts the comment above
+the loop ("each profile is refused on its own account") and `run_profile`'s "a failure is a value
+here". `RunReport`'s `planning-failed` and `write-failed` outcomes are never produced.
+
+Reproduced three ways: the Claude audit (a `20251399` value under `YYYYMMDD`), the second audit's
+probe (an unreadable Parquet source), and `e2e/RESULTS.json`, whose `null_dates_refused` case exits
+`-1` with `"escaped": "BucketingError: ..."`.
+
+The audits agree on the fix: one project base exception that every package's root subclasses,
+caught once per profile, so the catch no longer includes bare `ValueError` (which today also turns
+programming errors into exit 3 without a traceback).
+
+### 9.2 The lease TTL can never expire a run, and every report says `0s` — confirmed
+
+`RunInstants.at` (`pqx_pipeline/run.py:128`) sets `started`, `described`, `exported`, and
+`finished` to one moment, and the CLI builds the run's instants that way (`cli.py:182`). The lease
+is acquired at `instants.started` (`run.py:692`) and checked at `instants.exported` (`run.py:697`),
+the same instant, so the expiry guard (`pqx_staging/lease.py:179`) cannot fire from a real run,
+although `lease.py:36–39` calls the TTL "a ceiling on run length". Report durations are always
+zero.
+
+Fix direction: inject a clock (`Callable[[], datetime]`) instead of precomputed instants; tests
+pass a stepping fake.
+
+### 9.3 `config_path` records the output directory — confirmed
+
+`run.py:493` and `run.py:619` pass `config_path=str(config.output_directory)`. The field is
+documented as "where the configuration was read from" (`pqx_plan/manifest.py:161`), and
+`Invocation.config_path` (`cli.py:130`) is never passed to `run_profile`. Every published manifest
+and report records the wrong path.
+
+### 9.4 Descending greedy partitioning raises `CoverageError` — unconfirmed
+
+`pqx_plan/partition.py:225` takes a group's coverage from the first and last groups' positional
+endpoints, but the input can already be descending (`partition.py:303–308`). The second audit's
+probe — ten rows each in January 2024 and January 2025, descending yearly greedy, capacity 100 —
+raised `CoverageError`. `docs/partitioning-spec.md:400–401` requires the earlier endpoint first
+regardless of sheet order. The e2e `by_month_descending` case passes, so the failure needs the
+greedy grouping, not descending order alone.
+
+### 9.5 A manifest mixing hasher versions raises instead of returning a verdict — unconfirmed
+
+`pqx_verify/fragments.py:142–146` returns `unsupported-hasher` for an unsupported fragment, but
+`_reassembly` (`fragments.py:230`) then calls `combine`, whose mixed-version refusal escapes as
+`ValueError` (`pqx_frame/hashing/binary_aggregate.py:169`). The second audit reproduced it with
+versions 1 and 99. `docs/export-pipeline-spec.md:440–443` describes verification outcomes as
+verdicts, so an internally inconsistent manifest should produce one.
+
+### 9.6 Selection reads the sidecar beside the source, not from the configured directory — unconfirmed
+
+`run.py:551` passes only the original source path to `sidecar_stale`, so `staleness.py:145` reads
+the sidecar beside the source. Writing honours `sidecar_directory_for(config)` (`run.py:276–285`,
+`run.py:611`). With a configured sidecar directory, selection would read a different (or missing)
+sidecar than the one written, contradicting `docs/decisions/2026-09-15-phases-e-h.md:53–69`. Found
+by reading the code only; an acceptance case that writes and then selects with a configured
+directory would settle it.
 
 ---
 
