@@ -6,15 +6,16 @@ spec; confirm or correct them. This file is a map. The authorities stay where `C
 
 ## 1. Size and numbers
 
-- Classification: **Large**. One process (the `pqx` CLI), but three external systems: source storage, destination storage (local, SMB, or Azure Blob
-  through `UPath`), and the scratch volume.
+- Classification: **Standard with a C4 context view**. One process (the `pqx` CLI) and three external systems: source storage, destination
+  storage (local, SMB, or Azure Blob through `UPath`), and the scratch volume. External systems earn the context view; a container view would
+  need more than one process, so the packages are shown in the component flowchart (section 4) instead.
 - Code: 11 uv workspace packages, 11,445 lines of library source, 985 test functions, 25,587 lines in total including tests, gates, and tools.
 - Volumes, from the backlog and gate 0d: sources up to ~40M rows; a converted frame costs 7.0 to 25.4 bytes per cell depending on column mix;
   ~400M cells is the last shape that survives 16 GB of RAM, and 800M is killed for lack of memory.
 - Consequence: the whole converted frame of a source is resident during writing. That peak, not the cell count, is the scaling limit
   (backlog item 3).
 
-## 2. C4 context and containers
+## 2. C4 context
 
 ```mermaid
 C4Context
@@ -28,28 +29,6 @@ C4Context
     Rel(pqx, sources, "Reads and copies")
     Rel(pqx, scratch, "Stages, writes, verifies")
     Rel(pqx, dest, "Publishes under a lease; reconciles ownership")
-```
-
-```mermaid
-C4Container
-    title ParquetToXL: containers
-    Person(operator, "Operator")
-    System_Boundary(pqx, "pqx process") {
-        Container(cli, "pqx CLI", "pqx_pipeline.cli", "Parses the verb, reads the clock, maps outcomes to exit codes 0 to 3")
-        Container(orch, "Orchestrator", "pqx_pipeline.run", "Staleness, ownership, produce, verify, publish")
-        Container(core, "Planning core", "pqx-plan, pqx-calendar", "Pure: config semantics, capacity, partitioning, naming")
-        Container(data, "Data path", "pqx-frame, pqx-excel, pqx-sidecar", "Conversion, hashing, workbook writing, sidecars")
-        Container(check, "Verification and reporting", "pqx-verify, pqx-report", "Fragment digests, verdicts, JSON, Markdown, and HTML reports")
-        Container(io, "Staging", "pqx-staging, pqx-common", "Scratch, transfer, lease, UPath, portable names")
-    }
-    System_Ext(dest, "Destination storage")
-    Rel(operator, cli, "Runs")
-    Rel(cli, orch, "run_profile, preview_profile, select_profile")
-    Rel(orch, core, "plan_profile")
-    Rel(orch, data, "observe_sources, write_profile")
-    Rel(orch, check, "verify_manifest, publish_reports")
-    Rel(orch, io, "scratch_directory, acquire_lease, delete_names")
-    Rel(io, dest, "Reads and writes")
 ```
 
 ## 3. Domain states
@@ -199,7 +178,8 @@ Only requirements the repository verifies today.
 
 ## 11. Findings
 
-Deviations from the design rules. Items 1 to 3 are new. Items 4 to 6 are already recorded and are listed for completeness, not as new work.
+Deviations from the design rules. Items 1 to 3 are new and are written up with evidence and fixes in `docs/backlog2.md` (the undeclared
+dependency is item 1 there, confirmed by experiment; that file adds a fourth item, a check to keep declarations honest). Items 4 to 6 are already recorded and are listed for completeness, not as new work.
 No code was changed.
 
 1. **Rule 14, documentation drift (new).** The layering diagram in `CLAUDE.md` does not match the imports. It shows `pqx-common` feeding
@@ -227,5 +207,4 @@ by phase rather than one per decision, which works but makes superseding a singl
 
 1. What production volumes and column mixes should the scaling limit be judged against? Backlog item 3 shows a cell ceiling misjudges
    text-heavy sources.
-2. Should section 6 replace the layering diagram in `CLAUDE.md`, so there is one source of truth for package dependencies?
-3. Should a test enforce that each package's declared dependencies match its imports?
+2. Should section 6 replace the layering diagram in `CLAUDE.md`, so there is one source of truth for package dependencies? (`docs/backlog2.md` item 2)
